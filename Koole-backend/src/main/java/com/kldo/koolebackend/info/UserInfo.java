@@ -19,9 +19,6 @@ public class UserInfo {
     private String email;
     private String phone;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private String token;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createTime;

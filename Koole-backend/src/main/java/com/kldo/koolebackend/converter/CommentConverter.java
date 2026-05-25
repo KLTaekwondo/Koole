@@ -6,21 +6,34 @@ import com.kldo.koolebackend.entity.Comment;
 import com.kldo.koolebackend.entity.User;
 import com.kldo.koolebackend.info.CommentInfo;
 
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public class CommentConverter {
     //禁止实例化
     private CommentConverter() {}
 
-    public static CommentInfo convertToInfo(Comment comment , User user , Article article) {
+    public static CommentInfo convertToInfo(Object[] result) {
+        Long commentId = (Long) result[0];
+        String comment = (String) result[1];
+        LocalDateTime createTime = (LocalDateTime) result[2];
+        Long userId = (Long) result[4];
+        String username = (String) result[5];
+        Long articleId = (Long) result[6];
         return CommentInfo.builder()
-                .id(comment.getCommentId())
-                .content(comment.getContent())
-                .userId(user.getUserId())
-                .articleId(article.getArticleId())
-                .username(user.getUsername())
-                .createTime(comment.getCreateTime())
+                .id(commentId)
+                .content(comment)
+                .userId(userId)
+                .articleId(articleId)
+                .username(username)
+                .createTime(createTime)
                 .build();
+    }
+
+    public static List<CommentInfo> convertToListInfo(List<Object[]> results) {
+        return results.stream()
+                .map(CommentConverter::convertToInfo)
+                .toList();
     }
 
     public static Comment convertToComment(CommentBackDTO commentBackDTO , User user , Article article) {

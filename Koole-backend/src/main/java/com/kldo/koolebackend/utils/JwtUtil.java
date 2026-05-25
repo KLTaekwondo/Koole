@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -21,11 +23,15 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // 生成token
-    public String generateToken(Long userId) {
+    // 生成token（带role）
+    public String generateToken(Long userId, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         return Jwts.builder()
+                .claims(claims)           // 存放自定义字段（role）
                 .subject(userId.toString())
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -41,6 +47,17 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
         return Long.parseLong(claims.getSubject());
+    }
+
+    // 从token中提取role
+    public String getRoleFromToken(String token){
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        String role = claims.get("role", String.class);
+        return "ROLE_" + role;
     }
 
     // 验证token

@@ -74,11 +74,33 @@ public class ArticleConverter {
      * @return 文章实体
      */
     public static Article convertToArticle(ArticleBackDTO articleBackDTO, User user, Set<Tag> tags) {
+        String summary = articleBackDTO.getContent().length() > 100
+                ? articleBackDTO.getContent().substring(0, 100) + "..."
+                : articleBackDTO.getContent();
         return Article.builder()
                 .title(articleBackDTO.getTitle())
                 .content(articleBackDTO.getContent())
                 .user(user)
+                .summary(summary)
                 .tags(tags)
                 .build();
+    }
+
+    /**
+     * 将文章DTO转换为文章实体
+     * @param articleBackDTO 文章DTO
+     * @param article 文章实体
+     */
+    public static void setArticle(ArticleBackDTO articleBackDTO, Article article, Set<Tag> tags) {
+        // 更新摘要摘要
+        String summary = articleBackDTO.getContent().length() > 100
+                ? articleBackDTO.getContent().substring(0, 100) + "..."
+                : articleBackDTO.getContent();
+
+        // 更新文章内容
+        article.setSummary(summary);
+        article.setContent(articleBackDTO.getContent());
+        article.setTitle(articleBackDTO.getTitle());
+        article.setTags(tags);
     }
 }

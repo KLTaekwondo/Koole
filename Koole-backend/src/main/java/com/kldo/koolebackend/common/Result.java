@@ -2,9 +2,7 @@ package com.kldo.koolebackend.common;
 
 import lombok.*;
 
-@Setter
-@Getter
-@Builder
+@Data
 public class Result<T> {
     private int code;
     private String msg;

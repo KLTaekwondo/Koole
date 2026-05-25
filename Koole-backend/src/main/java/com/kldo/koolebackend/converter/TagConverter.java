@@ -10,16 +10,16 @@ public class TagConverter {
     //禁止实例化
     private TagConverter() {}
 
-    public static TagInfo convertToSetInfo(Tag tag) {
+    public static TagInfo convertToInfo(Tag tag) {
         return TagInfo.builder()
                 .id(tag.getTagId())
                 .name(tag.getTagName())
                 .build();
     }
 
-    public static List<TagInfo> convertToListInfo(Set<Tag> tags) {
+    public static List<TagInfo> convertToListInfo(List<Tag> tags) {
         return tags.stream()
-                .map(TagConverter::convertToSetInfo)
+                .map(TagConverter::convertToInfo)
                 .toList();
     }
 }
