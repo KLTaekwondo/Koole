@@ -17,9 +17,9 @@ public class CommentConverter {
         Long commentId = (Long) result[0];
         String comment = (String) result[1];
         LocalDateTime createTime = (LocalDateTime) result[2];
-        Long userId = (Long) result[4];
-        String username = (String) result[5];
-        Long articleId = (Long) result[6];
+        Long userId = (Long) result[3];
+        String username = (String) result[4];
+        Long articleId = (Long) result[5];
         return CommentInfo.builder()
                 .id(commentId)
                 .content(comment)

@@ -76,14 +76,10 @@ public class ArticleService {
      * @param articleBackDTO 文章信息
      * @param userId         用户ID
      */
-    @Caching(evict = {
-            @CacheEvict(value = "articleSummaryCache", key = "'allSummary'"),
-            @CacheEvict(value = "articleSummaryCache", key = "#tagId")
-    })
     @Transactional
     public void create(ArticleBackDTO articleBackDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("不存在的用户！"));
-        Set<Tag> tags = null;
+        Set<Tag> tags = new HashSet<>();
         if (articleBackDTO.getTagIds() != null && !articleBackDTO.getTagIds().isEmpty()) {
             List<Tag> tagsList = tagRepository.findAllById(articleBackDTO.getTagIds());
             if (tagsList.size() != articleBackDTO.getTagIds().size()) {
@@ -93,6 +89,12 @@ public class ArticleService {
         }
         Article article = ArticleConverter.convertToArticle(articleBackDTO, user, tags);
         articleRepository.save(article);
+        // 清空缓存
+        Set<Long> tagIds = tags.stream().map(Tag::getTagId).collect(Collectors.toSet());
+        cacheManager.getCache("articleSummaryCache").evict("allSummary");
+        for(Long tagId : tagIds) {
+            cacheManager.getCache("articleSummaryCache").evict(tagId);
+        }
     }
 
 
@@ -103,11 +105,6 @@ public class ArticleService {
      * @param articleBackDTO 文章信息
      * @param loginUser      用户信息
      */
-    @Caching(evict = {
-            @CacheEvict(value = "articleSummaryCache", key = "'allSummary'"),
-            @CacheEvict(value = "articleSummaryCache", key = "#tagId"),
-            @CacheEvict(value = "articleContentCache", key = "#articleId")
-    })
     @Transactional
     public void update(Long articleId, ArticleBackDTO articleBackDTO, LoginUser loginUser) {
         Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException("不存在的文章！"));
@@ -119,7 +116,7 @@ public class ArticleService {
             throw new BusinessException("您没有权限更新该文章！");
         }
 
-        Set<Tag> tags = null;
+        Set<Tag> tags = new HashSet<>();
         if (articleBackDTO.getTagIds() != null && !articleBackDTO.getTagIds().isEmpty()) {
             List<Tag> tagsList = tagRepository.findAllById(articleBackDTO.getTagIds());
             if (tagsList.size() != articleBackDTO.getTagIds().size()) {
@@ -129,6 +126,13 @@ public class ArticleService {
         }
         ArticleConverter.setArticle(articleBackDTO, article, tags);
         articleRepository.save(article);
+        // 清空缓存
+        Set<Long> tagIds = tags.stream().map(Tag::getTagId).collect(Collectors.toSet());
+        cacheManager.getCache("articleSummaryCache").evict("allSummary");
+        cacheManager.getCache("articleContentCache").evict(articleId);
+        for(Long tagId : tagIds) {
+            cacheManager.getCache("articleSummaryCache").evict(tagId);
+        }
     }
 
     /**

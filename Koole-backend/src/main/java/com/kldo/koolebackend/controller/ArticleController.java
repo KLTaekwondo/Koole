@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/article")
-@CrossOrigin("http://localhost:5173")
 public class ArticleController {
     @Autowired
     private ArticleService articleService;
@@ -57,6 +56,7 @@ public class ArticleController {
      */
     @PostMapping("/create")
     public Result<Void> createArticle(@RequestBody ArticleBackDTO articleBackDTO , HttpServletRequest request) {
+        System.out.println("接收到的文章创建DTO: " + articleBackDTO);
         LoginUser loginUser = AuthContext.getCurrentUser(request,jwtUtil);
         articleService.create(articleBackDTO, loginUser.getUserId());
         return Result.successMessage("文章创建成功");

@@ -1,29 +1,29 @@
 import UpdatePostAPI from "../api/UpdatePostAPI.js"
 
-function updatePostInterface(){
+export function updatePostInterface(){
     const findAll = async () =>{
-        const response = await UpdatePostAPI.findAll();
-        return Array.isArray(response.data) ? response.data : [];
+        const data = await UpdatePostAPI.findAll();
+        return Array.isArray(data) ? data : [];
     }
 
     const findById = async (id) =>{
-        const response = await UpdatePostAPI.findById(id);
-        return response.data || null;
+        const data = await UpdatePostAPI.findById(id);
+        return data || null;
     }
 
     const create = async (data) =>{
-        const response = await UpdatePostAPI.create(data);
-        return !!response;
+        await UpdatePostAPI.create(data);
+        return true;
     }
 
-    const update = async (data) =>{
-        const response = await UpdatePostAPI.update(data);
-        return !!response;
+    const update = async (id, data) =>{
+        await UpdatePostAPI.update(id, data);
+        return true;
     }
 
     const deleteById = async (id) =>{
-        const response = await UpdatePostAPI.delete(id);
-        return !!response;
+        await UpdatePostAPI.delete(id);
+        return true;
     }
 
     return{
@@ -35,4 +35,3 @@ function updatePostInterface(){
     }
 }
 
-export default updatePostInterface;

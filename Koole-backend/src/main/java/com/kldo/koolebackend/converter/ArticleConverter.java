@@ -21,11 +21,14 @@ public class ArticleConverter {
      */
     public static ArticleDetailInfo convertToDetailInfo(Article article) {
         List<Long> tagIds =  article.getTags().stream().map(Tag::getTagId).toList();
+        User user = article.getUser();
         return ArticleDetailInfo.builder()
                 .id(article.getArticleId())
                 .title(article.getTitle())
                 .content(article.getContent())
                 .tagIds(tagIds)
+                .userId(user.getUserId())
+                .userName(user.getUsername())
                 .createTime(article.getCreateTime())
                 .updateTime(article.getUpdateTime())
                 .build();
@@ -48,11 +51,14 @@ public class ArticleConverter {
 
     public static ArticleSummaryInfo convertToSummaryInfo(Article article) {
         List<Long> tagIds =  article.getTags().stream().map(Tag::getTagId).toList();
+        User user = article.getUser();
         return ArticleSummaryInfo.builder()
                 .id(article.getArticleId())
                 .title(article.getTitle())
                 .tagIds(tagIds)
                 .summary(article.getSummary())
+                .userId(user.getUserId())
+                .userName(user.getUsername())
                 .createTime(article.getCreateTime())
                 .updateTime(article.getUpdateTime())
                 .build();

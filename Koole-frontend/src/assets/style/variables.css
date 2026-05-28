@@ -1,0 +1,30 @@
+:root {
+  --primary: #c0392b;
+  --primary-dark: #a93226;
+  --primary-hover: #e74c3c;
+  --primary-light: rgb(253 213 213 / 0.8);
+  --primary-gradient: linear-gradient(135deg, #c0392b, #e74c3c);
+  --text: #2c3e50;
+  --text-secondary: #636e72;
+  --text-muted: #b2bec3;
+  --text-dark: #000000;
+  --text-light: #4a4a4a;
+  --bg: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafafa;
+  --border: #e8e8e8;
+  --border-light: #f0f0f0;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  --nav-height: 64px;
+  --content-width: 1000px;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --tag-color: rgb(251 142 142 / 0.8);
+}

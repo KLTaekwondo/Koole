@@ -1,5 +1,6 @@
 package com.kldo.koolebackend.info;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -18,8 +19,10 @@ public class UpdatePostInfo {
     private String content;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 }

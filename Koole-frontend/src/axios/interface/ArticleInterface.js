@@ -1,38 +1,43 @@
-import ActicleAPI from "../api/ArticleAPI.js"
+import ArticleAPI from "../api/ArticleAPI.js"
 
-function articleInterface(){
+export function articleInterface(){
     const findAll = async () =>{
-        const response = await ActicleAPI.findAll();
-        return Array.isArray(response.data) ? response.data : [];
+        const data = await ArticleAPI.findAll();
+        return Array.isArray(data) ? data : [];
     }
 
     const findById = async (id) =>{
-        const response = await ActicleAPI.findById(id);
-        return !response.data ? response.data : [];
+        const data = await ArticleAPI.findById(id);
+        return data || {};
+    }
+
+    const getTagSummary = async (tagId) =>{
+        const data = await ArticleAPI.getTagSummary(tagId);
+        return Array.isArray(data) ? data : [];
     }
 
     const create = async (data) =>{
-        const response = await ActicleAPI.create(data);
-        return !!response;
+        console.log(data)
+        await ArticleAPI.create(data);
+        return true;
     }
 
-    const update = async (data) =>{
-        const response = await ActicleAPI.update(data);
-        return !!response;
+    const update = async (id, data) =>{
+        await ArticleAPI.update(id, data);
+        return true;
     }
 
     const deleteById = async (id) =>{
-        const response = await ActicleAPI.deleteById(id);
-        return !!response;
+        await ArticleAPI.deleteById(id);
+        return true;
     }
 
     return{
         findAll,
         findById,
+        getTagSummary,
         create,
         update,
         deleteById,
     }
 }
-
-export default articleInterface;

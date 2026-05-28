@@ -8,13 +8,13 @@ import com.kldo.koolebackend.service.UpdatePostService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/updatepost")
-@CrossOrigin("http://localhost:5173")
 public class UpdatePostController {
     @Autowired
     private UpdatePostService updatePostService;
@@ -45,7 +45,7 @@ public class UpdatePostController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
-    public Result<Void> create(@RequestBody UpdatePostBackDTO updatePostBackDTO) {
+    public Result<Void> create(@RequestBody UpdatePostBackDTO updatePostBackDTO , Authentication authentication) {
         updatePostService.create(updatePostBackDTO);
         return Result.successMessage("创建成功");
     }

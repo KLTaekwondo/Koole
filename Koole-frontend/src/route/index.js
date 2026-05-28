@@ -1,47 +1,81 @@
 import { createRouter, createWebHistory } from "vue-router"
-import HomeView from "../views/HomeView.vue"
-import ArticleList from "../views/ArticleList.vue"
-import ArticleEditor from "../views/editor/ArticleEditor.vue"
-import ArticleDetail from "../views/detail/ArticleDetail.vue"
-import UpdatePostList from "../views/UpdatePostList.vue"
-import UpdatePostEditor from "../views/editor/UpdatePostEditor.vue"
-import UpdatePostDetail from "../views/detail/UpdatePostDetail.vue"
+import HomeIndex from "../views/HomeIndex.vue"
+import ArticleView from "../views/ArticleView.vue"
+import AboutIndex from "../views/AboutIndex.vue"
+import UpdatePostView from "../views/UpdatePostView.vue"
+import ArticleEditor from "../views/ArticleEditor.vue"
+import UpdatePostEditor from "../views/UpdatePostEditor.vue"
+import AuthView from "../views/AuthView.vue"
+import PhysicsLab from "../views/PhysicsLab.vue"
+import ArticleDetail from "../views/ArticleDetail.vue"
+import UserPage from "../views/UserPage.vue"
+import TestView from "../views/TestView.vue"
 
 const routes = [
     {
         path: "/",
-        name: "Home",
-        component: HomeView,
+        name: "首页",
+        component: HomeIndex,
     },
     {
-        path: "/article",
-        name: "ArticleList",
-        component: ArticleList,
+        path:"/about",
+        name: "关于本站",
+        component: AboutIndex,
     },
     {
-        path: "/article/create",
-        name: "ArticleCreate",
+        path:"/articles",
+        name: "文章列表",
+        component: ArticleView,
+    },
+    {
+        path:"/articles/create",
+        name: "编写文章",
         component: ArticleEditor,
     },
     {
-        path: "/article/:id",
-        name: "ArticleDetail",
+        path:"/articles/edit/:id",
+        name: "编辑文章",
+        component: ArticleEditor,
+    },
+    {
+        path:"/articles/:id",
+        name: "文章详情",
         component: ArticleDetail,
     },
     {
-        path: "/updatepost",
-        name: "UpdatePostList",
-        component: UpdatePostList,
+        path:"/updateposts",
+        name: "更新日志列表",
+        component: UpdatePostView,
     },
     {
-        path: "/updatepost/create",
-        name: "UpdatePostCreate",
+        path:"/updateposts/create",
+        name: "编写更新日志",
         component: UpdatePostEditor,
     },
     {
-        path: "/updatepost/:id",
-        name: "UpdatePostDetail",
-        component: UpdatePostDetail,
+        path:"/updateposts/edit/:id",
+        name: "编辑更新日志",
+        component: UpdatePostEditor,
+    },
+    {
+        path:"/auth",
+        name: "登录",
+        component: AuthView,
+    },
+    {
+        path:"/physics-lab",
+        name: "物理实验室",
+        component: PhysicsLab,
+    },
+    {
+        path:"/user",
+        name: "个人中心",
+        component: UserPage,
+    },
+    {
+        path:"/test",
+        name: "测试",
+        component: TestView,
     },
 ]
 

@@ -28,7 +28,7 @@ public class Article {
     @Column(nullable = false)
     private String summary;
 
-    @Column(nullable = false)
+    @Column(nullable = false,columnDefinition = "LONGTEXT")
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)

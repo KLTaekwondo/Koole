@@ -116,7 +116,7 @@ public class UserService{
             throw new BusinessException("旧密码错误");
         }
 
-        if(!user.getPassword().equals(userPasswordDTO.getNewPassword())){
+        if(user.getPassword().equals(userPasswordDTO.getNewPassword())){
             throw new BusinessException("新密码不能与旧密码相同");
         }
         // 更新密码

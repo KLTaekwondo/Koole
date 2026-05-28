@@ -1,0 +1,27 @@
+.container {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-light);
+}
+
+/* Page transition (used in App.vue) */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.3s var(--ease-out);
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
