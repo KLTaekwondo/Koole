@@ -82,7 +82,7 @@
 
                     <!-- Markdown 内容 -->
                     <div class="article-content">
-                        <MdPreview :modelValue="article.content" :theme="'light'" />
+                        <MdPreview :modelValue="article.content" :theme="theme" previewTheme="stackoverflow" codeTheme="stackoverflow" />
                     </div>
                 </template>
 
@@ -159,6 +159,7 @@ import { tagInterface } from "../axios/interface/TagInterface.js";
 import { commentInterface } from "../axios/interface/CommentInterface.js";
 import { currentUser } from "../stores/user.js";
 import { showToast } from "../stores/toast.js";
+import { theme } from "../stores/theme.js";
 import TableOfContents from "../components/TableOfContents.vue";
 
 const route = useRoute();
@@ -287,10 +288,14 @@ onMounted(async () => {
     max-width: 100%;
     margin: 0 auto;
     padding: 0 24px 80px;
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .article-detail-container {
+    background: #000000;
 }
 
 /* ── Loading ── */
@@ -431,7 +436,7 @@ onMounted(async () => {
 }
 
 .article-content :deep(.md-editor-preview code) {
-    background: #f5f5f5;
+    background: var(--bg-card-hover);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.9em;
@@ -439,7 +444,7 @@ onMounted(async () => {
 }
 
 .article-content :deep(.md-editor-preview pre) {
-    background: #f8f9fa;
+    background: var(--bg-card-hover);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 16px;
@@ -502,7 +507,7 @@ onMounted(async () => {
 }
 
 .article-content :deep(.md-editor-preview th) {
-    background: #f8f9fa;
+    background: var(--bg-card-hover);
     font-weight: 600;
 }
 

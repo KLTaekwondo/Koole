@@ -1,4 +1,5 @@
 import { DRAW_SCALE } from "../../constants/physicsModels.js"
+import { theme } from "../theme.js"
 
 /**
  * 渲染绘制模块
@@ -19,7 +20,7 @@ export function createRenderer(canvasRef, camera, modelRef, getParams, getState,
    * 绘制网格
    */
   const drawGrid = (ctx, cw, ch) => {
-    ctx.strokeStyle = "#e8e8e8"
+    ctx.strokeStyle = theme.value === "dark" ? "#444444" : "#e8e8e8"
     ctx.lineWidth = 0.5
     const startGX = Math.floor((-cw / 2 - cameraX.value) / DRAW_SCALE) * DRAW_SCALE
     const endGX = Math.ceil((cw / 2 - cameraX.value) / DRAW_SCALE) * DRAW_SCALE
@@ -41,9 +42,9 @@ export function createRenderer(canvasRef, camera, modelRef, getParams, getState,
    */
   const drawGround = (ctx, cw, ch) => {
     const groundScreenY = ch - 40 + cameraY.value
-    ctx.fillStyle = "#2c3e50"
+    ctx.fillStyle = theme.value === "dark" ? "#444444" : "#2c3e50"
     ctx.fillRect(0, groundScreenY, cw, ch - groundScreenY)
-    ctx.fillStyle = "#34495e"
+    ctx.fillStyle = theme.value === "dark" ? "#555555" : "#34495e"
     ctx.fillRect(0, groundScreenY, cw, 2)
   }
 
@@ -173,10 +174,10 @@ export function createRenderer(canvasRef, camera, modelRef, getParams, getState,
     ctx.lineTo(bx, by + rx)
     ctx.arcTo(bx, by, bx + rx, by, rx)
     ctx.closePath()
-    ctx.fillStyle = "rgba(0,0,0,0.55)"
+    ctx.fillStyle = theme.value === "dark" ? "rgba(0,0,0,0.75)" : "rgba(0,0,0,0.55)"
     ctx.fill()
 
-    ctx.fillStyle = "whitesmoke"
+    ctx.fillStyle = theme.value === "dark" ? "#e0e0e0" : "whitesmoke"
     infoLines.forEach((line, i) => {
       ctx.fillText(line, bx + padX, by + padY + 14 + i * lineHeight)
     })
@@ -204,8 +205,8 @@ export function createRenderer(canvasRef, camera, modelRef, getParams, getState,
     // 清空
     ctx.clearRect(0, 0, cw, ch)
 
-    // 背景
-    ctx.fillStyle = "#f8f9fa"
+    // 背景（适配深色模式）
+    ctx.fillStyle = theme.value === "dark" ? "#2a2a2a" : "#f8f9fa"
     ctx.fillRect(0, 0, cw, ch)
 
     // 网格

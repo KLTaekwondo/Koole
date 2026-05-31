@@ -18,6 +18,10 @@
                 </template>
             </div>
             <div class="nav-right">
+                <button class="theme-toggle" @click="toggleTheme" :title="theme === 'light' ? '切换深色模式' : '切换浅色模式'">
+                    <svg v-if="theme === 'light'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
                 <template v-if="isLoggedIn">
                     <router-link to="/user" class="user-info">
                         <div class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</div>
@@ -39,6 +43,7 @@
 <script setup>
 import { useRoute, useRouter } from "vue-router"
 import { currentUser, isLoggedIn, isAdmin, logout } from "../stores/user.js"
+import { theme, toggleTheme } from "../stores/theme.js"
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +66,10 @@ const handleLogout = async () => {
     top: 0;
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+:root[data-theme="dark"] .navbar {
+    background: rgba(26,26,26,0.92);
 }
 .nav-inner {
     max-width: 1200px;
@@ -106,6 +115,11 @@ const handleLogout = async () => {
     background: #f0f4ff;
     color: var(--primary) !important;
     font-weight: 600;
+}
+
+:root[data-theme="dark"] .nav-link:hover,
+:root[data-theme="dark"] .nav-link.active {
+    background: rgba(231, 76, 60, 0.15);
 }
 .nav-separator {
     width: 1px;
@@ -196,6 +210,24 @@ const handleLogout = async () => {
     border-color: var(--primary) !important;
     color: var(--primary) !important;
     background: var(--primary-light) !important;
+}
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.theme-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
 }
 </style>
 

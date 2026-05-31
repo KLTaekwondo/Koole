@@ -29,5 +29,10 @@ onMounted(async () => {
 .main-content {
     min-height: calc(100vh - var(--nav-height));
     padding: 32px 0;
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 40%, #f5f5f0 100%);
+}
+
+:root[data-theme="dark"] .main-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #222222 40%, #2a2a2a 100%);
 }
 </style>

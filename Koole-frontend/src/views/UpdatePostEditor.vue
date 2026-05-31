@@ -38,6 +38,7 @@ import "vditor/dist/index.css"
 import { updatePostInterface } from "../axios/interface/UpdatePostInterface.js"
 import { isAdmin } from "../stores/user.js";
 import {showToast} from "../stores/toast.js";
+import {theme} from "../stores/theme.js";
 
 const route = useRoute()
 const router = useRouter()
@@ -72,9 +73,10 @@ onMounted(async () => {
             enable: false,
         },
         mode: "ir",
+        theme: theme.value === "dark" ? "dark" : "classic",
         preview: {
             theme: {
-                current: "light",
+                current: theme.value === "dark" ? "dark" : "light",
             },
         },
         after: () => {
@@ -281,8 +283,27 @@ const goBack = () => {
     background: var(--bg-card) !important;
 }
 
-.vditor-wrapper :deep(.vditor-ir) {
+.vditor-wrapper :deep(.vditor-ir),
+.vditor-wrapper :deep(.vditor-wysiwyg),
+.vditor-wrapper :deep(.vditor-sv) {
     background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+:root[data-theme="dark"] .vditor-wrapper :deep(.vditor-toolbar) {
+    background: #2a2a2a !important;
+    border-color: #333 !important;
+}
+
+:root[data-theme="dark"] .vditor-wrapper :deep(.vditor-ir),
+:root[data-theme="dark"] .vditor-wrapper :deep(.vditor-wysiwyg),
+:root[data-theme="dark"] .vditor-wrapper :deep(.vditor-sv) {
+    background: #242424 !important;
+    color: #e0e0e0 !important;
+}
+
+:root[data-theme="dark"] .vditor-wrapper :deep(.vditor-content) {
+    background: #242424 !important;
 }
 
 @media (max-width: 640px) {

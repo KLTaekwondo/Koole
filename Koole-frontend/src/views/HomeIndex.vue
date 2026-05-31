@@ -177,7 +177,7 @@ const goAbout = () => {
     z-index: 1;
     font-size: 48px;
     font-weight: 800;
-    color: var(--text-dark);
+    color: black;
     margin-bottom: 16px;
     line-height: 1.2;
     letter-spacing: -1px;
@@ -261,6 +261,10 @@ const goAbout = () => {
     text-align: center;
     transition: var(--transition);
     box-shadow: var(--shadow);
+}
+
+:root[data-theme="dark"] .feature-card {
+    background: #000000;
 }
 
 .feature-card:hover {

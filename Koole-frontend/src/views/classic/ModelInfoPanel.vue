@@ -25,8 +25,9 @@
         <div class="info-content" v-show="!collapsed">
             <MdPreview
                 :modelValue="knowledge"
-                previewTheme="vuepress"
-                codeTheme="github"
+                :theme="theme"
+                previewTheme="stackoverflow"
+                codeTheme="stackoverflow"
                 :noKatex="false"
                 style="background: transparent;"
             />
@@ -38,6 +39,7 @@
 import { ref, computed, watch } from "vue"
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/preview.css"
+import { theme } from "../../stores/theme.js"
 
 const props = defineProps({
     modelId: { type: String, default: "" },
@@ -99,13 +101,13 @@ watch(() => props.modelId, () => {
 
 /* md-editor-v3 预览样式覆盖 */
 .info-content :deep(.md-editor-preview) {
-    font-size: 20px;
+    font-size: 15px;
     line-height: 1.8;
     color: var(--text);
 }
 
 .info-content :deep(.md-editor-preview h2) {
-    font-size: 18px;
+    font-size: 20px;
     margin-top: 14px;
     margin-bottom: 8px;
     padding-bottom: 6px;
@@ -113,7 +115,7 @@ watch(() => props.modelId, () => {
 }
 
 .info-content :deep(.md-editor-preview h3) {
-    font-size: 15px;
+    font-size: 18px;
     margin-top: 12px;
     margin-bottom: 6px;
 }

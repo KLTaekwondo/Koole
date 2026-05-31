@@ -20,7 +20,7 @@
                     <div class="meta">
                         <span>创建时间：{{ item.createTime }}</span>
                     </div>
-                    <MdPreview :modelValue="item.content" />
+                    <MdPreview :modelValue="item.content" :theme="theme" previewTheme="stackoverflow" codeTheme="stackoverflow" />
                 </div>
             </div>
         </div>
@@ -34,6 +34,7 @@ import {onMounted, ref} from "vue"
 import {updatePostInterface} from "../axios/interface/UpdatePostInterface.js";
 import {isAdmin} from "../stores/user.js";
 import {showToast} from "../stores/toast.js";
+import {theme} from "../stores/theme.js";
 import router from "../route/index.js";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 
@@ -60,7 +61,9 @@ const deletePost = async (item) => {
 }
 
 onMounted(async () => {
-    UpdatePostList.value = await updatePostInterface().findAll()
+    const list = await updatePostInterface().findAll()
+    list.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+    UpdatePostList.value = list
 })
 </script>
 
@@ -110,6 +113,10 @@ onMounted(async () => {
     padding: 32px;
     box-shadow: var(--shadow);
     transition: var(--transition);
+}
+
+:root[data-theme="dark"] .update-post-item {
+    background: #000000;
 }
 
 .update-post-item:hover {
@@ -245,7 +252,7 @@ onMounted(async () => {
 }
 
 .update-post-item :deep(.md-editor-preview code) {
-    background: #f0f0f0;
+    background: var(--bg-card-hover);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 13px;

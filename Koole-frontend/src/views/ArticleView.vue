@@ -143,7 +143,7 @@ onMounted(async () => {
 }
 
 .article-card {
-    background: whitesmoke;
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     cursor: pointer;

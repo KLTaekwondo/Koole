@@ -28,3 +28,26 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --tag-color: rgb(251 142 142 / 0.8);
 }
+
+/* 深色模式 */
+[data-theme="dark"] {
+  --primary: #e74c3c;
+  --primary-dark: #c0392b;
+  --primary-hover: #ec7063;
+  --primary-light: rgba(231, 76, 60, 0.15);
+  --primary-gradient: linear-gradient(135deg, #e74c3c, #ec7063);
+  --text: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  --text-dark: #ffffff;
+  --text-light: #cccccc;
+  --bg: #1a1a1a;
+  --bg-card: #242424;
+  --bg-card-hover: #2a2a2a;
+  --border: #333333;
+  --border-light: #2a2a2a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --tag-color: rgba(231, 76, 60, 0.3);
+}
