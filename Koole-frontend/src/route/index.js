@@ -9,7 +9,8 @@ import ArticleEditor from "../views/ArticleEditor.vue"
 import UpdatePostEditor from "../views/UpdatePostEditor.vue"
 import AuthView from "../views/AuthView.vue"
 import PhysicsLab from "../views/PhysicsLab.vue"
-import ClassicPhysicsLab from "../views/ClassicPhysicsLab.vue"
+import ClassicPhysicsLayout from "../views/classic/ClassicPhysicsLayout.vue"
+import ClassicModelView from "../views/classic/ClassicModelView.vue"
 import ArticleDetail from "../views/ArticleDetail.vue"
 import UserPage from "../views/UserPage.vue"
 import TestView from "../views/TestView.vue"
@@ -77,8 +78,15 @@ const routes = [
     },
     {
         path:"/physics-lab/classic",
-        name: "经典模型",
-        component: ClassicPhysicsLab,
+        component: ClassicPhysicsLayout,
+        redirect: "/physics-lab/classic/free-fall",
+        children: [
+            {
+                path: ":modelId",
+                name: "经典模型",
+                component: ClassicModelView,
+            },
+        ],
     },
     {
         path:"/physics-lab/sandbox",
