@@ -43,11 +43,31 @@ backendService.interceptors.response.use(
         const status = error.response?.status
         const msg = error.response?.data?.msg || error.message
 
-        if (status === 401) {
-            showToast("未登录或登录过期", "warning", 3000)
-        } else {
-            showToast(msg || "网络错误", "error", 4000)
+        if(status === 400) {
+            showToast(msg || "请求参数错误", "error", 4000)
         }
+
+        if (status === 401) {
+            showToast(msg || "未登录或登录过期", "warning", 3000)
+        }
+
+        if (status === 403) {
+            showToast(msg || "您没有权限访问该页面", "warning", 3000)
+        }
+
+        if (status === 404) {
+            showToast(msg || "资源不存在", "warning", 3000)
+        }
+
+        if(status === 409){
+            showToast(msg || "资源冲突", "error", 4000)
+        }
+
+        if (status === 500) {
+            showToast("网络错误", "error", 4000)
+        }
+
+
         return Promise.reject(error)
     }
 )

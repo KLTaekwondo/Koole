@@ -3,9 +3,11 @@ package com.kldo.koolebackend.exception;
 import com.kldo.koolebackend.common.Result;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandle {
@@ -20,6 +22,12 @@ public class GlobalExceptionHandle {
     public Result<?> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         return Result.errorMessage(message);
+    }
+
+    // 处理权限不足（比如403 错误）
+    @ExceptionHandler(AccessDeniedException.class)
+    public Result<?> handleAccessDeniedException() {
+        return Result.error(403, "权限不足");
     }
 
     // 处理 JSON 格式错误（比如前端传的 JSON 少了个引号）

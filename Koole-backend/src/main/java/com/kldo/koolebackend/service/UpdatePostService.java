@@ -36,7 +36,7 @@ public class UpdatePostService {
      */
     @Cacheable(value = "updatePostInfoCache",key = "#id")
     public UpdatePostInfo findById(Long id){
-        UpdatePost updatePost = updatePostRepository.findById(id).orElseThrow(() -> new BusinessException("更新帖子不存在"));
+        UpdatePost updatePost = updatePostRepository.findById(id).orElseThrow(() -> new BusinessException(404, "更新帖子不存在"));
         return UpdatePostConverter.convertToInfo(updatePost);
     }
 
@@ -62,7 +62,7 @@ public class UpdatePostService {
     })
     @Transactional
     public void update(Long id, UpdatePostBackDTO updatePostBackDTO) {
-        UpdatePost updatePost = updatePostRepository.findById(id).orElseThrow(() -> new BusinessException("更新帖子不存在"));
+        UpdatePost updatePost = updatePostRepository.findById(id).orElseThrow(() -> new BusinessException(404, "更新帖子不存在"));
         UpdatePostConverter.setPost(updatePostBackDTO, updatePost);
         updatePostRepository.save(updatePost);
     }
@@ -78,7 +78,7 @@ public class UpdatePostService {
     @Transactional
     public void delete(Long id) {
         if(!updatePostRepository.existsById(id)){
-            throw new BusinessException("更新帖子不存在");
+            throw new BusinessException(404, "更新帖子不存在");
         }
         updatePostRepository.deleteById(id);
     }

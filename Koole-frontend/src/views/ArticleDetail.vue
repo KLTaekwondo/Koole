@@ -229,7 +229,6 @@ const submitComment = async () => {
     try {
         await commentInterface().create(route.params.id, { content: text });
         commentText.value = "";
-        showToast("评论成功", "success");
         // 重新加载评论列表
         await loadComments();
         // 滚动到最新评论

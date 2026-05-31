@@ -14,10 +14,7 @@ public class AuthContext {
      * @throws BusinessException 未登录或token无效时抛出
      */
     public static Long getCurrentUserId(HttpServletRequest request, JwtUtil jwtUtil) {
-        String token = extractTokenFromCookie(request);
-        if (token == null || !jwtUtil.validateToken(token)) {
-            throw new BusinessException("未登录，请先登录");
-        }
+        String token = extractTokenAndValidateFromCookie(request, jwtUtil);
         return jwtUtil.getUserIdFromToken(token);
     }
 
@@ -29,10 +26,7 @@ public class AuthContext {
      * @throws BusinessException 未登录或token无效时抛出
      */
     public static String getCurrentUserRole(HttpServletRequest request, JwtUtil jwtUtil) {
-        String token = extractTokenFromCookie(request);
-        if (token == null || !jwtUtil.validateToken(token)) {
-            throw new BusinessException("未登录，请先登录");
-        }
+        String token = extractTokenAndValidateFromCookie(request, jwtUtil);
         return jwtUtil.getRoleFromToken(token);
     }
 
@@ -44,10 +38,7 @@ public class AuthContext {
      * @throws BusinessException 未登录或token无效时抛出
      */
     public static LoginUser getCurrentUser(HttpServletRequest request, JwtUtil jwtUtil) {
-        String token = extractTokenFromCookie(request);
-        if (token == null || !jwtUtil.validateToken(token)) {
-            throw new BusinessException("未登录，请先登录");
-        }
+        String token = extractTokenAndValidateFromCookie(request, jwtUtil);
         return LoginUser.builder()
                 .userId(jwtUtil.getUserIdFromToken(token))
                 .role(jwtUtil.getRoleFromToken(token))
@@ -59,15 +50,26 @@ public class AuthContext {
      * @param request HTTP请求
      * @return token字符串，如果没有则返回null
      */
-    private static String extractTokenFromCookie(HttpServletRequest request) {
+    private static String extractTokenAndValidateFromCookie(HttpServletRequest request, JwtUtil jwtUtil) {
         Cookie[] cookies = request.getCookies();
+        String token = null;
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if ("token".equals(cookie.getName())) {
-                    return cookie.getValue();
+                    token = cookie.getValue();
+                    break;
                 }
             }
         }
-        return null;
+
+        //自动检验token是否为空或过期
+        if (token == null) {
+            throw new BusinessException(401, "未登录，请先登录");
+        }
+        if (!jwtUtil.validateToken(token)) {
+            throw new BusinessException(401, "token过期，请重新登录");
+        }
+
+        return token;
     }
 }

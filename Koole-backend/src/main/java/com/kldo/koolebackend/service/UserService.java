@@ -100,7 +100,8 @@ public class UserService{
      */
     public UserInfo getCurrentUser(LoginUser loginUser) {
         Long userId = loginUser.getUserId();
-        return UserConverter.covernterToUserinfo(userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在")));
+        return UserConverter.covernterToUserinfo(userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(404, "用户不存在")));
     }
 
     /**
@@ -110,7 +111,7 @@ public class UserService{
     @Transactional
     public void updatePassword(UserPasswordDTO userPasswordDTO, LoginUser loginUser) {
         Long userId = loginUser.getUserId();
-        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(404, "用户不存在"));
         // 校验旧密码是否正确
         if(!user.getPassword().equals(userPasswordDTO.getOldPassword())){
             throw new BusinessException("旧密码错误");

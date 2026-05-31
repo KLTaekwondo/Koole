@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
+import {isLoggedIn, checkLogin , currentUser} from "../stores/user.js"
+import {showToast} from "../stores/toast.js"
 import HomeIndex from "../views/HomeIndex.vue"
 import ArticleView from "../views/ArticleView.vue"
 import AboutIndex from "../views/AboutIndex.vue"
@@ -7,9 +9,11 @@ import ArticleEditor from "../views/ArticleEditor.vue"
 import UpdatePostEditor from "../views/UpdatePostEditor.vue"
 import AuthView from "../views/AuthView.vue"
 import PhysicsLab from "../views/PhysicsLab.vue"
+import ClassicPhysicsLab from "../views/ClassicPhysicsLab.vue"
 import ArticleDetail from "../views/ArticleDetail.vue"
 import UserPage from "../views/UserPage.vue"
 import TestView from "../views/TestView.vue"
+import SandboxView from "../views/Sandbox.vue"
 
 const routes = [
     {
@@ -31,11 +35,13 @@ const routes = [
         path:"/articles/create",
         name: "编写文章",
         component: ArticleEditor,
+        meta: {requiresAuth: true},
     },
     {
         path:"/articles/edit/:id",
         name: "编辑文章",
         component: ArticleEditor,
+        meta: {requiresAuth: true},
     },
     {
         path:"/articles/:id",
@@ -51,11 +57,13 @@ const routes = [
         path:"/updateposts/create",
         name: "编写更新日志",
         component: UpdatePostEditor,
+        meta: {requiresAuth: true},
     },
     {
         path:"/updateposts/edit/:id",
         name: "编辑更新日志",
         component: UpdatePostEditor,
+        meta: {requiresAuth: true},
     },
     {
         path:"/auth",
@@ -68,9 +76,20 @@ const routes = [
         component: PhysicsLab,
     },
     {
+        path:"/physics-lab/classic",
+        name: "经典模型",
+        component: ClassicPhysicsLab,
+    },
+    {
+        path:"/physics-lab/sandbox",
+        name: "沙箱",
+        component: SandboxView,
+    },
+    {
         path:"/user",
         name: "个人中心",
         component: UserPage,
+        meta: {requiresAuth: true},
     },
     {
         path:"/test",
@@ -82,6 +101,21 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes,
+})
+
+router.beforeEach(async (to, from, next) => {
+    if(to.meta.requiresAuth){
+        if(!currentUser.value) {
+            await checkLogin()
+        }
+
+        if(!isLoggedIn.value) {
+            next({name: "登录" , query: {redirect: to.fullPath}})
+            showToast("请先登录", "warning")
+            return
+        }
+    }
+    next()
 })
 
 export default router

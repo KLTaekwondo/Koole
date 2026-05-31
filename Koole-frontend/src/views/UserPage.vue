@@ -239,7 +239,6 @@ const deleteArticle = async (article) => {
     try {
         await articleInterface().deleteById(article.id);
         myArticles.value = myArticles.value.filter(a => a.id !== article.id);
-        showToast("删除成功", "success");
     } catch {
         // 错误已在拦截器中处理
     }

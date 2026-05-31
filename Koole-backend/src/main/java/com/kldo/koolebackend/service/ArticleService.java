@@ -66,7 +66,7 @@ public class ArticleService {
      */
     @Cacheable(value = "articleContentCache", key = "#articleId")
     public ArticleDetailInfo findArticleById(Long articleId) {
-        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException("不存在的文章！"));
+        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException(404, "不存在的文章！"));
         return ArticleConverter.convertToDetailInfo(article);
     }
 
@@ -78,12 +78,12 @@ public class ArticleService {
      */
     @Transactional
     public void create(ArticleBackDTO articleBackDTO, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("不存在的用户！"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(404, "不存在的用户！"));
         Set<Tag> tags = new HashSet<>();
         if (articleBackDTO.getTagIds() != null && !articleBackDTO.getTagIds().isEmpty()) {
             List<Tag> tagsList = tagRepository.findAllById(articleBackDTO.getTagIds());
             if (tagsList.size() != articleBackDTO.getTagIds().size()) {
-                throw new BusinessException("部分标签不存在");
+                throw new BusinessException(404, "部分标签不存在");
             }
             tags = new HashSet<>(tagsList);
         }
@@ -107,7 +107,7 @@ public class ArticleService {
      */
     @Transactional
     public void update(Long articleId, ArticleBackDTO articleBackDTO, LoginUser loginUser) {
-        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException("不存在的文章！"));
+        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException(404, "不存在的文章！"));
 
         boolean isAuthor = article.getUser().getUserId().equals(loginUser.getUserId());
         boolean isAdmin = "ROLE_ADMIN".equals(loginUser.getRole());
@@ -120,7 +120,7 @@ public class ArticleService {
         if (articleBackDTO.getTagIds() != null && !articleBackDTO.getTagIds().isEmpty()) {
             List<Tag> tagsList = tagRepository.findAllById(articleBackDTO.getTagIds());
             if (tagsList.size() != articleBackDTO.getTagIds().size()) {
-                throw new BusinessException("部分标签不存在");
+                throw new BusinessException(404, "部分标签不存在");
             }
             tags = new HashSet<>(tagsList);
         }
@@ -142,14 +142,14 @@ public class ArticleService {
     @Transactional
     public void delete(Long articleId, LoginUser loginUser) {
         // 检查文章是否存在
-        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException("不存在的文章！"));
+        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException(404, "不存在的文章！"));
         boolean isAuthor = article.getUser().getUserId().equals(loginUser.getUserId());
         boolean isAdmin = ("ROLE_" + RoleEnum.ADMIN.getCode()).equals(loginUser.getRole());
         Set<Long> tagIds = article.getTags().stream().map(Tag::getTagId).collect(Collectors.toSet());
 
         // 检查是否是文章作者
         if (!isAuthor && !isAdmin) {
-            throw new BusinessException("您没有权限删除该文章！");
+            throw new BusinessException(403, "您没有权限删除该文章！");
         }
         articleRepository.deleteById(articleId);
         // 清空缓存

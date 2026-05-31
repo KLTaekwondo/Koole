@@ -31,7 +31,7 @@ public class TagService {
      */
     @Cacheable(value = "tagsCache", key = "#id")
     public TagInfo findById(Long id) {
-        return TagConverter.convertToInfo(tagRepository.findById(id).orElseThrow(() -> new BusinessException("标签不存在")));
+        return TagConverter.convertToInfo(tagRepository.findById(id).orElseThrow(() -> new BusinessException(404, "标签不存在")));
     }
 
 

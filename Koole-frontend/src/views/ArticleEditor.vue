@@ -76,15 +76,6 @@ const toggleTag = (id) => {
 
 onMounted(async () => {
     await nextTick()
-    // 先检查登录状态
-    await checkLogin()
-
-    // 检查用户是否登录
-    if (!currentUser.value) {
-        router.push("/auth")
-        showToast("请先登录", "warning")
-        return
-    }
 
     // 加载标签列表（失败不影响编辑器）
     try {

@@ -36,7 +36,7 @@ import { useRoute, useRouter } from "vue-router"
 import Vditor from "vditor"
 import "vditor/dist/index.css"
 import { updatePostInterface } from "../axios/interface/UpdatePostInterface.js"
-import { currentUser, isAdmin } from "../stores/user.js";
+import { isAdmin } from "../stores/user.js";
 import {showToast} from "../stores/toast.js";
 
 const route = useRoute()
@@ -53,12 +53,8 @@ onMounted(async () => {
     // 等待 DOM 渲染完成
     await nextTick()
 
-    // 检查用户是否登录
-    if (!currentUser.value) {
-        router.push("/auth")
-        showToast("请先登录", "warning")
-        return
-    }else if (!isAdmin.value) {
+    // 检查用户是否是管理员
+    if (!isAdmin.value) {
         router.push("/")
         showToast("您没有权限访问该页面", "warning")
         return

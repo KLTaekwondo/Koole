@@ -41,7 +41,7 @@ public class CommentService {
     @Cacheable(value = "commentInfoCache",key = "#articleId")
     public List<CommentInfo> findAllByArticle(Long articleId) {
         if (!articleRepository.existsById(articleId)) {
-            throw new BusinessException("文章不存在");
+            throw new BusinessException(404, "文章不存在");
         }
         return CommentConverter.convertToListInfo(commentRepository.findCommentsWithUserAndArticle(articleId));
     }
@@ -55,8 +55,8 @@ public class CommentService {
     @CacheEvict(value = "commentInfoCache",key = "#articleId")
     @Transactional
     public void create(CommentBackDTO commentBackDTO, Long userId, Long articleId ) {
-        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException("文章不存在"));
-        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException("用户不存在"));
+        Article article = articleRepository.findById(articleId).orElseThrow(() -> new BusinessException(404, "文章不存在"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(404, "用户不存在"));
 
         Comment comment = CommentConverter.convertToComment(commentBackDTO, user, article);
         commentRepository.save(comment);
@@ -68,13 +68,13 @@ public class CommentService {
      */
     @Transactional
     public void delete(LoginUser loginUser, Long commentId) {
-        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new BusinessException("评论不存在"));
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new BusinessException(404, "评论不存在"));
         Long articleId = comment.getArticle().getArticleId();
         // 删除评论
         boolean isOwner = comment.getUser().getUserId().equals(loginUser.getUserId());
         boolean isAdmin = "ROLE_ADMIN".equals(loginUser.getRole());
         if (!isOwner && !isAdmin) {
-            throw new BusinessException("您没有权限删除该评论");
+            throw new BusinessException(403, "您没有权限删除该评论");
         }
         commentRepository.deleteById(commentId);
 
