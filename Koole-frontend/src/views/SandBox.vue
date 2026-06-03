@@ -1527,8 +1527,9 @@ onUnmounted(() => {
   border: 1px solid #d0d4d8;
   border-radius: 12px;
   box-shadow: 0 12px 42px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.08);
-  z-index: 100;
+  z-index: 10;
   overflow: hidden;
+
   display: flex;
   flex-direction: column;
   animation: panel-in 0.2s ease-out;

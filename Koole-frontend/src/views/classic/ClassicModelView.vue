@@ -97,7 +97,7 @@
 <script setup>
 import { ref, watch } from "vue"
 import { useRoute } from "vue-router"
-import { PHYSICS_MODELS } from "../../constants/physicsModels.js"
+import { getModelById } from "../../constants/index.js"
 import { usePhysicsSim } from "../../stores/physics/usePhysicsSim.js"
 import ComparisonPanel from "./ComparisonPanel.vue"
 
@@ -106,7 +106,7 @@ const route = useRoute()
 const activeModel = ref(null)
 
 const loadModel = (modelId) => {
-    const source = PHYSICS_MODELS.find(m => m.id === modelId)
+    const source = getModelById(modelId)
     if (!source) {
         activeModel.value = null
         return

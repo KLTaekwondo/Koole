@@ -44,8 +44,25 @@
 
       <!-- 图表 + 数据 -->
       <div class="detail-area">
-        <!-- ECharts 轨迹对比图 -->
-        <div class="chart-container" ref="chartRef"></div>
+        <!-- 模型自定义图表组 -->
+        <div class="charts-grid" v-if="chartDefs.length > 0">
+          <div
+            v-for="(def, ci) in chartDefs"
+            :key="ci"
+            class="chart-container"
+            :ref="el => setChartRef(el, ci)"
+          ></div>
+        </div>
+        <!-- 无 chartDefs 时的回退 -->
+        <div v-else class="chart-container" ref="fallbackChartRef"></div>
+
+        <!-- 事件标记 -->
+        <div class="events-bar" v-if="selectedTrail && selectedTrail.events && selectedTrail.events.length > 0">
+          <div class="event-tag" v-for="(ev, i) in selectedTrail.events" :key="i">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>{{ ev.label }} · {{ ev.time.toFixed(2) }}s</span>
+          </div>
+        </div>
 
         <!-- 关键数据卡片 -->
         <div class="data-cards" v-if="selectedTrail">
@@ -80,11 +97,27 @@ const emit = defineEmits(["clearAll", "removeRecord", "toggleVisibility"])
 
 const expanded = ref(true)
 const selectedIndex = ref(0)
-const chartRef = ref(null)
-let chartInstance = null
+const chartRefs = ref({})
+const fallbackChartRef = ref(null)
+const chartInstances = ref({})
+
+function setChartRef(el, index) {
+  if (el) {
+    chartRefs.value[index] = el
+  } else {
+    delete chartRefs.value[index]
+  }
+}
 
 const selectedTrail = computed(() => {
   return props.trails[selectedIndex.value] || null
+})
+
+// 从选中轨迹获取 chartDefs
+const chartDefs = computed(() => {
+  const trail = selectedTrail.value
+  if (!trail || !trail.chartDefs) return []
+  return trail.chartDefs
 })
 
 // 确保 selectedIndex 在范围内
@@ -94,86 +127,158 @@ watch(() => props.trails.length, (len) => {
   }
 })
 
-// ECharts 初始化
-onMounted(async () => {
-  await nextTick()
-  if (chartRef.value) {
-    const echarts = await import("echarts")
-    chartInstance = echarts.init(chartRef.value)
-    updateChart()
+// 初始化/销毁图表
+async function initCharts() {
+  const echarts = await import("echarts")
 
-    // 监听容器大小变化
-    const resizeObserver = new ResizeObserver(() => {
-      chartInstance?.resize()
-    })
-    resizeObserver.observe(chartRef.value)
+  // 销毁旧实例
+  Object.values(chartInstances.value).forEach(c => c?.dispose())
+  chartInstances.value = {}
 
-    onBeforeUnmount(() => {
-      resizeObserver.disconnect()
-      chartInstance?.dispose()
-      chartInstance = null
-    })
-  }
-})
-
-// 更新图表
-function updateChart() {
-  if (!chartInstance) return
-  const visibleTrails = props.trails.filter(t => t.visible)
-  if (visibleTrails.length === 0) {
-    chartInstance.clear()
+  const defs = chartDefs.value
+  if (defs.length === 0) {
+    // 回退：单个 x-y 图
+    if (fallbackChartRef.value) {
+      chartInstances.value[0] = echarts.init(fallbackChartRef.value)
+    }
     return
   }
 
-  const series = visibleTrails.map(trail => ({
-    name: trail.label,
-    type: "line",
-    data: trail.trail.map(p => [p.x, p.y]),
-    lineStyle: { width: 2, color: trail.color },
-    itemStyle: { color: trail.color },
-    symbol: "none",
-    smooth: false,
-  }))
-
-  chartInstance.setOption({
-    grid: { top: 30, right: 20, bottom: 30, left: 50 },
-    tooltip: {
-      trigger: "axis",
-      formatter: (params) => {
-        if (!params.length) return ""
-        let html = `<b>${params[0].seriesName}</b><br/>`
-        html += `x: ${params[0].value[0].toFixed(2)} m<br/>`
-        html += `y: ${params[0].value[1].toFixed(2)} m`
-        return html
-      },
-    },
-    legend: {
-      top: 4,
-      right: 10,
-      textStyle: { fontSize: 11, color: "#999" },
-    },
-    xAxis: {
-      type: "value",
-      name: "x (m)",
-      nameTextStyle: { fontSize: 11, color: "#999" },
-      axisLabel: { fontSize: 10, color: "#999" },
-      splitLine: { lineStyle: { color: "rgba(0,0,0,0.06)" } },
-    },
-    yAxis: {
-      type: "value",
-      name: "y (m)",
-      nameTextStyle: { fontSize: 11, color: "#999" },
-      axisLabel: { fontSize: 10, color: "#999" },
-      splitLine: { lineStyle: { color: "rgba(0,0,0,0.06)" } },
-    },
-    series,
-  }, true)
+  defs.forEach((_, i) => {
+    const el = chartRefs.value[i]
+    if (el) {
+      chartInstances.value[i] = echarts.init(el)
+    }
+  })
 }
 
-// 监听 trails 变化更新图表
-watch(() => props.trails, () => {
-  nextTick(() => updateChart())
+function getThemeColors() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark"
+  return {
+    text: isDark ? "#aaa" : "#999",
+    title: isDark ? "#ccc" : "#666",
+    grid: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+    bg: isDark ? "#242424" : "#fff",
+  }
+}
+
+function updateCharts() {
+  const defs = chartDefs.value
+  const visibleTrails = props.trails.filter(t => t.visible)
+  const tc = getThemeColors()
+
+  if (defs.length === 0) {
+    // 回退模式
+    const inst = chartInstances.value[0]
+    if (!inst) return
+    if (visibleTrails.length === 0) { inst.clear(); return }
+    const series = visibleTrails.map(trail => ({
+      name: trail.label,
+      type: "line",
+      data: trail.trail.map(p => [p.x, p.y]),
+      lineStyle: { width: 2, color: trail.color },
+      itemStyle: { color: trail.color },
+      symbol: "none",
+    }))
+    inst.setOption({
+      backgroundColor: tc.bg,
+      grid: { top: 30, right: 20, bottom: 30, left: 50 },
+      tooltip: { trigger: "axis" },
+      legend: { top: 4, right: 10, textStyle: { fontSize: 11, color: tc.text } },
+      xAxis: { type: "value", name: "x (m)", nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
+      yAxis: { type: "value", name: "y (m)", nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
+      series,
+    }, true)
+    return
+  }
+
+  // 模型自定义图表
+  defs.forEach((def, ci) => {
+    const inst = chartInstances.value[ci]
+    if (!inst) return
+    if (visibleTrails.length === 0) { inst.clear(); return }
+
+    const series = []
+    visibleTrails.forEach(trail => {
+      const seriesDefs = def.getData(trail.trail, trail.params || {})
+      seriesDefs.forEach(sd => {
+        series.push({
+          name: `${trail.label} · ${sd.name}`,
+          type: "line",
+          data: sd.data,
+          lineStyle: {
+            width: 2,
+            color: sd.color || trail.color,
+            type: sd.lineStyle === "dashed" ? "dashed" : "solid",
+          },
+          itemStyle: { color: sd.color || trail.color },
+          symbol: "none",
+        })
+      })
+    })
+
+    inst.setOption({
+      backgroundColor: tc.bg,
+      title: { text: def.title, left: "center", top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: tc.title } },
+      grid: { top: 35, right: 16, bottom: 30, left: 50 },
+      tooltip: { trigger: "axis" },
+      legend: { top: 4, right: 10, textStyle: { fontSize: 10, color: tc.text } },
+      xAxis: {
+        type: "value",
+        name: def.xLabel,
+        nameTextStyle: { fontSize: 11, color: tc.text },
+        axisLabel: { fontSize: 10, color: tc.text },
+        splitLine: { lineStyle: { color: tc.grid } },
+      },
+      yAxis: {
+        type: "value",
+        name: def.yLabel,
+        nameTextStyle: { fontSize: 11, color: tc.text },
+        axisLabel: { fontSize: 10, color: tc.text },
+        splitLine: { lineStyle: { color: tc.grid } },
+      },
+      series,
+    }, true)
+  })
+}
+
+// 监听变化
+watch([() => props.trails, chartDefs], async () => {
+  await nextTick()
+  await initCharts()
+  updateCharts()
 }, { deep: true })
+
+watch(selectedIndex, async () => {
+  await nextTick()
+  await initCharts()
+  updateCharts()
+})
+
+onMounted(async () => {
+  await nextTick()
+  await initCharts()
+  updateCharts()
+
+  // ResizeObserver
+  const observer = new ResizeObserver(() => {
+    Object.values(chartInstances.value).forEach(c => c?.resize())
+  })
+  Object.values(chartRefs.value).forEach(el => el && observer.observe(el))
+  if (fallbackChartRef.value) observer.observe(fallbackChartRef.value)
+
+  // 监听主题变化
+  const themeObserver = new MutationObserver(() => {
+    updateCharts()
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] })
+
+  onBeforeUnmount(() => {
+    observer.disconnect()
+    themeObserver.disconnect()
+    Object.values(chartInstances.value).forEach(c => c?.dispose())
+  })
+})
 </script>
 
 <style scoped>
@@ -183,7 +288,8 @@ watch(() => props.trails, () => {
   border-radius: var(--radius-lg);
   overflow: hidden;
   flex-shrink: 0;
-  max-height: 50vh;
+  height: auto;
+  scrollbar-width: none;
   overflow-y: auto;
 }
 
@@ -264,7 +370,24 @@ watch(() => props.trails, () => {
   display: flex;
   flex-direction: column;
   min-height: 240px;
-  max-height: 360px;
+  max-height: 420px;
+}
+
+/* ── 图表网格 ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.charts-grid .chart-container {
+  min-height: 200px;
+  border-right: 1px solid var(--border);
+}
+
+.charts-grid .chart-container:last-child {
+  border-right: none;
 }
 
 .record-item {
@@ -371,6 +494,32 @@ watch(() => props.trails, () => {
   min-height: 200px;
 }
 
+/* ── 事件标记 ── */
+.events-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.event-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2ecc71;
+}
+
+.event-tag svg {
+  flex-shrink: 0;
+}
+
 /* ── 数据卡片 ── */
 .data-cards {
   border-top: 1px solid var(--border);
@@ -429,8 +578,12 @@ watch(() => props.trails, () => {
 
 /* ── 响应式 ── */
 @media (max-width: 640px) {
-  .comparison-content {
-    flex-direction: column;
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .charts-grid .chart-container {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
   }
   .record-list {
     width: 100%;

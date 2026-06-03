@@ -1,12 +1,14 @@
-// 世界坐标系：x 向右为正，y 向上为正，地面 y=0
-// 球半径为 12px，要使球贴地，球心应 y = 12/30 = 0.4
+// ── 模型 UI 元数据 ──
+// 只包含界面展示相关的信息，物理逻辑在 modelPhysics.js，渲染在 modelRenderers.js
 
 export const DRAW_SCALE = 30 // 像素/米
 export const GROUND_Y = 0.4 // 球心贴地高度（球半径/DRAW_SCALE）
+
 export const PHYSICS_MODELS = [
-  // ── 1. 自由落体 ──
   {
     id: "free-fall",
+    level: "初中",
+    category: "力学",
     name: "自由落体",
     desc: "物体在重力作用下的竖直下落",
     knowledge: `## 自由落体运动
@@ -34,47 +36,12 @@ export const PHYSICS_MODELS = [
       { key: "height", label: "初始高度 (m)", value: 15, min: 1, max: 50, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [] }),
-    step: (s, p, dt) => {
-      s.vy += p.gravity * dt
-      s.y -= s.vy * dt
-      if (s.y <= GROUND_Y && s.vy >= 0) { s.y = GROUND_Y; s.vy = 0 }
-    },
-    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
-    getBallPosition: (s) => ({ x: 0, y: s.y }),
-    getTrailPosition: (s) => ({ x: 0, y: s.y }),
-    getInfoLines: (s, p, t) => [
-      `下落高度: ${(p.height + GROUND_Y - s.y).toFixed(1)} m`,
-      `速度: ${s.vy.toFixed(1)} m/s`,
-      `时间: ${t.toFixed(2)} s`,
-      `重力: ${p.gravity} m/s²`,
-    ],
-    drawExtra: (ctx, s, p, w2s) => {
-      if (s.vy < 0.2 || s.y <= 0) return
-      const pos = w2s(0, s.y)
-      const len = Math.min(s.vy * 5, 110)
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
-      ctx.lineTo(pos.x, pos.y + len)
-      ctx.strokeStyle = "#e74c3c"
-      ctx.lineWidth = 2.5
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y + len)
-      ctx.lineTo(pos.x - 6, pos.y + len - 10)
-      ctx.lineTo(pos.x + 6, pos.y + len - 10)
-      ctx.closePath()
-      ctx.fillStyle = "#e74c3c"
-      ctx.fill()
-      ctx.fillStyle = "#e74c3c"
-      ctx.font = "bold 11px sans-serif"
-      ctx.fillText("V", pos.x + 10, pos.y + len * 0.5 + 4)
-    },
   },
 
-  // ── 2. 平抛运动 ──
   {
     id: "projectile",
+    level: "高中",
+    category: "力学",
     name: "平抛运动",
     desc: "水平初速度与重力合成抛物线轨迹",
     knowledge: `## 平抛运动
@@ -108,93 +75,12 @@ export const PHYSICS_MODELS = [
       { key: "vx", label: "水平速度 (m/s)", value: 5, min: 1, max: 20, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ x: 0, y: p.height + GROUND_Y, vx: p.vx, vy: 0, trail: [] }),
-    step: (s, p, dt) => {
-      s.vy += p.gravity * dt
-      s.x += s.vx * dt
-      s.y -= s.vy * dt
-      if (s.y <= GROUND_Y && s.vy >= 0) { s.y = GROUND_Y; s.vy = 0 }
-    },
-    isFinished: (s) => s.y <= GROUND_Y,
-    getBallPosition: (s) => ({ x: s.x, y: s.y }),
-    getTrailPosition: (s) => ({ x: s.x, y: s.y }),
-    getInfoLines: (s, p, t) => [
-      `水平位移: ${s.x.toFixed(1)} m`,
-      `下落高度: ${(p.height + GROUND_Y - s.y).toFixed(1)} m`,
-      `水平速度: ${s.vx.toFixed(1)} m/s`,
-      `竖直速度: ${s.vy.toFixed(1)} m/s`,
-      `时间: ${t.toFixed(2)} s`,
-    ],
-    drawExtra: (ctx, s, p, w2s) => {
-      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
-      if (speed < 0.2 || s.y <= 0) return
-      const pos = w2s(s.x, s.y)
-      // Vx (蓝色水平)
-      const vxLen = s.vx * 5
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
-      ctx.lineTo(pos.x + vxLen, pos.y)
-      ctx.strokeStyle = "#3498db"
-      ctx.lineWidth = 2
-      ctx.stroke()
-      // Vx 箭头
-      if (vxLen > 10) {
-        ctx.beginPath()
-        ctx.moveTo(pos.x + vxLen, pos.y)
-        ctx.lineTo(pos.x + vxLen - 7, pos.y - 4)
-        ctx.lineTo(pos.x + vxLen - 7, pos.y + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#3498db"
-        ctx.fill()
-      }
-      ctx.fillStyle = "#3498db"
-      ctx.font = "11px sans-serif"
-      ctx.fillText("Vx", pos.x + vxLen * 0.5 - 10, pos.y + 16)
-      // Vy (绿色竖直向下)
-      const vyLen = s.vy * 5
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
-      ctx.lineTo(pos.x, pos.y + vyLen)
-      ctx.strokeStyle = "#2ecc71"
-      ctx.lineWidth = 2
-      ctx.stroke()
-      // Vy 箭头
-      if (vyLen > 10) {
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y + vyLen)
-        ctx.lineTo(pos.x - 4, pos.y + vyLen - 7)
-        ctx.lineTo(pos.x + 4, pos.y + vyLen - 7)
-        ctx.closePath()
-        ctx.fillStyle = "#2ecc71"
-        ctx.fill()
-      }
-      ctx.fillStyle = "#2ecc71"
-      ctx.fillText("Vy", pos.x + 10, pos.y + vyLen * 0.5)
-      // 合速度 V（红色）
-      const endX = pos.x + vxLen
-      const endY = pos.y + vyLen
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
-      ctx.lineTo(endX, endY)
-      ctx.strokeStyle = "#e74c3c"
-      ctx.lineWidth = 2.5
-      ctx.stroke()
-      const a = Math.atan2(vyLen, vxLen)
-      ctx.beginPath()
-      ctx.moveTo(endX, endY)
-      ctx.lineTo(endX - 9 * Math.cos(a - 0.4), endY - 9 * Math.sin(a - 0.4))
-      ctx.lineTo(endX - 9 * Math.cos(a + 0.4), endY - 9 * Math.sin(a + 0.4))
-      ctx.closePath()
-      ctx.fillStyle = "#e74c3c"
-      ctx.fill()
-      ctx.fillStyle = "#e74c3c"
-      ctx.fillText("V", (endX + pos.x) / 2 + 10, (endY + pos.y) / 2 - 8)
-    },
   },
 
-  // ── 3. 竖直上抛 ──
   {
     id: "vertical-throw",
+    level: "高中",
+    category: "力学",
     name: "竖直上抛",
     desc: "物体以初速度竖直上抛，先升后落",
     knowledge: `## 竖直上抛运动
@@ -222,50 +108,12 @@ export const PHYSICS_MODELS = [
       { key: "initialVelocity", label: "初速度 (m/s)", value: 15, min: 5, max: 40, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ y: GROUND_Y, vy: p.initialVelocity, trail: [] }),
-    step: (s, p, dt) => {
-      s.vy -= p.gravity * dt
-      s.y += s.vy * dt
-      if (s.y <= GROUND_Y && s.vy <= 0) { s.y = GROUND_Y; s.vy = 0 }
-    },
-    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
-    getBallPosition: (s) => ({ x: 0, y: s.y }),
-    getTrailPosition: (s) => ({ x: 0, y: s.y }),
-    getInfoLines: (s, p, t) => [
-      `高度: ${s.y.toFixed(1)} m`,
-      `速度: ${s.vy.toFixed(1)} m/s`,
-      `时间: ${t.toFixed(2)} s`,
-      `最大高度: ${(p.initialVelocity * p.initialVelocity / (2 * p.gravity)).toFixed(1)} m`,
-    ],
-    drawExtra: (ctx, s, p, w2s) => {
-      if (Math.abs(s.vy) < 0.2 || s.y <= 0) return
-      const pos = w2s(0, s.y)
-      const len = Math.min(Math.abs(s.vy) * 5, 110)
-      const sign = s.vy > 0 ? 1 : -1
-      const tipX = pos.x
-      const tipY = pos.y - len * sign
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
-      ctx.lineTo(tipX, tipY)
-      ctx.strokeStyle = "#e74c3c"
-      ctx.lineWidth = 2.5
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.moveTo(tipX, tipY)
-      ctx.lineTo(tipX - 6, tipY + 10 * sign)
-      ctx.lineTo(tipX + 6, tipY + 10 * sign)
-      ctx.closePath()
-      ctx.fillStyle = "#e74c3c"
-      ctx.fill()
-      ctx.fillStyle = "#e74c3c"
-      ctx.font = "bold 11px sans-serif"
-      ctx.fillText("V", pos.x + 10, (pos.y + tipY) / 2 + 4)
-    },
   },
 
-  // ── 4. 圆周运动 ──
   {
     id: "circular",
+    level: "高中",
+    category: "力学",
     name: "圆周运动",
     desc: "质点做匀速圆周运动，显示向心力",
     knowledge: `## 匀速圆周运动
@@ -294,107 +142,12 @@ export const PHYSICS_MODELS = [
       { key: "radius", label: "轨道半径 (m)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "omega", label: "角速度 (rad/s)", value: 2, min: 0.5, max: 6, step: 0.1 },
     ],
-    createState: (p) => ({ angle: 0, trail: [] }),
-    step: (s, p, dt) => {
-      s.angle += p.omega * dt
-    },
-    isFinished: () => false,
-    getBallPosition: (s, p) => ({
-      x: p.radius * Math.cos(s.angle),
-      y: p.radius * Math.sin(s.angle) + p.radius,
-    }),
-    getTrailPosition: (s, p) => null, // 轨迹就是圆形轨道本身，静态绘制
-    getInfoLines: (s, p, t) => {
-      const v = p.omega * p.radius
-      const ac = v * v / p.radius
-      return [
-        `轨道半径: ${p.radius} m`,
-        `线速度: ${v.toFixed(2)} m/s`,
-        `角速度: ${p.omega.toFixed(1)} rad/s`,
-        `向心加速度: ${ac.toFixed(2)} m/s²`,
-        `周期: ${(2 * Math.PI / p.omega).toFixed(2)} s`,
-      ]
-    },
-    // 额外绘制：轨道圆 + 向心力矢量
-    drawExtra: (ctx, s, p, w2s) => {
-      const center = w2s(0, p.radius)
-      const ball = w2s(p.radius * Math.cos(s.angle), p.radius * Math.sin(s.angle) + p.radius)
-
-      // 轨道圆（虚线）
-      const rPx = p.radius * DRAW_SCALE
-      ctx.beginPath()
-      ctx.arc(center.x, center.y, rPx, 0, Math.PI * 2)
-      ctx.strokeStyle = "rgba(52, 152, 219, 0.3)"
-      ctx.lineWidth = 1.5
-      ctx.setLineDash([6, 4])
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // 半径线
-      ctx.beginPath()
-      ctx.moveTo(center.x, center.y)
-      ctx.lineTo(ball.x, ball.y)
-      ctx.strokeStyle = "rgba(0,0,0,0.15)"
-      ctx.lineWidth = 1
-      ctx.stroke()
-
-      // 向心力矢量（指向圆心）
-      const dx = center.x - ball.x
-      const dy = center.y - ball.y
-      const len = Math.sqrt(dx * dx + dy * dy)
-      if (len > 1) {
-        const nx = dx / len
-        const ny = dy / len
-        const arrowLen = Math.min(60, len * 0.6)
-        ctx.beginPath()
-        ctx.moveTo(ball.x, ball.y)
-        ctx.lineTo(ball.x + nx * arrowLen, ball.y + ny * arrowLen)
-        ctx.strokeStyle = "#e74c3c"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        // 箭头
-        ctx.beginPath()
-        ctx.moveTo(ball.x + nx * arrowLen, ball.y + ny * arrowLen)
-        ctx.lineTo(ball.x + nx * arrowLen - 6, ball.y + ny * arrowLen - 4)
-        ctx.lineTo(ball.x + nx * arrowLen - 6, ball.y + ny * arrowLen + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fill()
-        // 标签
-        ctx.fillStyle = "#e74c3c"
-        ctx.font = "bold 12px sans-serif"
-        ctx.fillText("F心", ball.x + nx * arrowLen * 0.5 - 12, ball.y + ny * arrowLen * 0.5 - 8)
-      }
-      // 切向速度箭头
-      const v = p.omega * p.radius
-      const sc = 3
-      const vLen = Math.min(v * sc, 80)
-      const dir = p.omega > 0 ? 1 : -1
-      const tx = dir * -Math.sin(s.angle) * vLen
-      const ty = dir * -Math.cos(s.angle) * vLen
-      ctx.beginPath()
-      ctx.moveTo(ball.x, ball.y)
-      ctx.lineTo(ball.x + tx, ball.y + ty)
-      ctx.strokeStyle = "#e67e22"
-      ctx.lineWidth = 2.5
-      ctx.stroke()
-      const vAng = Math.atan2(ty, tx)
-      ctx.beginPath()
-      ctx.moveTo(ball.x + tx, ball.y + ty)
-      ctx.lineTo(ball.x + tx - 8 * Math.cos(vAng - 0.4), ball.y + ty - 8 * Math.sin(vAng - 0.4))
-      ctx.lineTo(ball.x + tx - 8 * Math.cos(vAng + 0.4), ball.y + ty - 8 * Math.sin(vAng + 0.4))
-      ctx.closePath()
-      ctx.fillStyle = "#e67e22"
-      ctx.fill()
-      ctx.fillStyle = "#e67e22"
-      ctx.font = "bold 11px sans-serif"
-      ctx.fillText("V", ball.x + tx * 0.5 + 8, ball.y + ty * 0.5 - 6)
-    },
   },
 
-  // ── 5. 斜面滑动 ──
   {
     id: "incline",
+    level: "初中",
+    category: "力学",
     name: "斜面滑动",
     desc: "物体在光滑斜面上的加速下滑",
     knowledge: `## 斜面滑动
@@ -429,93 +182,12 @@ export const PHYSICS_MODELS = [
       { key: "rampHeight", label: "斜面高度 (m)", value: 10, min: 2, max: 30, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => {
-      const theta = p.angle * Math.PI / 180
-      const rampLen = p.rampHeight / Math.sin(theta)
-      return { dist: 0, vel: 0, rampLen, trail: [] }
-    },
-    step: (s, p, dt) => {
-      const theta = p.angle * Math.PI / 180
-      const accel = p.gravity * Math.sin(theta)
-      s.vel += accel * dt
-      s.dist += s.vel * dt
-      if (s.dist >= s.rampLen) { s.dist = s.rampLen; s.vel = 0 }
-    },
-    isFinished: (s) => s.dist >= s.rampLen,
-    getBallPosition: (s, p) => {
-      const theta = p.angle * Math.PI / 180
-      return {
-        x: s.dist * Math.cos(theta),
-        y: p.rampHeight - s.dist * Math.sin(theta),
-      }
-    },
-    getTrailPosition: (s, p) => {
-      const theta = p.angle * Math.PI / 180
-      return {
-        x: s.dist * Math.cos(theta),
-        y: p.rampHeight - s.dist * Math.sin(theta),
-      }
-    },
-    getInfoLines: (s, p, t) => [
-      `下滑距离: ${s.dist.toFixed(1)} m`,
-      `速度: ${s.vel.toFixed(2)} m/s`,
-      `加速度: ${(p.gravity * Math.sin(p.angle * Math.PI / 180)).toFixed(2)} m/s²`,
-      `时间: ${t.toFixed(2)} s`,
-    ],
-    drawExtra: (ctx, s, p, w2s) => {
-      const theta = p.angle * Math.PI / 180
-      const rampLen = s.rampLen
-      // 斜面三角形（底部在地面 y=0）
-      const top = w2s(0, p.rampHeight)
-      const bottom = w2s(0, 0)
-      const rampEnd = w2s(rampLen * Math.cos(theta), 0)
-      ctx.beginPath()
-      ctx.moveTo(top.x, top.y)
-      ctx.lineTo(rampEnd.x, rampEnd.y)
-      ctx.lineTo(bottom.x, bottom.y)
-      ctx.closePath()
-      ctx.fillStyle = "rgba(52, 152, 219, 0.08)"
-      ctx.fill()
-      ctx.strokeStyle = "rgba(52, 152, 219, 0.5)"
-      ctx.lineWidth = 2
-      ctx.stroke()
-      // 角度标注
-      const labelX = bottom.x + 20
-      const labelY = bottom.y - 10
-      ctx.fillStyle = "rgba(0,0,0,0.4)"
-      ctx.font = "12px sans-serif"
-      ctx.fillText(`θ = ${p.angle}°`, labelX, labelY)
-      // 速度方向箭头（沿斜面向下）
-      if (s.vel > 0.2 && s.dist < s.rampLen) {
-        const ballPos = w2s(s.dist * Math.cos(theta), p.rampHeight - s.dist * Math.sin(theta))
-        const sc = 3
-        const len = Math.min(s.vel * sc, 80)
-        const dx = Math.cos(theta) * len
-        const dy = Math.sin(theta) * len
-        ctx.beginPath()
-        ctx.moveTo(ballPos.x, ballPos.y)
-        ctx.lineTo(ballPos.x + dx, ballPos.y + dy)
-        ctx.strokeStyle = "#e74c3c"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        const a = Math.atan2(dy, dx)
-        ctx.beginPath()
-        ctx.moveTo(ballPos.x + dx, ballPos.y + dy)
-        ctx.lineTo(ballPos.x + dx - 8 * Math.cos(a - 0.4), ballPos.y + dy - 8 * Math.sin(a - 0.4))
-        ctx.lineTo(ballPos.x + dx - 8 * Math.cos(a + 0.4), ballPos.y + dy - 8 * Math.sin(a + 0.4))
-        ctx.closePath()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fill()
-        ctx.fillStyle = "#e74c3c"
-        ctx.font = "bold 11px sans-serif"
-        ctx.fillText("V", ballPos.x + dx * 0.5 + 8, ballPos.y + dy * 0.5 - 6)
-      }
-    },
   },
 
-  // ── 6. 单摆（简谐振动） ──
   {
     id: "pendulum",
+    level: "初中",
+    category: "力学",
     name: "单摆",
     desc: "单摆在重力作用下的周期性摆动",
     knowledge: `## 单摆运动
@@ -544,99 +216,12 @@ export const PHYSICS_MODELS = [
       { key: "initAngle", label: "初始角度 (°)", value: 30, min: 5, max: 60, step: 1 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => {
-      const theta0 = p.initAngle * Math.PI / 180
-      return { theta: theta0, omega: 0, trail: [] }
-    },
-    step: (s, p, dt) => {
-      const g = p.gravity
-      const L = p.length
-      // 小角近似：α = -(g/L) * θ
-      const alpha = -(g / L) * s.theta
-      s.omega += alpha * dt
-      s.theta += s.omega * dt
-    },
-    isFinished: () => false,
-    getBallPosition: (s, p) => ({
-      x: p.length * Math.sin(s.theta),
-      y: p.length - p.length * Math.cos(s.theta) + GROUND_Y,
-    }),
-    getTrailPosition: (s, p) => ({
-      x: p.length * Math.sin(s.theta),
-      y: p.length - p.length * Math.cos(s.theta) + GROUND_Y,
-    }),
-    getInfoLines: (s, p, t) => {
-      const period = 2 * Math.PI * Math.sqrt(p.length / p.gravity)
-      return [
-        `摆角: ${(s.theta * 180 / Math.PI).toFixed(1)}°`,
-        `角速度: ${s.omega.toFixed(2)} rad/s`,
-        `周期: ${period.toFixed(2)} s`,
-        `摆长: ${p.length} m`,
-      ]
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      const pivot = w2s(0, p.length)
-      const ball = w2s(p.length * Math.sin(s.theta), p.length - p.length * Math.cos(s.theta) + GROUND_Y)
-
-      // 摆线（细绳）
-      ctx.beginPath()
-      ctx.moveTo(pivot.x, pivot.y)
-      ctx.lineTo(ball.x, ball.y)
-      ctx.strokeStyle = "#999"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-
-      // 竖直参考线
-      ctx.beginPath()
-      ctx.moveTo(pivot.x, pivot.y)
-      ctx.lineTo(pivot.x, ball.y + 20)
-      ctx.strokeStyle = "rgba(0,0,0,0.1)"
-      ctx.lineWidth = 1
-      ctx.setLineDash([3, 3])
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // 角度弧
-      const r = 30
-      const startAngle = -Math.PI / 2
-      const endAngle = -Math.PI / 2 + Math.min(Math.max(s.theta, -Math.PI / 2), Math.PI / 2)
-      ctx.beginPath()
-      ctx.arc(pivot.x, pivot.y, r, s.theta > 0 ? startAngle : endAngle, s.theta > 0 ? endAngle : startAngle)
-      ctx.strokeStyle = "rgba(0,0,0,0.3)"
-      ctx.lineWidth = 1
-      ctx.stroke()
-      // 切向速度箭头
-      const tangSpeed = Math.abs(s.omega) * p.length
-      if (tangSpeed > 0.05) {
-        const sc = 8
-        const len = Math.min(tangSpeed * sc, 70)
-        const dir = s.omega > 0 ? 1 : -1
-        const dx = Math.cos(s.theta) * dir * len
-        const dy = -Math.sin(s.theta) * dir * len
-        ctx.beginPath()
-        ctx.moveTo(ball.x, ball.y)
-        ctx.lineTo(ball.x + dx, ball.y + dy)
-        ctx.strokeStyle = "#e67e22"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        const a = Math.atan2(dy, dx)
-        ctx.beginPath()
-        ctx.moveTo(ball.x + dx, ball.y + dy)
-        ctx.lineTo(ball.x + dx - 8 * Math.cos(a - 0.4), ball.y + dy - 8 * Math.sin(a - 0.4))
-        ctx.lineTo(ball.x + dx - 8 * Math.cos(a + 0.4), ball.y + dy - 8 * Math.sin(a + 0.4))
-        ctx.closePath()
-        ctx.fillStyle = "#e67e22"
-        ctx.fill()
-        ctx.fillStyle = "#e67e22"
-        ctx.font = "bold 11px sans-serif"
-        ctx.fillText("V", ball.x + dx * 0.5 + 8, ball.y + dy * 0.5 - 6)
-      }
-    },
   },
 
-  // ── 7. 斜向上抛运动 ──
   {
     id: "angled-projectile",
+    level: "高中",
+    category: "力学",
     name: "斜向上抛",
     desc: "物体以一定角度斜向上抛出，抛物线运动",
     knowledge: `## 斜向上抛运动
@@ -670,103 +255,12 @@ export const PHYSICS_MODELS = [
       { key: "angle", label: "抛射角 (°)", value: 45, min: 5, max: 85, step: 1 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => {
-      const theta = p.angle * Math.PI / 180
-      return { x: 0, y: GROUND_Y, vx: p.initialVelocity * Math.cos(theta), vy: p.initialVelocity * Math.sin(theta), trail: [] }
-    },
-    step: (s, p, dt) => {
-      s.vy -= p.gravity * dt
-      s.x += s.vx * dt
-      s.y += s.vy * dt
-      if (s.y <= GROUND_Y && s.vy <= 0) { s.y = GROUND_Y; s.vy = 0 }
-    },
-    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
-    getBallPosition: (s) => ({ x: s.x, y: s.y }),
-    getTrailPosition: (s) => ({ x: s.x, y: s.y }),
-    getInfoLines: (s, p, t) => {
-      const theta = p.angle * Math.PI / 180
-      const v0 = p.initialVelocity
-      const g = p.gravity
-      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
-      const maxH = (v0 * Math.sin(theta)) ** 2 / (2 * g)
-      const range = v0 * v0 * Math.sin(2 * theta) / g
-      const totalTime = 2 * v0 * Math.sin(theta) / g
-      return [
-        `水平位移: ${s.x.toFixed(1)} m`,
-        `高度: ${Math.max(s.y, 0).toFixed(1)} m`,
-        `速度: ${speed.toFixed(1)} m/s`,
-        `最大高度: ${maxH.toFixed(1)} m`,
-        `射程: ${range.toFixed(1)} m`,
-        `时间: ${t.toFixed(2)} / ${totalTime.toFixed(2)} s`,
-      ]
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      // 抛射角弧线标注
-      const start = w2s(0, 0)
-      const theta = p.angle * Math.PI / 180
-      const arcR = 36
-      ctx.beginPath()
-      ctx.arc(start.x, start.y, arcR, -Math.PI / 2, -Math.PI / 2 + Math.min(theta, Math.PI / 2))
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1
-      ctx.stroke()
-      // 角度标签
-      const midA = -Math.PI / 2 + theta / 2
-      ctx.fillStyle = "rgba(0,0,0,0.35)"
-      ctx.font = "11px sans-serif"
-      ctx.fillText(`θ=${p.angle}°`, start.x + (arcR + 8) * Math.cos(midA) - 12, start.y + (arcR + 8) * Math.sin(midA) + 4)
-
-      // 当前速度矢量分解（仅在空中时显示）
-      const pos = w2s(s.x, s.y)
-      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
-      if (speed > 0.1 && s.y > 0.5) {
-        const sc = 8
-        // Vx 水平分量（蓝）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x + s.vx * sc, pos.y)
-        ctx.strokeStyle = "#3498db"
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.fillStyle = "#3498db"
-        ctx.font = "11px sans-serif"
-        ctx.fillText("Vx", pos.x + s.vx * sc * 0.5 - 8, pos.y + 14)
-        // Vy 竖直分量（绿）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x, pos.y - s.vy * sc)
-        ctx.strokeStyle = "#2ecc71"
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.fillStyle = "#2ecc71"
-        ctx.fillText("Vy", pos.x + 6, pos.y - s.vy * sc * 0.5)
-        // 合速度（红）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x + s.vx * sc, pos.y - s.vy * sc)
-        ctx.strokeStyle = "#e74c3c"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        // 合速度箭头
-        const endX = pos.x + s.vx * sc
-        const endY = pos.y - s.vy * sc
-        const angle = Math.atan2(-s.vy, s.vx)
-        ctx.beginPath()
-        ctx.moveTo(endX, endY)
-        ctx.lineTo(endX - 8 * Math.cos(angle - 0.4), endY - 8 * Math.sin(angle - 0.4))
-        ctx.lineTo(endX - 8 * Math.cos(angle + 0.4), endY - 8 * Math.sin(angle + 0.4))
-        ctx.closePath()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fill()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fillText("V", endX * 0.5 + pos.x * 0.5 + 8, endY * 0.5 + pos.y * 0.5 - 6)
-      }
-    },
   },
 
-  // ── 8. 小船过河模型 ──
   {
     id: "boat-river",
+    level: "高中",
+    category: "力学",
     name: "小船过河",
     desc: "小船在流水中的运动，合速度与渡河路径",
     knowledge: `## 小船过河模型
@@ -804,185 +298,12 @@ $$\\sin\\theta = \\frac{v_{水}}{v_{船}} \\quad (v_{船} > v_{水})$$
       { key: "currentSpeed", label: "水流速度 (m/s)", value: 2, min: 0, max: 8, step: 0.5 },
       { key: "headingAngle", label: "船头偏角 (°)", value: 0, min: -60, max: 60, step: 1 },
     ],
-    // 船头偏角：与垂直过河方向的夹角，正顺流偏，负逆流偏
-    // 速度：vx(顺流)=boatSpeed*sinθ+currentSpeed, vy(过河)=boatSpeed*cosθ
-    createState: (p) => ({ x: 0, y: 0, riverWidth: p.riverWidth, trail: [] }),
-    step: (s, p, dt) => {
-      if (s.y >= s.riverWidth) return // 已到对岸，完全停止
-      const theta = p.headingAngle * Math.PI / 180
-      const vx = p.boatSpeed * Math.sin(theta) + p.currentSpeed
-      const vy = p.boatSpeed * Math.cos(theta)
-      s.x += vx * dt
-      s.y += vy * dt
-      if (s.y >= s.riverWidth) { s.y = s.riverWidth }
-    },
-    isFinished: (s) => s.y >= s.riverWidth,
-    getBallPosition: (s) => ({ x: s.x, y: s.y }),
-    getTrailPosition: (s) => ({ x: s.x, y: s.y }),
-    getInfoLines: (s, p, t) => {
-      const theta = p.headingAngle * Math.PI / 180
-      const vx = p.boatSpeed * Math.sin(theta) + p.currentSpeed
-      const vy = p.boatSpeed * Math.cos(theta)
-      const vResult = Math.sqrt(vx * vx + vy * vy)
-      const progress = s.y / s.riverWidth * 100
-      const remainingDist = s.riverWidth - s.y
-      const remainingTime = vy > 0.01 ? remainingDist / vy : Infinity
-      // 最小偏移角提示（船速 > 水速时）
-      let minAngleInfo = ""
-      if (p.boatSpeed > p.currentSpeed) {
-        const minDeg = -Math.asin(p.currentSpeed / p.boatSpeed) * 180 / Math.PI
-        minAngleInfo = `最小偏移角: ${minDeg.toFixed(1)}°`
-      }
-      return [
-        `渡河进度: ${Math.min(progress, 100).toFixed(0)}%`,
-        `下游偏移: ${s.x.toFixed(1)} m`,
-        `过河速度: ${vy.toFixed(2)} m/s`,
-        `合速度: ${vResult.toFixed(2)} m/s`,
-        `${vy > 0.01 ? "预计剩余: " + remainingTime.toFixed(2) + " s" : "无法到达对岸"}`,
-        minAngleInfo,
-      ].filter(Boolean)
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      const canvas = ctx.canvas
-      const dpr = window.devicePixelRatio || 1
-      const cw = canvas.width / dpr
-      const ch = canvas.height / dpr
-
-      const farPt = w2s(0, p.riverWidth)
-      const nearPt = w2s(0, 0)
-
-      // 1. 河水底色覆盖整个画布（盖住主画的灰色背景和地面）
-      ctx.fillStyle = "rgba(52, 152, 219, 0.08)"
-      ctx.fillRect(0, 0, cw, ch)
-
-      // 2. 对岸土地（从画布顶部到对岸线）
-      if (farPt.y > 0) {
-        ctx.fillStyle = "#2c3e50"
-        ctx.fillRect(0, 0, cw, farPt.y)
-      }
-      // 对岸线
-      ctx.beginPath()
-      ctx.moveTo(0, farPt.y)
-      ctx.lineTo(cw, farPt.y)
-      ctx.strokeStyle = "#2c3e50"
-      ctx.lineWidth = 3
-      ctx.stroke()
-
-      // 3. 水流方向指示箭头（在河水区域均匀分布）
-      const flowLevels = [0.2, 0.4, 0.6, 0.8]
-      for (const ratio of flowLevels) {
-        const wy = p.riverWidth * ratio
-        const basePt = w2s(0, wy)
-        // 只在可见范围内画箭头
-        if (basePt.y < 0 || basePt.y > ch) continue
-        for (let x = 40; x < cw - 40; x += cw / 4) {
-          ctx.beginPath()
-          ctx.moveTo(x - 12, basePt.y)
-          ctx.lineTo(x + 12, basePt.y)
-          ctx.strokeStyle = "rgba(52, 152, 219, 0.25)"
-          ctx.lineWidth = 1.2
-          ctx.stroke()
-          ctx.beginPath()
-          ctx.moveTo(x + 12, basePt.y)
-          ctx.lineTo(x + 6, basePt.y - 4)
-          ctx.lineTo(x + 6, basePt.y + 4)
-          ctx.closePath()
-          ctx.fillStyle = "rgba(52, 152, 219, 0.25)"
-          ctx.fill()
-        }
-      }
-
-      // 4. 起点 & 对岸标签
-      ctx.fillStyle = "rgba(0,0,0,0.15)"
-      ctx.font = "11px sans-serif"
-      ctx.fillText("起点", nearPt.x - 14, nearPt.y + 22)
-      if (farPt.y > 20) ctx.fillText("对岸", 6, farPt.y - 6)
-
-      // 5. 船体简化形状
-      const pos = w2s(s.x, s.y)
-      // 船身梯形
-      ctx.beginPath()
-      ctx.moveTo(pos.x - 11, pos.y + 5)
-      ctx.lineTo(pos.x - 7, pos.y - 4)
-      ctx.lineTo(pos.x + 7, pos.y - 4)
-      ctx.lineTo(pos.x + 11, pos.y + 5)
-      ctx.closePath()
-      ctx.fillStyle = "#8B4513"
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.25)"
-      ctx.lineWidth = 1
-      ctx.stroke()
-      // 桅杆
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y + 2)
-      ctx.lineTo(pos.x, pos.y - 12)
-      ctx.strokeStyle = "#666"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      // 帆
-      ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y - 12)
-      ctx.lineTo(pos.x + 9, pos.y - 4)
-      ctx.lineTo(pos.x, pos.y - 2)
-      ctx.closePath()
-      ctx.fillStyle = "rgba(255,255,255,0.65)"
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.15)"
-      ctx.lineWidth = 0.5
-      ctx.stroke()
-
-      // 6. 速度矢量（运动时显示）
-      const theta = p.headingAngle * Math.PI / 180
-      const vx = p.boatSpeed * Math.sin(theta) + p.currentSpeed
-      const vy = p.boatSpeed * Math.cos(theta)
-      const speed = Math.sqrt(vx * vx + vy * vy)
-      if (speed > 0.05 && s.y < s.riverWidth - 1) {
-        const sc = 12
-        // 过河分量 vy（绿）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x, pos.y - vy * sc)
-        ctx.strokeStyle = "#2ecc71"
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.fillStyle = "#2ecc71"
-        ctx.font = "11px sans-serif"
-        ctx.fillText("Vy", pos.x + 6, pos.y - vy * sc * 0.5)
-        // 顺流分量 vx（蓝）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x + vx * sc, pos.y)
-        ctx.strokeStyle = "#3498db"
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.fillStyle = "#3498db"
-        ctx.fillText("Vx", pos.x + vx * sc * 0.5 - 10, pos.y + 14)
-        // 合速度（红）
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x + vx * sc, pos.y - vy * sc)
-        ctx.strokeStyle = "#e74c3c"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        const eX = pos.x + vx * sc
-        const eY = pos.y - vy * sc
-        const a = Math.atan2(-vy, vx)
-        ctx.beginPath()
-        ctx.moveTo(eX, eY)
-        ctx.lineTo(eX - 7 * Math.cos(a - 0.4), eY - 7 * Math.sin(a - 0.4))
-        ctx.lineTo(eX - 7 * Math.cos(a + 0.4), eY - 7 * Math.sin(a + 0.4))
-        ctx.closePath()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fill()
-        ctx.fillStyle = "#e74c3c"
-        ctx.fillText("V合", (eX + pos.x) / 2 + 8, (eY + pos.y) / 2 - 6)
-      }
-    },
   },
 
-  // ── 9. 弹簧振子 ──
   {
     id: "spring-mass",
+    level: "高中",
+    category: "力学",
     name: "弹簧振子",
     desc: "物体在弹簧作用下的简谐振动，动能与势能相互转化",
     knowledge: `## 弹簧振子
@@ -1018,63 +339,12 @@ $$\\sin\\theta = \\frac{v_{水}}{v_{船}} \\quad (v_{船} > v_{水})$$
       { key: "k", label: "劲度系数 (N/m)", value: 10, min: 1, max: 30, step: 0.5 },
       { key: "initX", label: "初始位移 (m)", value: 2, min: 0.3, max: 5, step: 0.1 },
     ],
-    createState: (p) => ({ x: p.initX, vx: 0, trail: [] }),
-    step: (s, p, dt) => {
-      const a = -(p.k / p.mass) * s.x
-      s.vx += a * dt
-      s.x += s.vx * dt
-    },
-    isFinished: () => false,
-    getBallPosition: (s) => ({ x: s.x, y: GROUND_Y }),
-    getTrailPosition: (s) => ({ x: s.x, y: GROUND_Y }),
-    getInfoLines: (s, p, t) => {
-      const ke = 0.5 * p.mass * s.vx * s.vx
-      const pe = 0.5 * p.k * s.x * s.x
-      const period = 2 * Math.PI * Math.sqrt(p.mass / p.k)
-      const freq = 1 / period
-      return [
-        `位移: ${s.x.toFixed(2)} m`,
-        `速度: ${s.vx.toFixed(2)} m/s`,
-        `加速度: ${(-(p.k / p.mass) * s.x).toFixed(2)} m/s²`,
-        `动能: ${ke.toFixed(2)} J | 势能: ${pe.toFixed(2)} J`,
-        `机械能: ${(ke + pe).toFixed(2)} J`,
-        `周期: ${period.toFixed(2)} s | 频率: ${freq.toFixed(2)} Hz`,
-      ]
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      const massPos = w2s(s.x, GROUND_Y)
-      const wallX = -p.initX - 0.8
-      const wallPos = w2s(wallX, GROUND_Y)
-
-      // 墙壁
-      ctx.fillStyle = "#666"
-      ctx.fillRect(wallPos.x - 3, wallPos.y - 16, 6, 32)
-      ctx.strokeStyle = "#888"
-      ctx.lineWidth = 1
-      ctx.strokeRect(wallPos.x - 3, wallPos.y - 16, 6, 32)
-
-      // 弹簧（锯齿线）从墙壁连到小球边
-      const dx = massPos.x - wallPos.x
-      const segs = Math.max(8, Math.round(Math.abs(dx) / 6))
-      const amp = Math.min(7, Math.abs(dx) / segs * 3)
-      ctx.beginPath()
-      ctx.moveTo(wallPos.x, wallPos.y)
-      for (let i = 1; i <= segs; i++) {
-        const t = i / segs
-        const sx = wallPos.x + dx * t
-        const sy = wallPos.y + (i % 2 === 0 ? -amp : amp)
-        ctx.lineTo(sx, sy)
-      }
-      ctx.lineTo(massPos.x - 12, massPos.y)
-      ctx.strokeStyle = "#999"
-      ctx.lineWidth = 1.8
-      ctx.stroke()
-    },
   },
 
-  // ── 10. 粗糙面滑动 ──
   {
     id: "friction-slide",
+    level: "初中",
+    category: "力学",
     name: "粗糙面滑动",
     desc: "物体在粗糙水平面上因摩擦力而减速直至停止",
     knowledge: `## 粗糙面滑动
@@ -1104,76 +374,12 @@ $$\\sin\\theta = \\frac{v_{水}}{v_{船}} \\quad (v_{船} > v_{水})$$
       { key: "mu", label: "摩擦系数 μ", value: 0.3, min: 0.05, max: 1, step: 0.05 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ x: 0, vx: p.v0, trail: [] }),
-    step: (s, p, dt) => {
-      const a = p.mu * p.gravity
-      s.vx -= a * dt
-      if (s.vx <= 0) { s.vx = 0; return }
-      s.x += s.vx * dt
-    },
-    isFinished: (s) => s.vx <= 0,
-    getBallPosition: (s) => ({ x: s.x, y: GROUND_Y }),
-    getTrailPosition: (s) => ({ x: s.x, y: GROUND_Y }),
-    getInfoLines: (s, p, t) => {
-      const a = p.mu * p.gravity
-      const stopDist = p.v0 * p.v0 / (2 * a)
-      return [
-        `位移: ${s.x.toFixed(2)} m`,
-        `速度: ${s.vx.toFixed(2)} m/s`,
-        `减速度: ${a.toFixed(2)} m/s²`,
-        `μ = ${p.mu},  g = ${p.gravity} m/s²`,
-        `理论停止距离: ${stopDist.toFixed(2)} m`,
-        `预计剩余: ${s.vx > 0 ? (s.vx / a).toFixed(2) : 0} s`,
-      ]
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      // 粗糙面纹理标记（短斜线）
-      const groundY = w2s(0, 0).y
-      for (let wx = 0; wx < 30; wx += 2.5) {
-        const sx = w2s(wx, 0).x
-        if (sx < -20 || sx > ctx.canvas.width / (window.devicePixelRatio || 1) + 20) continue
-        ctx.beginPath()
-        ctx.moveTo(sx, groundY)
-        ctx.lineTo(sx + 4, groundY - 5)
-        ctx.strokeStyle = "rgba(0,0,0,0.08)"
-        ctx.lineWidth = 0.8
-        ctx.stroke()
-      }
-      // 摩擦标签
-      ctx.fillStyle = "rgba(0,0,0,0.15)"
-      ctx.font = "11px sans-serif"
-      ctx.fillText(`μ = ${p.mu}`, w2s(0, 0).x + 4, groundY - 8)
-    },
-    // 绘制方块
-    drawObject: (ctx, s, p, w2s) => {
-      const pos = w2s(s.x, 0)
-      const w = 28
-      const h = 18
-      const x = pos.x - w / 2
-      const y = pos.y - h
-      // 方块本体
-      ctx.fillStyle = "#e74c3c"
-      ctx.fillRect(x, y, w, h)
-      // 边框
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(x, y, w, h)
-      // 底部纹理线，模拟粗糙感
-      ctx.strokeStyle = "rgba(0,0,0,0.12)"
-      ctx.lineWidth = 0.6
-      for (let i = 0; i < 3; i++) {
-        const lx = x + 6 + i * 8
-        ctx.beginPath()
-        ctx.moveTo(lx, y + h - 4)
-        ctx.lineTo(lx + 4, y + h - 8)
-        ctx.stroke()
-      }
-    },
   },
 
-  // ── 11. 空气阻力落体 ──
   {
     id: "drag-fall",
+    level: "高中",
+    category: "力学",
     name: "空气阻力落体",
     desc: "考虑空气阻力的自由落体，最终达到收尾速度",
     knowledge: `## 空气阻力落体
@@ -1214,54 +420,12 @@ $$v(t) = v_t(1 - e^{-\\frac{b}{m}t})$$
       { key: "dragCoeff", label: "阻力系数 b", value: 0.5, min: 0.05, max: 3, step: 0.05 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [] }),
-    step: (s, p, dt) => {
-      // 重力 mg 向下，阻力 b*v 向上
-      // a = g - (b/m) * v
-      const a = p.gravity - (p.dragCoeff / p.mass) * s.vy
-      s.vy += a * dt
-      s.y -= s.vy * dt
-      if (s.y <= GROUND_Y && s.vy >= 0) { s.y = GROUND_Y; s.vy = 0 }
-    },
-    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
-    getBallPosition: (s) => ({ x: 0, y: s.y }),
-    getTrailPosition: (s) => ({ x: 0, y: s.y }),
-    getInfoLines: (s, p, t) => {
-      const vt = p.mass * p.gravity / p.dragCoeff
-      return [
-        `下落高度: ${(p.height + GROUND_Y - s.y).toFixed(1)} m`,
-        `速度: ${s.vy.toFixed(2)} m/s`,
-        `时间: ${t.toFixed(2)} s`,
-        `收尾速度: ${vt.toFixed(2)} m/s`,
-        `已接近收尾: ${s.vy > 0 ? (s.vy / vt * 100).toFixed(0) : 0}%`,
-      ]
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      // 显示空气阻力流线
-      if (s.vy > 0.5) {
-        const pos = w2s(0, s.y)
-        const intensity = Math.min(s.vy / (p.mass * p.gravity / p.dragCoeff), 1)
-        for (let i = 0; i < 3; i++) {
-          const offset = (i - 1) * 14
-          ctx.beginPath()
-          ctx.moveTo(pos.x + offset - 8, pos.y + 6)
-          ctx.quadraticCurveTo(pos.x + offset, pos.y + 20 + intensity * 15, pos.x + offset + 8, pos.y + 6)
-          ctx.strokeStyle = `rgba(52, 152, 219, ${0.1 + intensity * 0.25})`
-          ctx.lineWidth = 1.2
-          ctx.stroke()
-        }
-        // 收尾速度标签
-        const vt = p.mass * p.gravity / p.dragCoeff
-        ctx.fillStyle = "rgba(0,0,0,0.2)"
-        ctx.font = "11px sans-serif"
-        ctx.fillText(`v收尾 = ${vt.toFixed(1)} m/s`, pos.x + 16, pos.y - 8)
-      }
-    },
   },
 
-  // 12. 碰撞变形模型
   {
     id: "bounce-deformation",
+    level: "初中",
+    category: "力学",
     name: "碰撞变形",
     desc: "弹性/非弹性碰撞，观察变形与能量损失",
     knowledge: `## 碰撞变形模型
@@ -1297,89 +461,12 @@ $$h_n = h_0 \\cdot e^{2n}$$
       { key: "restitution", label: "恢复系数 e", value: 0.8, min: 0, max: 1, step: 0.05 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [], bounceCount: 0, deform: 0 }),
-    step: (s, p, dt) => {
-      s.vy += p.gravity * dt
-      s.y -= s.vy * dt
-      // 变形逐渐恢复
-      s.deform *= 0.85
-      if (s.y <= GROUND_Y && s.vy >= 0) {
-        if (p.restitution > 0 && s.vy > 0.3) {
-          // 碰撞瞬间产生变形
-          s.deform = Math.min(s.vy * 0.8, 12)
-          s.vy = -s.vy * p.restitution
-          s.y = GROUND_Y
-          s.bounceCount++
-        } else {
-          s.y = GROUND_Y
-          s.vy = 0
-        }
-      }
-    },
-    isFinished: (s) => s.y <= GROUND_Y && Math.abs(s.vy) <= 0.3,
-    getBallPosition: (s) => ({ x: 0, y: s.y }),
-    getTrailPosition: (s) => ({ x: 0, y: s.y }),
-    getInfoLines: (s, p, t) => {
-      const mode = p.restitution === 1 ? '完全弹性' : p.restitution === 0 ? '完全非弹性' : '非弹性'
-      return [
-        `高度: ${(s.y - GROUND_Y).toFixed(2)} m`,
-        `速度: ${s.vy.toFixed(2)} m/s`,
-        `弹跳次数: ${s.bounceCount}`,
-        `恢复系数: e = ${p.restitution.toFixed(2)}  (${mode})`,
-        `变形: ${s.deform > 0.1 ? s.deform.toFixed(1) : '0'}`,
-      ]
-    },
-    drawObject: (ctx, s, p, w2s) => {
-      const pos = w2s(0, s.y)
-      const radius = 12
-      const deform = s.deform
-      // 根据变形画椭圆
-      ctx.beginPath()
-      ctx.ellipse(pos.x, pos.y + deform * 0.3, radius + deform * 0.2, radius - deform * 0.4, 0, 0, Math.PI * 2)
-      ctx.fillStyle = "#e74c3c"
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      // 完全非弹性停住时显示挤压效果
-      if (p.restitution === 0 && s.y <= GROUND_Y && Math.abs(s.vy) <= 0.3) {
-        ctx.fillStyle = "rgba(0,0,0,0.1)"
-        ctx.fillRect(pos.x - 16, pos.y - 1, 32, 2)
-      }
-      // 标注恢复系数
-      if (deform > 1) {
-        ctx.fillStyle = "rgba(0,0,0,0.3)"
-        ctx.font = "11px sans-serif"
-        ctx.fillText(`e=${p.restitution.toFixed(2)}`, pos.x + 16, pos.y - 8)
-      }
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      // 显示 bounce 轨迹高度标
-      if (s.bounceCount > 0) {
-        const groundY = w2s(0, 0).y
-        ctx.fillStyle = "rgba(0,0,0,0.08)"
-        ctx.font = "12px sans-serif"
-        for (let i = 1; i <= Math.min(s.bounceCount, 5); i++) {
-          const h = p.height * Math.pow(p.restitution, 2 * i)
-          if (h < 0.5) break
-          const peakY = w2s(0, GROUND_Y + h).y
-          ctx.beginPath()
-          ctx.setLineDash([2, 3])
-          ctx.moveTo(30, peakY)
-          ctx.lineTo(90, peakY)
-          ctx.strokeStyle = "rgba(0,0,0,0.1)"
-          ctx.lineWidth = 0.8
-          ctx.stroke()
-          ctx.setLineDash([])
-          ctx.fillText(`#${i} ${h.toFixed(1)}m`, 92, peakY + 3)
-        }
-      }
-    },
   },
 
-  // ── 13. 两球碰撞 ──
   {
     id: "ball-collision",
+    level: "高中",
+    category: "力学",
     name: "两球碰撞",
     desc: "两个小球在水平方向上的弹性/非弹性碰撞",
     knowledge: `## 两球碰撞
@@ -1420,182 +507,12 @@ $$v_2' = \\frac{(m_2-m_1)v_2 + 2m_1 v_1}{m_1+m_2}$$
         { value: 0, label: "完全非弹性碰撞" },
       ]},
     ],
-    createState: (p) => ({
-      x1: -8, v1: p.v1,
-      x2: 8, v2: p.v2,
-      collided: false,
-      trail: [],
-      trail2: [],
-      collisionTime: 999, // 碰撞时刻，用 dt 累计
-    }),
-    step: (s, p, dt) => {
-      const BALL_RADIUS = 0.5
-      const MIN_DIST = BALL_RADIUS * 2
-
-      s.x1 += s.v1 * dt
-      s.x2 += s.v2 * dt
-
-      // 碰撞检测：两球距离小于直径且正在接近
-      if (!s.collided && s.x2 - s.x1 < MIN_DIST && s.v1 > s.v2) {
-        s.collided = true
-        s.collisionTime = 0
-
-        // 分离防止重叠
-        const overlap = MIN_DIST - (s.x2 - s.x1)
-        s.x1 -= overlap / 2
-        s.x2 += overlap / 2
-
-        if (p.restitution === 1) {
-          // 完全弹性碰撞：动量守恒 + 动能守恒
-          const m1 = p.m1, m2 = p.m2
-          const v1 = s.v1, v2 = s.v2
-          s.v1 = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2)
-          s.v2 = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2)
-        } else {
-          // 完全非弹性碰撞：动量守恒，粘在一起
-          const m1 = p.m1, m2 = p.m2
-          const v = (m1 * s.v1 + m2 * s.v2) / (m1 + m2)
-          s.v1 = v
-          s.v2 = v
-        }
-      }
-
-      // 碰撞计时
-      if (s.collided) s.collisionTime += dt
-
-      // 记录球2轨迹（球1的轨迹由实验室自动处理）
-      if (!s.trail2) s.trail2 = []
-      s.trail2.push({ x: s.x2, y: GROUND_Y })
-      if (s.trail2.length > 5000) s.trail2.splice(0, s.trail2.length - 5000)
-    },
-    isFinished: () => false,
-    getBallPosition: (s) => ({ x: (s.x1 + s.x2) / 2, y: GROUND_Y }),
-    getTrailPosition: (s, p) => ({ x: s.x1, y: GROUND_Y }),
-    getInfoLines: (s, p, t) => {
-      const KE1 = 0.5 * p.m1 * s.v1 * s.v1
-      const KE2 = 0.5 * p.m2 * s.v2 * s.v2
-      const momentum = p.m1 * s.v1 + p.m2 * s.v2
-      const collisionType = p.restitution === 1 ? '完全弹性' : '完全非弹性'
-      return [
-        `球1: m=${p.m1.toFixed(1)}kg  v=${s.v1.toFixed(2)}m/s  KE=${KE1.toFixed(2)}J`,
-        `球2: m=${p.m2.toFixed(1)}kg  v=${s.v2.toFixed(2)}m/s  KE=${KE2.toFixed(2)}J`,
-        `总动量: ${momentum.toFixed(2)} kg·m/s`,
-        `总动能: ${(KE1 + KE2).toFixed(2)} J`,
-        `状态: ${s.collided ? '已碰撞' : '未碰撞'} 类型: ${collisionType}`,
-      ]
-    },
-    drawObject: (ctx, s, p, w2s) => {
-      const RADIUS_PX = 14
-
-      // 绘制球1（蓝色）
-      const pos1 = w2s(s.x1, GROUND_Y)
-      ctx.beginPath()
-      ctx.arc(pos1.x, pos1.y, RADIUS_PX, 0, Math.PI * 2)
-      const grad1 = ctx.createRadialGradient(pos1.x - 4, pos1.y - 4, 2, pos1.x, pos1.y, RADIUS_PX)
-      grad1.addColorStop(0, '#5dade2')
-      grad1.addColorStop(1, '#2980b9')
-      ctx.fillStyle = grad1
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.15)"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 11px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("1", pos1.x, pos1.y + 4)
-      ctx.textAlign = "left"
-
-      // 绘制球2（红色）
-      const pos2 = w2s(s.x2, GROUND_Y)
-      ctx.beginPath()
-      ctx.arc(pos2.x, pos2.y, RADIUS_PX, 0, Math.PI * 2)
-      const grad2 = ctx.createRadialGradient(pos2.x - 4, pos2.y - 4, 2, pos2.x, pos2.y, RADIUS_PX)
-      grad2.addColorStop(0, '#ec7063')
-      grad2.addColorStop(1, '#c0392b')
-      ctx.fillStyle = grad2
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.15)"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 11px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("2", pos2.x, pos2.y + 4)
-      ctx.textAlign = "left"
-    },
-    drawExtra: (ctx, s, p, w2s) => {
-      // 绘制球2轨迹
-      ctx.globalAlpha = 0.5
-      for (let i = 1; i < s.trail2.length; i++) {
-        const p1 = w2s(s.trail2[i - 1].x, s.trail2[i - 1].y)
-        const p2 = w2s(s.trail2[i].x, s.trail2[i].y)
-        ctx.beginPath()
-        ctx.moveTo(p1.x, p1.y)
-        ctx.lineTo(p2.x, p2.y)
-        ctx.strokeStyle = "rgba(231, 76, 60, 0.35)"
-        ctx.lineWidth = 2
-        ctx.stroke()
-      }
-      ctx.globalAlpha = 1.0
-
-      // 速度箭头
-      const drawArrow = (pos, v, color) => {
-        const len = Math.min(Math.abs(v) * 10, 70)
-        if (len < 5) return
-        const dir = v > 0 ? 1 : -1
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y - RADIUS_PX - 4)
-        ctx.lineTo(pos.x + dir * len, pos.y - RADIUS_PX - 4)
-        ctx.strokeStyle = color
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(pos.x + dir * len, pos.y - RADIUS_PX - 4)
-        ctx.lineTo(pos.x + dir * (len - 8), pos.y - RADIUS_PX - 8)
-        ctx.lineTo(pos.x + dir * (len - 8), pos.y - RADIUS_PX)
-        ctx.closePath()
-        ctx.fillStyle = color
-        ctx.fill()
-        ctx.fillStyle = color
-        ctx.font = "bold 11px sans-serif"
-        ctx.textAlign = "center"
-        ctx.fillText("v", pos.x + dir * len * 0.5, pos.y - RADIUS_PX - 10)
-        ctx.textAlign = "left"
-      }
-
-      const RADIUS_PX = 14
-      const pos1 = w2s(s.x1, GROUND_Y)
-      const pos2 = w2s(s.x2, GROUND_Y)
-      drawArrow(pos1, s.v1, "#2980b9")
-      drawArrow(pos2, s.v2, "#c0392b")
-
-      // 碰撞时刻视觉效果
-      if (s.collided) {
-        const midX = (s.x1 + s.x2) / 2
-        const midPx = w2s(midX, GROUND_Y)
-        const elapsed = s.collisionTime
-        const alpha = Math.max(0, 0.6 - elapsed * 2)
-        if (alpha > 0) {
-          ctx.beginPath()
-          ctx.arc(midPx.x, midPx.y, 24 + elapsed * 20, 0, Math.PI * 2)
-          ctx.strokeStyle = `rgba(230, 126, 34, ${alpha})`
-          ctx.lineWidth = 2.5
-          ctx.setLineDash([4, 4])
-          ctx.stroke()
-          ctx.setLineDash([])
-
-          ctx.fillStyle = `rgba(230, 126, 34, ${alpha})`
-          ctx.font = "bold 14px sans-serif"
-          ctx.textAlign = "center"
-          ctx.fillText("碰撞!", midPx.x, midPx.y - 36)
-          ctx.textAlign = "left"
-        }
-      }
-    },
   },
-  // ── 14. 连接体（滑轮模型） ──
+
   {
     id: "connected-bodies",
+    level: "高中",
+    category: "力学",
     name: "连接体",
     desc: "两个物体通过定滑轮连接，整体法与隔离法分析",
     knowledge: `## 连接体（滑轮模型）
@@ -1633,300 +550,12 @@ $$T = m_1(a + \\mu g)$$
       { key: "mu", label: "桌面摩擦系数 μ", value: 0.2, min: 0, max: 1, step: 0.05 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ d: 0, v: 0, trail: [] }),
-    step: (s, p, dt) => {
-      const TABLE_H = 5
-      const TABLE_W = 8
-      const m1_hw = 0.45
-      const m1_hh = 0.3
-      const m2_r = 0.38
-      // m₁ 最大移动距离（从桌面左端到滑轮下方）
-      const m1_max_dist = TABLE_W - m1_hw * 2
-      // m₂ 最大下落距离（滑轮中心高度 - 球半径 - 地面高度）
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const m2_max_dist = PULLEY_CENTER_Y - m2_r - GROUND_Y
-      // 实际最大距离取两者最小值
-      const maxDist = Math.min(m1_max_dist, m2_max_dist)
-
-      const a = (p.m2 * p.gravity - p.mu * p.m1 * p.gravity) / (p.m1 + p.m2)
-      if (a <= 0) {
-        // m₂ 太轻无法拉动 m₁，减速到停止
-        if (s.v > 0) {
-          s.v += a * dt
-          if (s.v < 0) s.v = 0
-          s.d += s.v * dt
-        }
-        return
-      }
-      s.v += a * dt
-      if (s.v < 0) s.v = 0
-      s.d += s.v * dt
-      // m₁ 到达滑轮或 m₂ 落地时停止
-      if (s.d >= maxDist) { s.d = maxDist; s.v = 0 }
-    },
-    isFinished: (s) => {
-      const TABLE_H = 5
-      const TABLE_W = 8
-      const m1_hw = 0.45
-      const m1_hh = 0.3
-      const m2_r = 0.38
-      const m1_max_dist = TABLE_W - m1_hw * 2
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const m2_max_dist = PULLEY_CENTER_Y - m2_r - GROUND_Y
-      const maxDist = Math.min(m1_max_dist, m2_max_dist)
-      return s.d >= maxDist
-    },
-    getBallPosition: (s, p) => {
-      // 相机跟踪 m₁ 和 m₂ 的中心点
-      const TABLE_H = 5
-      const TABLE_W = 8
-      const m2_r = 0.38
-      const m1_hw = 0.45
-      const m1_hh = 0.3
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const m1_x = Math.max(-TABLE_W + m1_hw, Math.min(-TABLE_W + m1_hw + s.d, -m1_hw))
-      const m2_y = Math.max(PULLEY_CENTER_Y - m2_r - s.d, GROUND_Y)
-      return { x: (m1_x + 0) / 2, y: (PULLEY_CENTER_Y + m2_y) / 2 }
-    },
-    getTrailPosition: (s, p) => {
-      // 记录 m₂（悬挂重物）的下落轨迹
-      const TABLE_H = 5
-      const m1_hh = 0.3
-      const m2_r = 0.38
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const m2_y = Math.max(PULLEY_CENTER_Y - m2_r - s.d, GROUND_Y)
-      return { x: 0, y: m2_y }  // m₂ 在滑轮正下方（x=0）
-    },
-    getInfoLines: (s, p, t) => {
-      const TABLE_H = 5
-      const TABLE_W = 8
-      const m1_hw = 0.45
-      const m1_hh = 0.3
-      const m2_r = 0.38
-      const m1_max_dist = TABLE_W - m1_hw * 2
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const m2_max_dist = PULLEY_CENTER_Y - m2_r - GROUND_Y
-      const maxDist = Math.min(m1_max_dist, m2_max_dist)
-      const a = (p.m2 * p.gravity - p.mu * p.m1 * p.gravity) / (p.m1 + p.m2)
-      const a_valid = a > 0 ? a : 0
-      const T = a_valid > 0 ? p.m1 * (a_valid + p.mu * p.gravity) : p.m1 * p.gravity
-      const isM1Stopped = s.d >= m1_max_dist
-      const isM2Landed = s.d >= m2_max_dist
-      return [
-        `加速度: ${a_valid.toFixed(2)} m/s²`,
-        `速度: ${s.v.toFixed(2)} m/s`,
-        `移动距离: ${s.d.toFixed(1)} / ${maxDist.toFixed(1)} m`,
-        `绳中拉力: ${T.toFixed(2)} N`,
-        `m₁=${p.m1}kg  m₂=${p.m2}kg  μ=${p.mu.toFixed(2)}`,
-        `时间: ${t.toFixed(2)} s`,
-        ...(a <= 0 ? ['⚠ m₂ 太轻，无法拉动 m₁'] : []),
-        ...(isM1Stopped && !isM2Landed ? ['⚡ m₁ 已到滑轮处'] : []),
-        ...(isM2Landed ? ['⚡ m₂ 已落地'] : []),
-      ]
-    },
-    drawObject: (ctx, s, p, w2s) => {
-      const TABLE_H = 5, TABLE_W = 8  // 桌子更长
-      const PULLEY_X = 0
-      const d = s.d
-      const m1_hw = 0.45, m1_hh = 0.3
-      const m2_r = 0.38
-      // m₁ 从桌面左端开始，向滑轮方向移动，最多到滑轮下方
-      const m1_start = -TABLE_W + m1_hw
-      const m1_end = -m1_hw  // 滑轮左侧边缘
-      const m1_x = Math.max(m1_start, Math.min(m1_start + d, m1_end))
-      // 滑轮中心和滑块中心齐高
-      const PULLEY_CENTER_Y = TABLE_H + m1_hh
-      const PULLEY_OFFSET_X = 1.0  // 滑轮向右偏移的世界坐标
-      // m₂ 球中心对准滑轮中心，随下落距离下降，不低于地面
-      const m2_y = Math.max(PULLEY_CENTER_Y - m2_r - d, GROUND_Y)
-      const m2_x = PULLEY_X + PULLEY_OFFSET_X  // m₂ 在滑轮正下方
-      const ch = ctx.canvas.height / (window.devicePixelRatio || 1)
-
-      // ── 1. 桌面 ──
-      const tL = w2s(-TABLE_W, 0), tR = w2s(0, 0)
-      const tT = w2s(-TABLE_W, TABLE_H)
-
-      // 桌面主体（渐变）
-      const tGrad = ctx.createLinearGradient(tL.x, tT.y, tL.x, tL.y)
-      tGrad.addColorStop(0, "#b8956a")
-      tGrad.addColorStop(0.12, "#d4b88c")
-      tGrad.addColorStop(0.5, "#c4a67a")
-      tGrad.addColorStop(1, "#8B7355")
-      ctx.fillStyle = tGrad
-      ctx.fillRect(tL.x, tT.y, tR.x - tL.x, tR.y - tT.y)
-
-      // 桌面顶部边缘高光
-      ctx.fillStyle = "#e0c8a0"
-      ctx.fillRect(tL.x, tT.y - 3, tR.x - tL.x, 5)
-
-      // 桌面底部阴影
-      ctx.fillStyle = "rgba(0,0,0,0.07)"
-      ctx.fillRect(tL.x, tL.y - 2, tR.x - tL.x, 2)
-
-      // 桌腿
-      ctx.fillStyle = "#6b5b45"
-      for (const lx of [-TABLE_W + 0.4, -0.4]) {
-        const leg = w2s(lx, 0)
-        ctx.fillRect(leg.x - 3, leg.y, 6, ch - leg.y)
-        // 桌脚
-        ctx.fillRect(leg.x - 5, leg.y + (ch - leg.y) - 6, 10, 6)
-      }
-
-      // ── 2. 绳子（先渲染绳子，再渲染滑轮覆盖）──
-      const PULLEY_RADIUS_PX = 8  // 滑轮半径（像素）
-      const pulleyPos = w2s(PULLEY_X + PULLEY_OFFSET_X, PULLEY_CENTER_Y)
-      const tableTopRight = w2s(0, TABLE_H)  // 桌面右上角
-      const m1 = w2s(m1_x, TABLE_H + m1_hh)
-      const m2 = w2s(m2_x, m2_y)
-
-      ctx.lineCap = "round"
-      ctx.strokeStyle = "#c4956a"
-      ctx.lineWidth = 2.5
-
-      // 绳子到滑块（水平，连接滑块中心）
-      ctx.beginPath()
-      ctx.moveTo(pulleyPos.x, m1.y)
-      ctx.lineTo(m1.x, m1.y)
-      ctx.stroke()
-
-      // 绳子到重物（从滑轮底部垂直向下，连接球中心）
-      ctx.beginPath()
-      ctx.moveTo(pulleyPos.x, pulleyPos.y + PULLEY_RADIUS_PX)
-      ctx.lineTo(m2.x, m2.y)
-      ctx.stroke()
-      ctx.lineCap = "butt"
-
-      // ── 3. 滑轮及支架（覆盖在绳子上面）──
-      // 支架（从桌面右上角斜向上到滑轮中心）
-      ctx.strokeStyle = "#666"
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.moveTo(tableTopRight.x, tableTopRight.y)  // 桌面右上角
-      ctx.lineTo(pulleyPos.x, pulleyPos.y)  // 到滑轮中心
-      ctx.stroke()
-
-      // 支架横梁
-      ctx.fillStyle = "#777"
-      ctx.fillRect(pulleyPos.x - 11, pulleyPos.y - 4, 22, 4)
-
-      // 滑轮外圈
-      ctx.beginPath()
-      ctx.arc(pulleyPos.x, pulleyPos.y, PULLEY_RADIUS_PX, 0, Math.PI * 2)
-      ctx.fillStyle = "#555"
-      ctx.fill()
-      ctx.strokeStyle = "#444"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-
-      // 滑轮内圈
-      ctx.beginPath()
-      ctx.arc(pulleyPos.x, pulleyPos.y, 3.5, 0, Math.PI * 2)
-      ctx.fillStyle = "#333"
-      ctx.fill()
-
-      // ── 4. m₁（桌面上滑块）──
-      const m1W = m1_hw * 2 * DRAW_SCALE
-      const m1H = m1_hh * 2 * DRAW_SCALE
-      const m1X = m1.x - m1_hw * DRAW_SCALE
-      const m1Y = m1.y - m1_hh * DRAW_SCALE
-
-      // 投影
-      ctx.fillStyle = "rgba(0,0,0,0.1)"
-      ctx.fillRect(m1X + 3, m1Y + 3, m1W, m1H)
-
-      // 主体
-      const m1Grad = ctx.createLinearGradient(m1X, m1Y, m1X, m1Y + m1H)
-      m1Grad.addColorStop(0, "#5dade2")
-      m1Grad.addColorStop(1, "#2980b9")
-      ctx.fillStyle = m1Grad
-      ctx.fillRect(m1X, m1Y, m1W, m1H)
-      ctx.strokeStyle = "rgba(0,0,0,0.25)"
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(m1X, m1Y, m1W, m1H)
-
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 12px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("m₁", m1.x, m1.y + 4)
-      ctx.textAlign = "left"
-
-      // ── 5. m₂（悬挂球）──
-      const m2R = m2_r * DRAW_SCALE
-
-      // 球体投影
-      ctx.beginPath()
-      ctx.ellipse(m2.x + 3, m2.y + m2R * 0.3, m2R * 0.8, m2R * 0.2, 0, 0, Math.PI * 2)
-      ctx.fillStyle = "rgba(0,0,0,0.08)"
-      ctx.fill()
-
-      // 球体
-      ctx.beginPath()
-      ctx.arc(m2.x, m2.y, m2R, 0, Math.PI * 2)
-      const m2Grad = ctx.createRadialGradient(m2.x - 5, m2.y - 4, 2, m2.x, m2.y, m2R)
-      m2Grad.addColorStop(0, "#f1948a")
-      m2Grad.addColorStop(0.4, "#ec7063")
-      m2Grad.addColorStop(1, "#c0392b")
-      ctx.fillStyle = m2Grad
-      ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 12px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("m₂", m2.x, m2.y + 4)
-      ctx.textAlign = "left"
-
-      // ── 6. 速度箭头 ──
-      if (s.v > 0.05) {
-        const vLen = Math.min(s.v * 3, 60)
-
-        // m₁ → （向右）
-        const ax1 = m1.x + m1_hw * DRAW_SCALE + 4
-        ctx.beginPath()
-        ctx.moveTo(ax1, m1.y)
-        ctx.lineTo(ax1 + vLen, m1.y)
-        ctx.strokeStyle = "#e67e22"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(ax1 + vLen, m1.y)
-        ctx.lineTo(ax1 + vLen - 8, m1.y - 4)
-        ctx.lineTo(ax1 + vLen - 8, m1.y + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#e67e22"
-        ctx.fill()
-        ctx.fillStyle = "#e67e22"
-        ctx.font = "bold 11px sans-serif"
-        ctx.textAlign = "center"
-        ctx.fillText("v", ax1 + vLen * 0.5, m1.y - 8)
-
-        // m₂ ↓（向下）
-        const ax2 = m2.x + m2R + 6
-        ctx.beginPath()
-        ctx.moveTo(ax2, m2.y)
-        ctx.lineTo(ax2, m2.y + vLen)
-        ctx.strokeStyle = "#e67e22"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(ax2, m2.y + vLen)
-        ctx.lineTo(ax2 - 4, m2.y + vLen - 8)
-        ctx.lineTo(ax2 + 4, m2.y + vLen - 8)
-        ctx.closePath()
-        ctx.fillStyle = "#e67e22"
-        ctx.fill()
-        ctx.fillStyle = "#e67e22"
-        ctx.fillText("v", ax2 + 10, m2.y + vLen * 0.5)
-        ctx.textAlign = "left"
-      }
-    },
   },
 
-  // ── 15. 传送带 ──
   {
     id: "conveyor-belt",
+    level: "高中",
+    category: "力学",
     name: "传送带",
     desc: "物块在传送带上的运动，摩擦力驱动的加速与匀速",
     knowledge: `## 传送带模型
@@ -1961,148 +590,12 @@ $$a = \\mu g$$
       { key: "beltLength", label: "传送带长度 (m)", value: 20, min: 5, max: 50, step: 1 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({ x: 0, v: p.v0, trail: [] }),
-    step: (s, p, dt) => {
-      const dv = p.beltSpeed - s.v
-      if (Math.abs(dv) > 0.05) {
-        const a = Math.sign(dv) * p.mu * p.gravity
-        if (Math.abs(a * dt) > Math.abs(dv)) {
-          s.v = p.beltSpeed
-        } else {
-          s.v += a * dt
-        }
-      }
-      s.x += s.v * dt
-      if (s.x >= p.beltLength) { s.x = p.beltLength }
-      if (s.x < 0) s.x = 0
-    },
-    isFinished: (s, p) => s.x >= p.beltLength,
-    getBallPosition: (s, p) => ({ x: s.x, y: GROUND_Y }),
-    getTrailPosition: (s, p) => ({ x: s.x, y: GROUND_Y }),
-    getInfoLines: (s, p, t) => {
-      const dv = p.beltSpeed - s.v
-      const isSynced = Math.abs(dv) < 0.05
-      const phase = isSynced ? '匀速 ✓' : (dv > 0 ? '加速中 🔄' : '减速中 🔄')
-      const a = isSynced ? 0 : Math.sign(dv) * p.mu * p.gravity
-      return [
-        `物块速度: ${s.v.toFixed(2)} m/s`,
-        `传送带速度: ${p.beltSpeed.toFixed(1)} m/s`,
-        `相对速度: ${isSynced ? 0 : dv.toFixed(2)} m/s`,
-        `位移: ${s.x.toFixed(1)} / ${p.beltLength} m`,
-        `加速度: ${a.toFixed(2)} m/s²`,
-        `μ = ${p.mu.toFixed(2)}`,
-        `状态: ${phase}`,
-        `时间: ${t.toFixed(2)} s`,
-      ]
-    },
-    drawObject: (ctx, s, p, w2s) => {
-      const beltLen = p.beltLength
-      const beltH = 0.3  // 传送带厚度
-      const blockH = 0.7  // 物块高度
-      const blockW = 0.7  // 物块宽度
-
-      // 1. 传送带底座（在地面下方）
-      const beltLeft = w2s(-1, 0)
-      const beltRight = w2s(beltLen + 1, 0)
-      const beltBot = w2s(0, -beltH - 0.5)
-      ctx.fillStyle = "#d5dbe0"
-      ctx.fillRect(beltLeft.x, beltLeft.y, beltRight.x - beltLeft.x, beltBot.y - beltLeft.y)
-
-      // 2. 传送带表面（皮带）
-      const beltSurface = w2s(0, 0)
-      const beltBottom = w2s(0, -beltH)
-      ctx.fillStyle = "#555"
-      ctx.fillRect(beltLeft.x, beltSurface.y, beltRight.x - beltLeft.x, beltBottom.y - beltSurface.y)
-
-      // 3. 滚筒
-      for (const rx of [-0.5, beltLen + 0.5]) {
-        const rp = w2s(rx, -beltH / 2)
-        ctx.beginPath()
-        ctx.arc(rp.x, rp.y, 12, 0, Math.PI * 2)
-        ctx.fillStyle = "#7f8c8d"
-        ctx.fill()
-        ctx.strokeStyle = "#444"
-        ctx.lineWidth = 1.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.arc(rp.x, rp.y, 5, 0, Math.PI * 2)
-        ctx.fillStyle = "#444"
-        ctx.fill()
-      }
-
-      // 4. 皮带纹理（斜线表示运动方向）
-      ctx.strokeStyle = "rgba(255,255,255,0.15)"
-      ctx.lineWidth = 1
-      for (let wx = 0; wx < beltLen; wx += 1.2) {
-        const px = w2s(wx, 0).x
-        ctx.beginPath()
-        ctx.moveTo(px, beltSurface.y)
-        ctx.lineTo(px + 4, beltBottom.y)
-        ctx.stroke()
-      }
-
-      // 5. 皮带速度方向指示
-      if (Math.abs(p.beltSpeed) > 0.1) {
-        const arrowPos = w2s(0, 0.15)
-        const midX = (beltLeft.x + beltRight.x) / 2
-        const aLen = 30
-        const dir = Math.sign(p.beltSpeed)
-        ctx.beginPath()
-        ctx.moveTo(midX - aLen * dir, arrowPos.y)
-        ctx.lineTo(midX + aLen * dir, arrowPos.y)
-        ctx.strokeStyle = "rgba(52, 152, 219, 0.4)"
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(midX + aLen * dir, arrowPos.y)
-        ctx.lineTo(midX + aLen * dir - 8 * dir, arrowPos.y - 4)
-        ctx.lineTo(midX + aLen * dir - 8 * dir, arrowPos.y + 4)
-        ctx.closePath()
-        ctx.fillStyle = "rgba(52, 152, 219, 0.4)"
-        ctx.fill()
-      }
-
-      // 6. 物块（底部在传送带表面 y=0）
-      const blockWorldX = Math.max(0, Math.min(s.x, beltLen))
-      const blkBottom = w2s(blockWorldX, 0)  // 物块底部在 y=0
-      const blkScreenW = blockW * DRAW_SCALE
-      const blkScreenH = blockH * DRAW_SCALE
-      ctx.fillStyle = "#e74c3c"
-      ctx.fillRect(blkBottom.x - blkScreenW / 2, blkBottom.y - blkScreenH, blkScreenW, blkScreenH)
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(blkBottom.x - blkScreenW / 2, blkBottom.y - blkScreenH, blkScreenW, blkScreenH)
-
-      // 7. 物块速度箭头
-      if (Math.abs(s.v) > 0.05) {
-        const sc = 3
-        const vLen = Math.min(Math.abs(s.v) * sc, 60)
-        const vDir = s.v >= 0 ? 1 : -1
-        const arrowX = blkBottom.x + blkScreenW / 2 + 4
-        const arrowY = blkBottom.y - blkScreenH / 2
-        ctx.beginPath()
-        ctx.moveTo(arrowX, arrowY)
-        ctx.lineTo(arrowX + vLen * vDir, arrowY)
-        ctx.strokeStyle = "#e67e22"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(arrowX + vLen * vDir, arrowY)
-        ctx.lineTo(arrowX + vLen * vDir - 8 * vDir, arrowY - 4)
-        ctx.lineTo(arrowX + vLen * vDir - 8 * vDir, arrowY + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#e67e22"
-        ctx.fill()
-        ctx.fillStyle = "#e67e22"
-        ctx.font = "bold 11px sans-serif"
-        ctx.fillText("v", arrowX + vLen * vDir * 0.5 - 4, arrowY - 8)
-      }
-    },
   },
 
-  // ── 16. 板块模型 ──
   {
     id: "block-board",
+    level: "高中",
+    category: "力学",
     name: "板块模型",
     desc: "滑块在木板上滑动，摩擦作用下的相对运动，高考经典",
     knowledge: `## 板块模型
@@ -2143,170 +636,469 @@ $$v_{共} = \\frac{mv_0}{m+M}$$
       { key: "boardLength", label: "木板长度 (m)", value: 6, min: 2, max: 15, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
     ],
-    createState: (p) => ({
-      xb: 0.5, vb: p.v0,  // 滑块中心初始位置（考虑宽度，左端对齐木板左端）
-      xB: 0, vB: 0,
-      trail: [], trailB: [],
-    }),
-    step: (s, p, dt) => {
-      const relV = s.vb - s.vB
-      if (Math.abs(relV) > 0.01) {
-        const a_block = -Math.sign(relV) * p.mu * p.gravity
-        const a_board = Math.sign(relV) * p.mu * p.m * p.gravity / p.M
-        s.vb += a_block * dt
-        s.vB += a_board * dt
-      } else {
-        const vcm = (p.m * s.vb + p.M * s.vB) / (p.m + p.M)
-        s.vb = vcm; s.vB = vcm
-      }
-      s.xb += s.vb * dt
-      s.xB += s.vB * dt
-      if (s.xb - s.xB >= p.boardLength) {
-        s.xb = s.xB + p.boardLength
-        if (s.vb > s.vB) s.vb = s.vB
-      }
-      // 记录木板轨迹（滑块轨迹由实验室自动处理）
-      if (s.trailB) {
-        s.trailB.push({ x: s.xB, y: GROUND_Y + 0.15 })
-        if (s.trailB.length > 5000) s.trailB.splice(0, s.trailB.length - 5000)
-      }
-    },
-    isFinished: (s, p) => {
-      return (s.xb - s.xB) >= p.boardLength || (Math.abs(s.vb - s.vB) < 0.01 && (s.xb - s.xB) < p.boardLength)
-    },
-    getBallPosition: (s, p) => ({ x: (s.xb + s.xB + p.boardLength) / 2, y: GROUND_Y }),
-    getTrailPosition: (s, p) => ({ x: s.xb - 0.5, y: GROUND_Y + 0.4 }),  // 从滑块左端记录轨迹
-    drawExtra: (ctx, s, p, w2s) => {
-      // 绘制木板的运动轨迹（虚线）
-      if (!s.trailB || s.trailB.length < 2) return
-      ctx.globalAlpha = 0.45
-      for (let i = 1; i < s.trailB.length; i++) {
-        const p1 = w2s(s.trailB[i - 1].x, s.trailB[i - 1].y)
-        const p2 = w2s(s.trailB[i].x, s.trailB[i].y)
-        ctx.beginPath()
-        ctx.moveTo(p1.x, p1.y)
-        ctx.lineTo(p2.x, p2.y)
-        ctx.strokeStyle = "rgba(108, 122, 137, 0.5)"
-        ctx.lineWidth = 2
-        ctx.setLineDash([6, 4])
-        ctx.stroke()
-        ctx.setLineDash([])
-      }
-      ctx.globalAlpha = 1.0
-    },
-    getInfoLines: (s, p, t) => {
-      const relV = s.vb - s.vB
-      const relDisp = s.xb - s.xB
-      const isDone = Math.abs(relV) < 0.01
-      const vcm = (p.m * p.v0) / (p.m + p.M)
-      const a_block = relV > 0 ? -p.mu * p.gravity : p.mu * p.gravity
-      const phase = isDone ? '已共速 ✓' : (relDisp >= p.boardLength ? '滑块滑落 ⚡' : '相对滑动中 🔄')
-      return [
-        `滑块速度: ${s.vb.toFixed(2)} m/s`,
-        `木板速度: ${s.vB.toFixed(2)} m/s`,
-        `相对速度: ${relV.toFixed(2)} m/s`,
-        `相对位移: ${relDisp.toFixed(2)} / ${p.boardLength} m`,
-        `滑块加速度: ${isDone ? 0 : a_block.toFixed(2)} m/s²`,
-        `m=${p.m}kg  M=${p.M}kg  μ=${p.mu.toFixed(2)}`,
-        `状态: ${phase}`,
-        ...(isDone ? [`共速速度: ${vcm.toFixed(2)} m/s`] : []),
-        `时间: ${t.toFixed(2)} s`,
-      ]
-    },
-    drawObject: (ctx, s, p, w2s) => {
-      const boardH = 0.5   // 木板厚度
-      const blockH = 0.6   // 滑块高度
-      const blockW = 1.0   // 滑块宽度
-
-      // 1. 木板（底部在地面上）
-      const boardBottomLeft = w2s(s.xB, 0)  // 木板底部左端
-      const boardBottomRight = w2s(s.xB + p.boardLength, 0)  // 木板底部右端
-      const boardScreenW = boardBottomRight.x - boardBottomLeft.x
-      const boardScreenH = boardH * DRAW_SCALE
-
-      // 木板主体（从底部向上画）
-      ctx.fillStyle = "#6c7a89"
-      ctx.fillRect(boardBottomLeft.x, boardBottomLeft.y - boardScreenH, boardScreenW, boardScreenH)
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(boardBottomLeft.x, boardBottomLeft.y - boardScreenH, boardScreenW, boardScreenH)
-
-      // 木板标签
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 12px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("M", boardBottomLeft.x + boardScreenW / 2, boardBottomLeft.y - boardScreenH / 2 + 4)
-      ctx.textAlign = "left"
-
-      // 2. 滑块（底部在木板顶部）
-      const blockBottom = w2s(s.xb, boardH + 0.01)  // 滑块底部在木板顶部
-      const blkScreenW = blockW * DRAW_SCALE
-      const blkScreenH = blockH * DRAW_SCALE
-
-      ctx.fillStyle = "#e74c3c"
-      ctx.fillRect(blockBottom.x - blkScreenW / 2, blockBottom.y - blkScreenH, blkScreenW, blkScreenH)
-      ctx.strokeStyle = "rgba(0,0,0,0.25)"
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(blockBottom.x - blkScreenW / 2, blockBottom.y - blkScreenH, blkScreenW, blkScreenH)
-
-      // 滑块标签
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 12px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText("m", blockBottom.x, blockBottom.y - blkScreenH / 2 + 4)
-      ctx.textAlign = "left"
-
-      // 3. 滑块速度箭头
-      if (Math.abs(s.vb) > 0.05) {
-        const vLen = Math.min(Math.abs(s.vb) * 3, 60)
-        const dir = s.vb > 0 ? 1 : -1
-        const ax = blockBottom.x + blkScreenW / 2 + 4
-        const ay = blockBottom.y - blkScreenH / 2
-        ctx.beginPath()
-        ctx.moveTo(ax, ay)
-        ctx.lineTo(ax + vLen * dir, ay)
-        ctx.strokeStyle = "#e67e22"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(ax + vLen * dir, ay)
-        ctx.lineTo(ax + vLen * dir - 7 * dir, ay - 4)
-        ctx.lineTo(ax + vLen * dir - 7 * dir, ay + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#e67e22"
-        ctx.fill()
-        ctx.fillStyle = "#e67e22"
-        ctx.font = "bold 11px sans-serif"
-        ctx.textAlign = "center"
-        ctx.fillText("v块", ax + vLen * dir * 0.5, ay - 8)
-        ctx.textAlign = "left"
-      }
-
-      // 4. 木板速度箭头
-      if (Math.abs(s.vB) > 0.05) {
-        const vLen = Math.min(Math.abs(s.vB) * 3, 60)
-        const dir = s.vB > 0 ? 1 : -1
-        const ax = boardBottomRight.x + 4
-        const ay = boardBottomRight.y - boardScreenH / 2
-        ctx.beginPath()
-        ctx.moveTo(ax, ay)
-        ctx.lineTo(ax + vLen * dir, ay)
-        ctx.strokeStyle = "#3498db"
-        ctx.lineWidth = 2.5
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(ax + vLen * dir, ay)
-        ctx.lineTo(ax + vLen * dir - 7 * dir, ay - 4)
-        ctx.lineTo(ax + vLen * dir - 7 * dir, ay + 4)
-        ctx.closePath()
-        ctx.fillStyle = "#3498db"
-        ctx.fill()
-        ctx.fillStyle = "#3498db"
-        ctx.font = "bold 11px sans-serif"
-        ctx.textAlign = "center"
-        ctx.fillText("v板", ax + vLen * dir * 0.5, ay - 8)
-        ctx.textAlign = "left"
-      }
-    },
   },
+
+  // ── 杠杆 ──
+  {
+    id: "lever",
+    level: "初中",
+    category: "力学",
+    name: "杠杆",
+    desc: "杠杆平衡条件：力×力臂 = 力×力臂",
+    knowledge: `## 杠杆原理
+
+杠杆是一种简单机械，在力的作用下能绕固定点（支点）转动。
+
+### 核心公式
+
+- $F_1 \\times L_1 = F_2 \\times L_2$ — 杠杆平衡条件
+- 力矩 $M = F \\times d$ — 力与力臂的乘积
+
+**变量说明**：$F$ 为力（N），$L$ 为力臂（m），$M$ 为力矩（N·m）
+
+### 关键知识点
+
+- **支点**：杠杆绕着转动的固定点
+- **力臂**：从支点到力的作用线的垂直距离
+- **平衡条件**：顺时针力矩 = 逆时针力矩
+- **三种杠杆**：
+  - 省力杠杆：$L_1 > L_2$，省力但费距离
+  - 费力杠杆：$L_1 < L_2$，费力但省距离
+  - 等臂杠杆：$L_1 = L_2$，如天平
+
+### 生活中的杠杆
+
+- 剪刀、钳子（省力杠杆）
+- 钓鱼竿、筷子（费力杠杆）
+- 天平（等臂杠杆）
+
+> 💡 试试让 $F_1 \\times L_1 = F_2 \\times L_2$，观察杠杆如何保持水平平衡。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 4 8 10 16 10" fill="rgba(0,0,0,0.08)"/><line x1="2" y1="8" x2="22" y2="8"/><circle cx="4" cy="6" r="1.5"/><circle cx="20" cy="6" r="1.5"/></svg>`,
+    params: [
+      { key: "F1", label: "左侧力 F₁ (N)", value: 3, min: 0, max: 20, step: 0.5 },
+      { key: "d1", label: "左侧力臂 L₁ (m)", value: 3, min: 0.5, max: 5, step: 0.1 },
+      { key: "dir1", label: "F₁ 方向", value: 1, options: [{ label: "↓ 向下", value: 1 }, { label: "↑ 向上", value: -1 }] },
+      { key: "F2", label: "右侧力 F₂ (N)", value: 2, min: 0, max: 20, step: 0.5 },
+      { key: "d2", label: "右侧力臂 L₂ (m)", value: 2, min: 0.5, max: 5, step: 0.1 },
+      { key: "dir2", label: "F₂ 方向", value: 1, options: [{ label: "↓ 向下", value: 1 }, { label: "↑ 向上", value: -1 }] },
+    ],
+  },
+
+  // ── 定滑轮 ──
+  {
+    id: "pulley",
+    level: "初中",
+    category: "力学",
+    name: "定滑轮",
+    desc: "定滑轮改变力的方向，不省力",
+    knowledge: `## 定滑轮
+
+定滑轮是轴固定不动的滑轮，实质上是等臂杠杆。
+
+### 核心特点
+
+- **不省力**：$F = mg$，拉力等于物体重力
+- **不省距离**：拉绳距离 = 物体上升距离
+- **改变方向**：可以向下拉绳子使物体上升
+
+### 关键知识点
+
+- 定滑轮的实质是等臂杠杆（动力臂 = 阻力臂 = 滑轮半径）
+- 理想情况下不计摩擦和滑轮重力
+- 绳中张力处处相等（轻绳假设）
+
+### 与动滑轮的对比
+
+| | 定滑轮 | 动滑轮 |
+|---|---|---|
+| 省力 | ❌ 不省力 | ✅ 省一半力 |
+| 省距离 | ❌ 不省距离 | ❌ 费一倍距离 |
+| 改变方向 | ✅ 可以 | ❌ 不可以 |
+
+> 💡 观察：无论物体多重，拉力始终等于物体重量——试试改变质量看看。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="4"/><line x1="12" y1="2" x2="12" y2="1"/><line x1="8" y1="10" x2="8" y2="20"/><line x1="16" y1="10" x2="16" y2="16"/></svg>`,
+    params: [
+      { key: "mass", label: "物体质量 (kg)", value: 2, min: 0.5, max: 10, step: 0.5 },
+      { key: "pullForce", label: "拉力 (N)", value: 20, min: 0, max: 100, step: 1 },
+      { key: "pulleyH", label: "滑轮高度 (m)", value: 5, min: 3, max: 7, step: 0.5 },
+      { key: "initHeight", label: "初始高度 (m)", value: 2, min: 0.5, max: 4, step: 0.5 },
+      { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
+    ],
+  },
+
+  // ── 动滑轮 ──
+  {
+    id: "movable-pulley",
+    level: "初中",
+    category: "力学",
+    name: "动滑轮",
+    desc: "动滑轮省一半力，但费一倍距离",
+    knowledge: `## 动滑轮
+
+动滑轮是轴随物体一起移动的滑轮，实质上是动力臂为阻力臂 2 倍的杠杆。
+
+### 核心公式
+
+$$F = \\frac{mg}{2}$$
+
+$$s_{拉} = 2s_{物}$$
+
+### 特点
+
+- **省一半力**：拉力 = 物体重力的一半
+- **费一倍距离**：拉绳距离是物体上升距离的 2 倍
+- **不能改变方向**：拉力方向与物体运动方向相同
+
+> 💡 观察：改变质量，拉力始终是重力的一半。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="16" y1="4" x2="16" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/></svg>`,
+    params: [
+      { key: "mass", label: "物体质量 (kg)", value: 4, min: 0.5, max: 10, step: 0.5 },
+      { key: "pullForce", label: "拉力 (N)", value: 25, min: 0, max: 100, step: 1 },
+      { key: "ceilingH", label: "天花板高度 (m)", value: 10, min: 3, max: 15, step: 0.5 },
+      { key: "initHeight", label: "初始高度 (m)", value: 3, min: 0.5, max: 10.0, step: 0.5 },
+      { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
+    ],
+  },
+
+  // ── 滑轮组 ──
+  {
+    id: "pulley-system",
+    level: "初中",
+    category: "力学",
+    name: "滑轮组",
+    desc: "定滑轮+动滑轮组合，省力又改变方向",
+    knowledge: `## 滑轮组
+
+滑轮组由定滑轮和动滑轮组合而成，兼具两者的优点。
+
+### 核心公式
+
+$$F = \\frac{mg}{n}$$
+
+其中 n 是承担物重的绳子段数（本模型 n=2）。
+
+### 特点
+
+- **省力**：拉力 = 物体重力 ÷ 绳子段数
+- **费距离**：拉绳距离 = 物体上升距离 × 绳子段数
+- **改变方向**：可以向下拉绳子使物体上升
+
+> 💡 绳子段数越多越省力，但摩擦也会增大。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><circle cx="16" cy="12" r="3"/><line x1="8" y1="3" x2="8" y2="1"/><line x1="5" y1="9" x2="5" y2="20"/><line x1="11" y1="9" x2="16" y2="9"/><line x1="16" y1="15" x2="16" y2="22"/></svg>`,
+    params: [
+      { key: "mass", label: "物体质量 (kg)", value: 4, min: 0.5, max: 10, step: 0.5 },
+      { key: "pullForce", label: "拉力 (N)", value: 20, min: 0, max: 100, step: 1 },
+      { key: "ceilingH", label: "天花板高度 (m)", value: 10, min: 5, max: 15, step: 0.5 },
+      { key: "initHeight", label: "初始高度 (m)", value: 3, min: 0.5, max: 10.0, step: 0.5 },
+      { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
+    ],
+  },
+
+  {
+    id: "buoyancy",
+    level: "初中",
+    category: "力学",
+    name: "浮力",
+    desc: "阿基米德原理：物体在液体中的浮沉与平衡",
+    knowledge: `## 浮力（阿基米德原理）
+
+浸在液体中的物体受到向上的浮力，浮力大小等于物体排开液体的重力。
+
+### 核心公式
+
+- $F_{浮} = \\rho_{液} \\cdot g \\cdot V_{排}$ — 阿基米德原理
+- $G = \\rho_{物} \\cdot g \\cdot V_{物}$ — 物体重力
+
+### 浮沉条件
+
+| 条件 | 状态 |
+|---|---|
+| $\\rho_{物} < \\rho_{液}$ | 上浮 → 漂浮（部分浸没） |
+| $\\rho_{物} = \\rho_{液}$ | 悬浮（完全浸没，任意位置） |
+| $\\rho_{物} > \\rho_{液}$ | 下沉 → 沉底 |
+
+### 漂浮时的浸没比
+
+$$\\frac{V_{排}}{V_{物}} = \\frac{\\rho_{物}}{\\rho_{液}}$$
+
+**变量说明**：$\\rho_{液}$ 为液体密度，$\\rho_{物}$ 为物体密度，$V_{排}$ 为排开液体体积，$V_{物}$ 为物体体积，$g$ 为重力加速度
+
+### 关键知识点
+
+- **浮力本质**：液体对物体上下表面的压力差
+- **与深度无关**：漂浮时浮力只取决于排开液体的重力，与浸入深度无关
+- **应用**：轮船（空心增大体积）、潜水艇（改变自重）、密度计
+
+> 💡 把物体密度调到小于液体密度，观察它漂浮时浸没的比例——正好等于密度之比。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1" fill="rgba(52,152,219,0.15)"/><rect x="8" y="4" width="8" height="8" rx="1"/><path d="M12 14l-2-2m2 2l2-2" stroke-width="1.5"/></svg>`,
+    params: [
+      { key: "rhoObj", label: "物体密度 (kg/m³)", value: 600, min: 100, max: 3000, step: 50 },
+      { key: "rhoLiquid", label: "液体密度 (kg/m³)", value: 1000, min: 500, max: 2000, step: 50 },
+      { key: "volume", label: "体积 (m³)", value: 0.125, min: 0.01, max: 1, step: 0.01 },
+      { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },
+      { key: "liquidH", label: "液面高度 (m)", value: 3, min: 1.5, max: 6, step: 0.5 },
+    ],
+  },
+
+  // ── 力的合成（平行四边形法则）──
+  {
+    id: "force-composition",
+    level: "初中",
+    category: "力学",
+    name: "力的合成",
+    desc: "平行四边形法则：两个力的合力与分解",
+    knowledge: `## 力的合成
+
+两个力作用于同一点时，可以用平行四边形法则求合力。
+
+### 平行四边形法则
+
+以两个力为邻边作平行四边形，对角线即为合力。
+
+### 余弦定理求合力大小
+
+$$F = \\sqrt{F_1^2 + F_2^2 + 2 F_1 F_2 \\cos\\theta}$$
+
+**变量说明**：$F_1, F_2$ 为两个分力，$\\theta$ 为两力夹角，$F$ 为合力
+
+### 特殊情况
+
+| 夹角 | 合力 | 说明 |
+|---|---|---|
+| $\\theta = 0°$ | $F_1 + F_2$ | 同向，最大 |
+| $\\theta = 90°$ | $\\sqrt{F_1^2 + F_2^2}$ | 勾股定理 |
+| $\\theta = 120°$（等大时） | $F_1$ | 等大时合力等于分力 |
+| $\\theta = 180°$ | $|F_1 - F_2|$ | 反向，最小 |
+
+### 关键知识点
+
+- **合力范围**：$|F_1 - F_2| \\leq F \\leq F_1 + F_2$
+- **夹角越大，合力越小**：从 0° 到 180°，合力单调递减
+- **三个力平衡**：任意两个力的合力与第三个力等大反向
+
+> 💡 调整夹角到 90°，观察合力是否符合勾股定理。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="12" x2="4" y2="6"/><line x1="12" y1="12" x2="20" y2="6"/><line x1="12" y1="12" x2="12" y2="20" stroke="#2ecc71"/></svg>`,
+    params: [
+      { key: "F1", label: "力 F₁ (N)", value: 5, min: 1, max: 15, step: 0.5 },
+      { key: "F2", label: "力 F₂ (N)", value: 5, min: 1, max: 15, step: 0.5 },
+      { key: "angle", label: "夹角 θ (°)", value: 60, min: 0, max: 180, step: 5 },
+    ],
+  },
+
+  // ── 波的叠加 ──
+  {
+    id: "string-wave",
+    level: "高中",
+    category: "波",
+    name: "波的叠加",
+    desc: "两列波从两端相向传播，观察干涉与叠加",
+    knowledge: `## 波的叠加（干涉）
+
+两列波在同一介质中传播时，相遇处的位移等于两列波各自位移的**矢量和**。
+
+### 核心公式（必背）
+
+| 物理量 | 公式 | 单位 |
+|--------|------|------|
+| 波速 | $v = \\lambda / T = \\lambda f$ | m/s |
+| 波长 | $\\lambda = v / f = vT$ | m |
+| 周期 | $T = 1/f = \\lambda / v$ | s |
+| 频率 | $f = 1/T = v / \\lambda$ | Hz |
+| 角频率 | $\\omega = 2\\pi f = 2\\pi / T$ | rad/s |
+| 波数 | $k = 2\\pi / \\lambda$ | rad/m |
+
+### 三者关系（高频考点）
+
+$$v = \\lambda f = \\frac{\\lambda}{T}$$
+
+- **波速**由介质决定，与波长、频率无关
+- **频率**由波源决定，波进入不同介质时不变
+- **波长**随介质（波速）变化而变化
+
+### 叠加原理
+
+$$y = y_1 + y_2$$
+
+- **波峰 + 波峰** → 振幅加倍（加强）
+- **波谷 + 波谷** → 振幅加倍（加强）
+- **波峰 + 波谷** → 完全抵消（减弱）
+
+### 两列相向传播的波
+
+- 左波：$y_1 = A\\sin(kx - \\omega t + \\varphi_L)$（向右传播）
+- 右波：$y_2 = A\\sin(kx + \\omega t + \\varphi_R)$（向左传播）
+- 合成：$y = 2A\\sin(kx)\\cos(\\omega t)$（当 $\\varphi_L = \\varphi_R$ 时形成驻波）
+
+### 干涉条件
+
+1. **频率相同**（$f_1 = f_2$）
+2. **相位差恒定**
+3. **振动方向相同**
+
+满足以上条件称为**相干波**，叠加后形成稳定的加强/减弱分布。
+
+### 驻波（重点）
+
+两列等幅反向行波叠加形成驻波：
+
+$$y = 2A\\sin(kx)\\cos(\\omega t)$$
+
+- **波节**：$\\sin(kx) = 0$ 的点，始终不动
+- **波腹**：$|\\sin(kx)| = 1$ 的点，振幅最大 $2A$
+- 相邻波节（或波腹）间距：$\\lambda / 2$
+
+> 💡 调节相位差观察：同相（$\\varphi_L = \\varphi_R$）时形成驻波；反相（相差 180°）时波节位置互换。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 6 8 12 Q11 18 14 12" stroke="#e74c3c"/><path d="M22 12 Q19 6 16 12 Q13 18 10 12" stroke="#3498db"/><path d="M2 12 Q5 6 8 12 Q11 18 14 12 Q17 6 20 12 Q23 18 26 12" stroke="#2ecc71" stroke-width="2.5"/></svg>`,
+    params: [
+      { key: "waveCount", label: "弦上波数", value: 3, min: 1, max: 6, step: 0.5 },
+      { key: "amplitude", label: "振幅 (m)", value: 2, min: 0.3, max: 4, step: 0.1 },
+      { key: "waveSpeed", label: "波速 (m/s)", value: 3, min: 1, max: 15, step: 0.5 },
+      { key: "phaseL", label: "左波相位 (°)", value: 0, min: 0, max: 360, step: 15 },
+      { key: "phaseR", label: "右波相位 (°)", value: 0, min: 0, max: 360, step: 15 },
+    ],
+  },
+
+  // ── 凸透镜成像 ──
+  {
+    id: "convex-lens",
+    level: "初中",
+    category: "光学",
+    name: "凸透镜成像",
+    desc: "物距与像距的关系，观察实像与虚像",
+    knowledge: `## 凸透镜成像规律
+
+### 成像公式（薄透镜公式）
+
+$$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
+
+- $f$：焦距（焦点到光心的距离）
+- $u$：物距（物体到光心的距离）
+- $v$：像距（像到光心的距离）
+
+### 成像规律表（必背）
+
+| 物距 $u$ | 像的性质 | 像距 $v$ | 应用 |
+|----------|---------|---------|------|
+| $u > 2f$ | 倒立、缩小、实像 | $f < v < 2f$ | 照相机 |
+| $u = 2f$ | 倒立、等大、实像 | $v = 2f$ | 测焦距 |
+| $f < u < 2f$ | 倒立、放大、实像 | $v > 2f$ | 投影仪 |
+| $u = f$ | 不成像 | $v → ∞$ | 平行光源 |
+| $u < f$ | 正立、放大、虚像 | $v < 0$（同侧） | 放大镜 |
+
+### 口诀
+
+**一倍焦距分虚实，二倍焦距分大小**
+
+- $u > f$：成实像（倒立，异侧）
+- $u < f$：成虚像（正立，同侧）
+- $u > 2f$：缩小像
+- $u < 2f$（且 $u > f$）：放大像
+
+### 三条特殊光线
+
+1. 平行于主光轴 → 折射过焦点
+2. 过光心 → 方向不变
+3. 过焦点 → 折射平行于主光轴
+
+> 💡 拖动物体观察像的变化——注意物距等于焦距时像消失（光线平行），物距小于焦距时像变成正立放大的虚像。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,
+    params: [
+      { key: "focalLength", label: "焦距 f (cm)", value: 10, min: 3, max: 20, step: 1 },
+      { key: "objectDist", label: "物距 u (cm)", value: 30, min: 3, max: 60, step: 1 },
+      { key: "objectHeight", label: "物高 (cm)", value: 4, min: 1, max: 8, step: 0.5 },
+      { key: "showRays", label: "显示光线", value: 1, min: 0, max: 1, step: 1 },
+    ],
+  },
+
+  // ── 凹透镜成像 ──
+  {
+    id: "concave-lens",
+    level: "初中",
+    category: "光学",
+    name: "凹透镜成像",
+    desc: "凹透镜始终成正立缩小的虚像",
+    knowledge: `## 凹透镜成像规律
+
+### 成像公式
+
+$$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
+
+凹透镜焦距 $f < 0$（虚焦点）
+
+### 成像特点
+
+| 物距 $u$ | 像的性质 | 像距 $v$ |
+|----------|---------|---------|
+| $u > 0$（任意位置） | 正立、缩小、虚像 | $v < 0$（同侧） |
+
+### 与凸透镜的对比
+
+| | 凸透镜 | 凹透镜 |
+|--|--------|--------|
+| 对光线作用 | 会聚 | 发散 |
+| 焦点 | 实焦点 | 虚焦点 |
+| 像的性质 | 可实可虚 | 只能成虚像 |
+| 应用 | 照相机、放大镜 | 近视眼镜 |
+
+### 三条特殊光线
+
+1. 平行于主光轴 → 折射光线的反向延长线过焦点
+2. 过光心 → 方向不变
+3. 射向焦点 → 折射平行于主光轴
+
+> 💡 凹透镜始终成正立、缩小、虚像，像在物体同侧、焦点以内。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M6 6l-2-2M6 18l-2 2M18 6l2-2M18 18l2 2"/></svg>`,
+    params: [
+      { key: "focalLength", label: "焦距 |f| (cm)", value: 10, min: 3, max: 20, step: 1 },
+      { key: "objectDist", label: "物距 u (cm)", value: 30, min: 3, max: 60, step: 1 },
+      { key: "objectHeight", label: "物高 (cm)", value: 4, min: 1, max: 8, step: 0.5 },
+      { key: "showRays", label: "显示光线", value: 1, min: 0, max: 1, step: 1 },
+    ],
+  },
+
+  // ── 声波测距（回声）──
+  {
+    id: "echo-ranging",
+    level: "初中",
+    category: "声学",
+    name: "声波测距",
+    desc: "小车发声波，遇墙反射回来，用回声测距",
+    knowledge: `## 声波测距（回声）
+
+声音遇到障碍物会反射回来，利用这个原理可以测量距离。
+
+### 核心公式
+
+$$d = \\frac{v \\times t}{2}$$
+
+**变量说明**：$d$ 为到障碍物的距离，$v$ 为声速（空气中约 340 m/s），$t$ 为从发声到收到回声的总时间
+
+### 为什么要除以 2？
+
+声音走了**来回两趟**：发声 → 墙 → 回来。总路程是 $2d$，所以距离 $d = \\frac{vt}{2}$。
+
+### 关键知识点
+
+- **声速**：空气中约 340 m/s（15°C），水中约 1500 m/s
+- **回声条件**：障碍物距离要大于 17 m（人耳能区分原声和回声的最短间隔约 0.1s）
+- **应用**：声呐测海深、倒车雷达、蝙蝠捕食
+
+### 常见题型
+
+1. 已知距离和声速，求回声时间
+2. 已知回声时间和声速，求距离
+3. 汽车远离/靠近墙壁时的多普勒效应（高中）
+
+> 💡 观察波的传播路径：发声 → 到墙 → 反射 → 回到小车。计时器记录的是来回的总时间。`,
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="8" height="6" rx="1"/><line x1="14" y1="4" x2="14" y2="20"/><path d="M18 8 Q22 12 18 16" stroke-dasharray="2 2"/><circle cx="5" cy="10" r="1" fill="currentColor"/></svg>`,
+    params: [
+      { key: "wallDist", label: "墙的距离 (m)", value: 170, min: 20, max: 1000, step: 10 },
+      { key: "v0", label: "车速 (m/s)", value: 20, min: 0, max: 50, step: 1 },
+      { key: "soundSpeed", label: "声速 (m/s)", value: 100, min: 50, max: 400, step: 10 },
+    ],
+  },
+
 ]
+
+export const LEVELS = ["初中", "高中"]
+export const CATEGORIES = ["力学", "声学", "波", "光学"]

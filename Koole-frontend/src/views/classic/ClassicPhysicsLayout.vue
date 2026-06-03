@@ -8,9 +8,32 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     返回
                 </button>
+
+                <!-- 筛选标签 -->
+                <div class="filter-section">
+                    <div class="filter-row">
+                        <button
+                            v-for="lv in levelOptions"
+                            :key="lv"
+                            class="filter-tag"
+                            :class="{ active: activeLevel === lv }"
+                            @click="activeLevel = lv"
+                        >{{ lv }}</button>
+                    </div>
+                    <div class="filter-row">
+                        <button
+                            v-for="cat in categoryOptions"
+                            :key="cat"
+                            class="filter-tag"
+                            :class="{ active: activeCategory === cat }"
+                            @click="activeCategory = cat"
+                        >{{ cat }}</button>
+                    </div>
+                </div>
+
                 <nav class="model-list">
                     <router-link
-                        v-for="m in models"
+                        v-for="m in filteredModels"
                         :key="m.id"
                         :to="`/physics-lab/classic/${m.id}`"
                         class="model-item"
@@ -42,13 +65,26 @@
 </template>
 
 <script setup>
-import { computed } from "vue"
+import { ref, computed } from "vue"
 import { useRoute } from "vue-router"
-import { PHYSICS_MODELS } from "../../constants/physicsModels.js"
+import { PHYSICS_MODELS, LEVELS, CATEGORIES } from "../../constants/physicsModels.js"
 import ModelInfoPanel from "./ModelInfoPanel.vue"
 
 const route = useRoute()
-const models = PHYSICS_MODELS
+
+const activeLevel = ref("全部")
+const activeCategory = ref("全部")
+
+const levelOptions = ["全部", ...LEVELS]
+const categoryOptions = ["全部", ...CATEGORIES]
+
+const filteredModels = computed(() => {
+    return PHYSICS_MODELS.filter(m => {
+        if (activeLevel.value !== "全部" && m.level !== activeLevel.value) return false
+        if (activeCategory.value !== "全部" && m.category !== activeCategory.value) return false
+        return true
+    })
+})
 
 const activeModelId = computed(() => route.params.modelId)
 
@@ -109,6 +145,45 @@ const activeKnowledge = computed(() => {
 .back-btn:hover {
     color: var(--primary);
     background: var(--primary-light);
+}
+
+/* ── 筛选标签 ── */
+.filter-section {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.filter-tag {
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.filter-tag:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-tag.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
 }
 
 .model-list {

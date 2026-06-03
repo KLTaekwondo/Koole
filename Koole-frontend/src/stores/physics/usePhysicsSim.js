@@ -1,81 +1,70 @@
 import { watch, nextTick } from "vue"
 import { createCanvasManager } from "./canvas.js"
 import { createCamera } from "./camera.js"
-import { createPhysicsEngine } from "./engine.js"
-import { createTrailRecorder } from "./trailRecorder.js"
+import { createPhysicsEngine } from "./PhysicsEngine.js"
+import { createSimulationPlayer } from "./SimulationPlayer.js"
 import { createRenderer } from "./renderer.js"
+import { createSimulationState } from "./SimulationState.js"
+import { createViewTransform } from "./ViewTransform.js"
+import { theme } from "../theme.js"
 
 /**
  * 物理模拟器编排层
- * 组装各模块，处理依赖关系，管理生命周期
+ * 组装各模块，管理生命周期
  * @param {Ref} modelRef - 当前模型引用
  * @returns {Object} 对外暴露的统一接口
  */
 export function usePhysicsSim(modelRef) {
-  // ── 共享工具函数 ──
-  const getParams = () => {
-    const model = modelRef.value
-    if (!model) return {}
-    const obj = {}
-    model.params.forEach(p => { obj[p.key] = p.value })
-    return obj
-  }
+  // ── 统一状态层 ──
+  const {
+    simState,
+    running,
+    recordedTrails,
+    setParamsFromModel,
+    displayParamValue,
+    recordCurrentTrail,
+    clearRecords,
+    removeRecord,
+    toggleTrailVisibility,
+    resetCounter,
+  } = createSimulationState()
 
-  const displayParamValue = (param) => {
-    if (param.options) {
-      const opt = param.options.find(o => o.value === param.value)
-      return opt ? opt.label : param.value
-    }
-    const v = param.value
-    return Number.isInteger(v) ? v : v.toFixed(1)
-  }
+  // ── 视图变换 ──
+  const viewTransform = createViewTransform()
 
   // ── 创建各模块 ──
 
-  // 1. Canvas 管理（需要 draw 回调，先创建占位）
-  const canvasManager = createCanvasManager(() => renderer.draw())
+  // 1. Canvas（resize 时同步 ViewTransform）
+  const canvasManager = createCanvasManager(() => renderer.draw(), viewTransform)
 
-  // 2. 相机控制
-  const camera = createCamera(
-    canvasManager.canvasRef,
-    modelRef,
-    getParams,
-    () => engine.getState()
-  )
+  // 2. 相机（拖拽更新 ViewTransform.offsetX/Y）
+  const camera = createCamera(canvasManager.canvasRef, modelRef, simState, viewTransform, () => renderer.draw())
 
-  // 3. 轨迹录制
-  const trailRecorder = createTrailRecorder(
-    modelRef,
-    getParams,
-    () => engine.getState(),
-    () => engine.getSimTime()
-  )
+  // 3. 纯物理引擎
+  const engine = createPhysicsEngine(modelRef, simState)
 
-  // 4. 物理引擎（需要 onStep 和 onFinished 回调）
-  const engine = createPhysicsEngine(
-    modelRef,
-    getParams,
-    // onStep: 跟随目标 + 绘制
+  // 4. 播放控制器
+  const player = createSimulationPlayer(
+    engine,
+    simState,
     () => {
       if (camera.followTarget.value) camera.centerCameraOnBall()
       renderer.draw()
     },
-    // onFinished: 录制轨迹 + 绘制
     () => {
-      trailRecorder.recordCurrentTrail()
+      recordCurrentTrail(modelRef.value, simState.simTime)
       renderer.draw()
     }
   )
 
-  // 5. 渲染绘制
+  // 5. 渲染器（使用 ViewTransform 的 worldToScreen）
   const renderer = createRenderer(
     canvasManager.canvasRef,
-    camera,
+    viewTransform,
     modelRef,
-    getParams,
-    () => engine.getState(),
-    () => engine.getSimTime(),
-    trailRecorder.recordedTrails
+    simState,
+    recordedTrails,
+    () => theme.value
   )
 
   // ── 参数更新 ──
@@ -85,83 +74,59 @@ export function usePhysicsSim(modelRef) {
     const param = model.params.find(p => p.key === key)
     if (!param) return
     param.value = val
-    if (!engine.running.value) {
-      engine.resetSimulation()
+    simState.params[key] = val
+    if (!simState.running) {
+      engine.initState()
       camera.followTarget.value = true
       camera.centerCameraOnBall()
       renderer.draw()
     }
   }
 
-  // ── 重置（带相机重置）──
+  // ── 重置 ──
   const resetSimulation = () => {
-    engine.resetSimulation()
+    player.stop()
+    engine.initState()
     camera.followTarget.value = true
     camera.centerCameraOnBall()
     renderer.draw()
   }
 
-  // ── 清空记录（带重绘）──
-  const clearRecords = () => {
-    trailRecorder.clearRecords()
-    renderer.draw()
-  }
-
-  // ── 删除单条记录（带重绘）──
-  const removeRecord = (index) => {
-    trailRecorder.removeRecord(index)
-    renderer.draw()
-  }
-
-  // ── 切换轨迹可见性（带重绘）──
-  const toggleTrailVisibility = (index) => {
-    trailRecorder.toggleTrailVisibility(index)
-    renderer.draw()
-  }
-
-  // ── 重置相机（带重绘）──
   const resetCamera = () => {
     camera.resetCamera()
     renderer.draw()
   }
 
-  // ── 模型切换时重新初始化 ──
+  // ── 模型切换 ──
   watch(() => modelRef.value?.id, async () => {
-    engine.running.value = false
-    engine.resetSimulation()
-    camera.followTarget.value = true
-    trailRecorder.clearRecords()
-    trailRecorder.resetCounter()
+    player.stop()
+    resetCounter()
+    clearRecords()
     if (modelRef.value) {
+      setParamsFromModel(modelRef.value)
       engine.initState()
     }
     await nextTick()
     canvasManager.resizeCanvas()
+    camera.followTarget.value = true
     camera.centerCameraOnBall()
     renderer.draw()
   }, { immediate: true })
 
-  // ── 对外暴露统一接口 ──
   return {
-    // refs
     canvasRef: canvasManager.canvasRef,
     canvasAreaRef: canvasManager.canvasAreaRef,
-    // 状态
-    running: engine.running,
+    running,
     followTarget: camera.followTarget,
-    recordedTrails: trailRecorder.recordedTrails,
-    cameraX: camera.cameraX,
-    cameraY: camera.cameraY,
-    // 方法
+    recordedTrails,
     updateParam,
     displayParamValue,
-    toggleSimulation: engine.toggleSimulation,
+    toggleSimulation: player.toggleSimulation,
     resetSimulation,
     resetCamera,
-    clearRecords,
-    removeRecord,
-    toggleTrailVisibility,
-    // canvas 事件
+    clearRecords: () => { clearRecords(); renderer.draw() },
+    removeRecord: (i) => { removeRecord(i); renderer.draw() },
+    toggleTrailVisibility: (i) => { toggleTrailVisibility(i); renderer.draw() },
     onMouseDown: camera.onMouseDown,
     onMouseMove: camera.onMouseMove,
     onMouseUp: camera.onMouseUp,
