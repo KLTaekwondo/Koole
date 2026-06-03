@@ -1,8 +1,8 @@
 <template>
     <div class="lab-entry-page">
         <div class="entry-header">
-            <h1>物理实验室</h1>
-            <p>探索经典物理模型，理解运动规律</p>
+            <h1>演示工具</h1>
+            <p>个人练习作品</p>
         </div>
         <div class="entry-cards">
             <router-link to="/physics-lab/classic" class="entry-card">
@@ -18,11 +18,7 @@
                 </div>
                 <div class="card-body">
                     <h2>经典模型</h2>
-                    <p>涵盖初中、高中力学核心模型，支持参数调节、实时模拟与数据对比。</p>
-                    <ul class="model-preview-list">
-                        <li>初中力学 · 6 个模型</li>
-                        <li>高中力学 · 10 个模型</li>
-                    </ul>
+                    <p>支持参数调节与实时模拟。</p>
                 </div>
                 <div class="card-action">
                     <span class="enter-btn">进入</span>
@@ -39,13 +35,7 @@
                 </div>
                 <div class="card-body">
                     <h2>沙盒模式</h2>
-                    <p>自由搭建实验场景，拖拽添加物体、调节物理属性，探索任意物理现象。</p>
-                    <ul class="model-preview-list">
-                        <li>自由添加模型</li>
-                        <li>拖拽放置</li>
-                        <li>属性实时编辑</li>
-                        <li>重力开关</li>
-                    </ul>
+                    <p>自由搭建场景，拖拽添加物体。</p>
                 </div>
                 <div class="card-action">
                     <span class="enter-btn">进入</span>

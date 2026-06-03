@@ -1,4 +1,5 @@
 ﻿<template>
+  <div class="sandbox-page">
   <div class="sandbox-layout">
     <!-- 左侧：模型面板 -->
     <div class="panel panel-left">
@@ -286,6 +287,7 @@
       <div class="legend-item"><span class="legend-tag">重力 (px/s²)</span><span class="legend-desc">重力加速度，默认 980 ≈ 9.8×100</span></div>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -359,6 +361,7 @@ let canvasH = 600
 // 动画
 let animationId = null
 let lastTimestamp = 0
+let isUnmounted = false
 
 // 重力常数 (像素/秒²) — 见 constants/physics.js
 
@@ -1073,6 +1076,7 @@ function drawPlacementPreview(ctx) {
 // 动画循环
 // ============================================================
 function animate(now) {
+  if (isUnmounted) return
   const dt = Math.min(0.033, (now - lastTimestamp) / 1000)
   if (dt > 0) {
     updatePhysics(dt)
@@ -1121,6 +1125,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  isUnmounted = true
   if (animationId) {
     cancelAnimationFrame(animationId)
   }
@@ -1138,6 +1143,11 @@ onUnmounted(() => {
 
 <style scoped>
 /* ========== 布局 ========== */
+.sandbox-page {
+  width: 100%;
+  min-height: 100%;
+}
+
 .sandbox-layout {
   display: flex;
   height: calc(100vh - 60px);

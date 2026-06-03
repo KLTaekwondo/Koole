@@ -1208,6 +1208,119 @@ export const MODEL_PHYSICS = {
     },
   },
 
+  // ── 光的折射 ──
+  "refraction": {
+    createState: () => ({ _t: 0, trail: [] }),
+    step: (s, p, dt) => { s._t += dt },
+    isFinished: () => false,
+    getBallPosition: () => null,
+    getTrailPosition: () => null,
+    trailFields: () => null,
+    chartDefs: [],
+    getInfoLines: (s, p) => {
+      const theta1 = p.incidentAngle * Math.PI / 180
+      const sinTheta2 = (p.n1 / p.n2) * Math.sin(theta1)
+      const totalReflection = p.n1 > p.n2 && sinTheta2 > 1
+      const hasCriticalAngle = p.n1 > p.n2
+      const criticalAngle = hasCriticalAngle ? Math.asin(p.n2 / p.n1) * 180 / Math.PI : null
+
+      if (totalReflection) {
+        return [
+          `入射角: ${p.incidentAngle}°`,
+          `n₁ = ${p.n1.toFixed(2)}  n₂ = ${p.n2.toFixed(2)}`,
+          `n₁/n₂ × sin(θ₁) = ${sinTheta2.toFixed(3)} > 1`,
+          `临界角: ${criticalAngle.toFixed(1)}°`,
+          `⚠ 全反射！无折射光线`,
+          `反射角: ${p.incidentAngle}°`,
+        ]
+      }
+
+      const theta2 = Math.asin(sinTheta2) * 180 / Math.PI
+      const n1sin = p.n1 * Math.sin(theta1)
+      const n2sin = p.n2 * Math.sin(theta2 * Math.PI / 180)
+      const lines = [
+        `入射角 θ₁: ${p.incidentAngle}°`,
+        `折射角 θ₂: ${theta2.toFixed(1)}°`,
+        `n₁ = ${p.n1.toFixed(2)}  n₂ = ${p.n2.toFixed(2)}`,
+        `n₁sinθ₁ = ${n1sin.toFixed(3)}  n₂sinθ₂ = ${n2sin.toFixed(3)}`,
+      ]
+      if (hasCriticalAngle) {
+        lines.push(`临界角: ${criticalAngle.toFixed(1)}°（距全反射还差 ${(criticalAngle - p.incidentAngle).toFixed(1)}°）`)
+      }
+      if (p.incidentAngle === 0) {
+        lines.push(`垂直入射，不发生偏折`)
+      } else if (p.n1 < p.n2) {
+        lines.push(`光疏→光密，向法线偏折`)
+      } else if (p.n1 > p.n2) {
+        lines.push(`光密→光疏，远离法线偏折`)
+      } else {
+        lines.push(`n₁ = n₂，不发生偏折`)
+      }
+      return lines
+    },
+  },
+
+  // ── 水中视深 ──
+  "water-refraction": {
+    createState: () => ({ _t: 0, trail: [] }),
+    step: (s, p, dt) => { s._t += dt },
+    isFinished: () => false,
+    getBallPosition: () => null,
+    getTrailPosition: () => null,
+    trailFields: () => null,
+    chartDefs: [],
+    getInfoLines: (s, p) => {
+      const theta2 = p.viewAngle * Math.PI / 180
+      const n1 = p.refractiveIndex
+      const n2 = 1.0
+      const sinTheta1 = n2 / n1 * Math.sin(theta2)
+      const theta1 = Math.asin(Math.min(1, Math.max(-1, sinTheta1)))
+      const theta1deg = theta1 * 180 / Math.PI
+      const cosTheta1 = Math.cos(theta1)
+      const cosTheta2 = Math.cos(theta2)
+
+      const appDepth = p.depth * (n2 * cosTheta2) / (n1 * cosTheta1)
+      const smallAngleDepth = p.depth / n1
+
+      return [
+        `实深: ${p.depth} cm`,
+        `视深: ${appDepth.toFixed(1)} cm`,
+        `相差: ${(p.depth - appDepth).toFixed(1)} cm`,
+        `水中光线角 θ₁: ${theta1deg.toFixed(1)}°`,
+        `观察角 θ₂: ${p.viewAngle}°`,
+        `水折射率: ${n1.toFixed(2)}`,
+        `小角度近似视深: ${smallAngleDepth.toFixed(1)} cm`,
+      ]
+    },
+  },
+
+  // ── 水下光照 ──
+  "underwater-light": {
+    createState: () => ({ _t: 0, trail: [] }),
+    step: (s, p, dt) => { s._t += dt },
+    isFinished: () => false,
+    getBallPosition: () => null,
+    getTrailPosition: () => null,
+    trailFields: () => null,
+    chartDefs: [],
+    getInfoLines: (s, p) => {
+      const n1 = p.refractiveIndex
+      const n2 = 1.0
+      const theta_c = Math.asin(Math.min(1, n2 / n1))
+      const theta_c_deg = theta_c * 180 / Math.PI
+      const maxRadius = p.depth * 0.5 * Math.tan(theta_c)  // 单位：像素空间
+      return [
+        `水深: ${p.depth} cm`,
+        `光源水平位置: ${p.sourcePos}% 池宽`,
+        `水折射率: ${n1.toFixed(2)}`,
+        `空气折射率: ${n2.toFixed(2)}`,
+        `全反射临界角: ${theta_c_deg.toFixed(1)}°`,
+        `射出光锥半角: ${theta_c_deg.toFixed(1)}°`,
+        `水面光斑理论半径: ${(p.depth * Math.tan(theta_c)).toFixed(0)} cm`,
+      ]
+    },
+  },
+
   // ── 声波测距（回声）──
   "echo-ranging": {
     createState: (p) => ({

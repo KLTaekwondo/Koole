@@ -2,20 +2,12 @@
     <div class="update-post-view-container">
         <div class="update-post-list-container">
             <div class="header">
-                更新日志
+                更新记录
             </div>
             <div class="update-post-list">
-                <div v-for="item in UpdatePostList" :key="item.id" class="update-post-item">
+                <div v-for="item in updatePosts" :key="item.id" class="update-post-item">
                     <div class="item-header">
                         <h1>{{ item.title }}</h1>
-                        <button class="edit-btn" @click="editPost(item)" v-if="isAdmin">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            编辑
-                        </button>
-                        <button class="delete-btn" @click="deletePost(item)" v-if="isAdmin">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                            删除
-                        </button>
                     </div>
                     <div class="meta">
                         <span>创建时间：{{ item.createTime }}</span>
@@ -24,47 +16,13 @@
                 </div>
             </div>
         </div>
-        <ConfirmDialog ref="confirmDialog" />
     </div>
 </template>
 
 <script setup>
 import { MdPreview } from "md-editor-v3"
-import {onMounted, ref} from "vue"
-import {updatePostInterface} from "../axios/interface/UpdatePostInterface.js";
-import {isAdmin} from "../stores/user.js";
-import {showToast} from "../stores/toast.js";
-import {theme} from "../stores/theme.js";
-import router from "../route/index.js";
-import ConfirmDialog from "../components/ConfirmDialog.vue";
-
-const UpdatePostList = ref([])
-const confirmDialog = ref(null)
-
-const editPost = (item) => {
-    router.push(`/updateposts/edit/${item.id}`)
-}
-
-const deletePost = async (item) => {
-    const confirmed = await confirmDialog.value.show(
-        `确定要删除「${item.title}」吗？此操作不可撤销。`,
-        "确认删除"
-    )
-    if (!confirmed) return
-
-    try {
-        await updatePostInterface().deleteById(item.id)
-        UpdatePostList.value = UpdatePostList.value.filter(p => p.id !== item.id)
-    } catch {
-        // 交给 backendService 处理
-    }
-}
-
-onMounted(async () => {
-    const list = await updatePostInterface().findAll()
-    list.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
-    UpdatePostList.value = list
-})
+import { updatePosts } from "../data/updatePosts.js"
+import { theme } from "../stores/theme.js"
 </script>
 
 <style scoped>
@@ -137,74 +95,6 @@ onMounted(async () => {
     margin-bottom: 12px;
     line-height: 1.4;
     flex: 1;
-}
-
-.edit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.edit-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: var(--primary-light);
-    box-shadow: 0 2px 8px rgba(192, 57, 43, 0.15);
-}
-
-.edit-btn svg {
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.edit-btn:hover svg {
-    opacity: 1;
-}
-
-.delete-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-card);
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.delete-btn:hover {
-    border-color: #e74c3c;
-    color: #e74c3c;
-    background: #fef2f2;
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.15);
-}
-
-.delete-btn svg {
-    opacity: 0.5;
-    transition: opacity 0.2s;
-}
-
-.delete-btn:hover svg {
-    opacity: 1;
 }
 
 .update-post-item .meta {

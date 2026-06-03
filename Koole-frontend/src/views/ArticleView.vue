@@ -13,9 +13,9 @@
             >
                 <div class="article-card-body">
                     <!-- 标签 -->
-                    <div class="article-tags" v-if="getTagNames(item.tagIds).length > 0">
+                    <div class="article-tags" v-if="item.tags && item.tags.length > 0">
                         <span
-                            v-for="(tag, idx) in getTagNames(item.tagIds)"
+                            v-for="(tag, idx) in item.tags"
                             :key="idx"
                             class="tag-chip"
                             :style="{ '--tag-color': tagColors[idx % tagColors.length] }"
@@ -32,12 +32,12 @@
 
                     <!-- 底部信息：作者 + 创建时间 -->
                     <div class="article-card-footer">
-                        <span class="article-author" v-if="item.userName">
+                        <span class="article-author" v-if="item.author">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            {{ item.userName }}
+                            {{ item.author }}
                         </span>
                         <span class="article-create-time">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -59,22 +59,19 @@
                 <line x1="16" y1="13" x2="8" y2="13"/>
                 <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
-            <p>{{ searchText ? '没有匹配的文章' : '暂无文章' }}</p>
+            <p>{{ searchText ? '没有匹配的笔记' : '暂无笔记' }}</p>
         </div>
     </div>
 </template>
 
 <script setup>
 import SearchBar from "../components/SearchBar.vue";
-import { computed, ref, onMounted } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { articleInterface } from "../axios/interface/ArticleInterface.js";
-import { tagInterface } from "../axios/interface/TagInterface.js";
+import { articles } from "../data/articles.js";
 
 const router = useRouter();
 const searchText = ref("");
-const OriginalList = ref([]);
-const tagMap = ref({}); // { id: name }
 
 const tagColors = [
     '#e74c3c', '#3498db', '#2ecc71', '#f39c12',
@@ -82,15 +79,10 @@ const tagColors = [
 ];
 
 const ArticleSummaryList = computed(() => {
-    return OriginalList.value.filter((item) => {
+    return articles.filter((item) => {
         return item.title.includes(searchText.value);
     });
 });
-
-const getTagNames = (tagIds) => {
-    if (!tagIds || !Array.isArray(tagIds)) return [];
-    return tagIds.map(id => tagMap.value[id]).filter(Boolean);
-};
 
 const search = (text) => {
     searchText.value = text;
@@ -101,24 +93,8 @@ const reset = () => {
 };
 
 const goDetail = (id) => {
-    router.push({ name: "文章详情", params: { id } });
+    router.push({ name: "笔记详情", params: { id } });
 };
-
-onMounted(async () => {
-    // 并行请求文章列表和标签列表
-    const [articles, tags] = await Promise.all([
-        articleInterface().findAll(),
-        tagInterface().getAll().catch(() => [])
-    ]);
-    OriginalList.value = articles;
-
-    // 构建 tagId → tagName 映射
-    const map = {};
-    tags.forEach(tag => {
-        map[tag.id] = tag.name;
-    });
-    tagMap.value = map;
-});
 </script>
 
 <style scoped>

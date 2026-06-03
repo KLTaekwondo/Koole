@@ -2882,4 +2882,813 @@ export const MODEL_RENDERERS = {
     },
   },
 
+  // ── 光的折射 ──
+  "refraction": {
+    drawObject: () => {},
+    drawExtra: (ctx, s, p, w2s, getTheme) => {
+      const isDark = getTheme && getTheme() === "dark"
+      const dpr = window.devicePixelRatio || 1
+      const cw = ctx.canvas.width / dpr
+      const ch = ctx.canvas.height / dpr
+
+      // ── 布局 ──
+      const intY = ch * 0.50                 // 界面 Y
+      const hitX = cw / 2                      // 入射点 X
+      const rayLen = Math.min(cw, ch) * 0.32   // 光线长度
+
+      // ── 物理参数 ──
+      const theta1 = p.incidentAngle * Math.PI / 180
+      const n1 = p.n1
+      const n2 = p.n2
+      const sinTheta2 = n1 / n2 * Math.sin(theta1)
+      const totalReflection = n1 > n2 && sinTheta2 > 1
+      const theta2 = totalReflection ? null : Math.asin(Math.min(1, Math.max(-1, sinTheta2)))
+
+      // ── 颜色 ──
+      const bg1Color = isDark ? "rgba(220,220,220,0.06)" : "rgba(220,220,220,0.08)"
+      const bg2Color = isDark ? "rgba(52,152,219,0.12)" : "rgba(52,152,219,0.05)"
+      const intColor = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.25)"
+      const normalColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.10)"
+      const incidentColor = "#e74c3c"
+      const reflectedColor = "#f39c12"
+      const refractedColor = "#3498db"
+      const labelColor = isDark ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)"
+      const dimColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.35)"
+
+      // 画箭头辅助函数
+      const drawArrow = (fromX, fromY, toX, toY, color, ratio = 0.55) => {
+        const dx = toX - fromX, dy = toY - fromY
+        const len = Math.sqrt(dx * dx + dy * dy)
+        if (len < 1) return
+        const ax = fromX + dx * ratio, ay = fromY + dy * ratio
+        const nx = dx / len, ny = dy / len
+        const sz = 8
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.moveTo(ax, ay)
+        ctx.lineTo(ax - nx * sz - ny * sz * 0.5, ay - ny * sz + nx * sz * 0.5)
+        ctx.lineTo(ax - nx * sz + ny * sz * 0.5, ay - ny * sz - nx * sz * 0.5)
+        ctx.closePath()
+        ctx.fill()
+      }
+
+      // ── 1. 两种介质背景 ──
+      ctx.fillStyle = bg1Color
+      ctx.fillRect(0, 0, cw, intY)
+      ctx.fillStyle = bg2Color
+      ctx.fillRect(0, intY, cw, ch - intY)
+
+      // ── 2. 界面线 ──
+      ctx.strokeStyle = intColor
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(30, intY)
+      ctx.lineTo(cw - 30, intY)
+      ctx.stroke()
+
+      // ── 3. 法线（虚线）──
+      ctx.setLineDash([5, 5])
+      ctx.strokeStyle = normalColor
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(hitX, intY - rayLen - 20)
+      ctx.lineTo(hitX, intY + rayLen + 20)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // "法线" 标签
+      ctx.fillStyle = dimColor
+      ctx.font = "11px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText("法线", hitX + 8, intY - rayLen - 5)
+
+      // ── 4. 入射光线（左上 → 入射点）──
+      const srcX = hitX - rayLen * Math.sin(theta1)
+      const srcY = intY - rayLen * Math.cos(theta1)
+      ctx.strokeStyle = incidentColor
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.moveTo(srcX, srcY)
+      ctx.lineTo(hitX, intY)
+      ctx.stroke()
+      drawArrow(srcX, srcY, hitX, intY, incidentColor, 0.5)
+
+      // ── 5. 反射光线（入射点 → 右上）──
+      const refX = hitX + rayLen * Math.sin(theta1)
+      const refY = intY - rayLen * Math.cos(theta1)
+      ctx.strokeStyle = reflectedColor
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.moveTo(hitX, intY)
+      ctx.lineTo(refX, refY)
+      ctx.stroke()
+      drawArrow(hitX, intY, refX, refY, reflectedColor, 0.5)
+
+      // ── 6. 折射光线（入射点 → 右下）──
+      if (!totalReflection && theta2 !== null) {
+        const transX = hitX + rayLen * Math.sin(theta2)
+        const transY = intY + rayLen * Math.cos(theta2)
+        ctx.strokeStyle = refractedColor
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(hitX, intY)
+        ctx.lineTo(transX, transY)
+        ctx.stroke()
+        drawArrow(hitX, intY, transX, transY, refractedColor, 0.5)
+      }
+
+      // ── 7. 角度弧标注 ──
+      const arcR = 32
+      // θ₁ 入射角（法线左侧，入射光线与法线之间）
+      if (p.incidentAngle > 2) {
+        ctx.strokeStyle = incidentColor
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.arc(hitX, intY, arcR, -Math.PI / 2 - theta1, -Math.PI / 2)
+        ctx.stroke()
+        const la = -Math.PI / 2 - theta1 / 2
+        ctx.fillStyle = incidentColor
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText(`θ₁=${p.incidentAngle}°`, hitX + (arcR + 18) * Math.cos(la),
+          intY + (arcR + 18) * Math.sin(la))
+
+        // 反射角（法线右侧，与入射角相同）
+        ctx.strokeStyle = reflectedColor
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.arc(hitX, intY, arcR, -Math.PI / 2, -Math.PI / 2 + theta1)
+        ctx.stroke()
+        const la2 = -Math.PI / 2 + theta1 / 2
+        ctx.fillStyle = reflectedColor
+        ctx.fillText(`θ₁=${p.incidentAngle}°`, hitX + (arcR + 18) * Math.cos(la2),
+          intY + (arcR + 18) * Math.sin(la2))
+      }
+
+      // θ₂ 折射角（法线右侧下方）
+      if (!totalReflection && theta2 !== null && theta2 > 0.02) {
+        const theta2deg = theta2 * 180 / Math.PI
+        ctx.strokeStyle = refractedColor
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.arc(hitX, intY, arcR, Math.PI / 2 - theta2, Math.PI / 2)
+        ctx.stroke()
+        const la3 = Math.PI / 2 - theta2 / 2
+        ctx.fillStyle = refractedColor
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText(`θ₂=${theta2deg.toFixed(1)}°`, hitX + (arcR + 18) * Math.cos(la3),
+          intY + (arcR + 18) * Math.sin(la3))
+      }
+
+      // ── 8. 全反射提示 ──
+      if (totalReflection) {
+        ctx.fillStyle = "#e74c3c"
+        ctx.font = "bold 16px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("⚠ 全反射 — 无折射光线", hitX, intY + rayLen * 0.55)
+        // 在折射方向画一个 X
+        const xLen = 16
+        ctx.strokeStyle = "rgba(231,76,60,0.4)"
+        ctx.lineWidth = 2.5
+        const xDirX = hitX + rayLen * 0.35 * Math.sin(theta1)
+        const xDirY = intY + rayLen * 0.35 * Math.cos(theta1)
+        ctx.beginPath()
+        ctx.moveTo(xDirX - xLen, xDirY - xLen)
+        ctx.lineTo(xDirX + xLen, xDirY + xLen)
+        ctx.moveTo(xDirX + xLen, xDirY - xLen)
+        ctx.lineTo(xDirX - xLen, xDirY + xLen)
+        ctx.stroke()
+      }
+
+      // ── 9. 入射点标记 ──
+      ctx.beginPath()
+      ctx.arc(hitX, intY, 3, 0, Math.PI * 2)
+      ctx.fillStyle = isDark ? "#fff" : "#333"
+      ctx.fill()
+
+      // ── 10. 介质标签 ──
+      ctx.fillStyle = dimColor
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText(`介质 1  n₁ = ${n1.toFixed(2)}`, cw * 0.05, intY - 20)
+      ctx.fillText(`介质 2  n₂ = ${n2.toFixed(2)}`, cw * 0.05, intY + 28)
+
+      // ── 11. 图例 ──
+      const legendX = cw - 140
+      const legendY = 16
+      const items = [
+        { color: incidentColor, label: "入射光" },
+        { color: reflectedColor, label: "反射光" },
+      ]
+      if (!totalReflection && theta2 !== null) {
+        items.push({ color: refractedColor, label: "折射光" })
+      }
+      ctx.font = "11px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillStyle = isDark ? "rgba(30,30,30,0.8)" : "rgba(255,255,255,0.8)"
+      ctx.fillRect(legendX, legendY, 125, items.length * 18 + 8)
+      items.forEach((item, i) => {
+        const iy = legendY + 10 + i * 18
+        ctx.fillStyle = item.color
+        ctx.fillRect(legendX + 8, iy - 5, 16, 3)
+        ctx.fillStyle = labelColor
+        ctx.fillText(item.label, legendX + 30, iy)
+      })
+
+      ctx.textAlign = "left"
+    },
+  },
+
+  // ── 水中视深 ──
+  "water-refraction": {
+    drawObject: () => {},
+    drawExtra: (ctx, s, p, w2s, getTheme) => {
+      const isDark = getTheme && getTheme() === "dark"
+      const dpr = window.devicePixelRatio || 1
+      const cw = ctx.canvas.width / dpr
+      const ch = ctx.canvas.height / dpr
+
+      // ── 布局常量 ──
+      const surfaceY = ch * 0.38             // 水面 Y（屏幕坐标，越大越靠下）
+      const landLeft = cw * 0.68             // 陆地左边界
+      const groundTop = surfaceY - 50        // 地面顶部
+      const eyeHeight = 140                  // 眼睛离水面高度（像素）
+
+      // ── 物理参数 ──
+      const D_px = p.depth * 0.55            // 实深 → 像素
+      const theta2 = p.viewAngle * Math.PI / 180
+      const n1 = p.refractiveIndex
+      const sinTheta1 = Math.sin(theta2) / n1
+      const theta1 = Math.asin(Math.min(1, Math.max(-1, sinTheta1)))
+      const tan1 = Math.tan(theta1)
+      const tan2 = Math.tan(theta2)
+      const cos1 = Math.cos(theta1)
+      const cos2 = Math.cos(theta2)
+
+      // 物体位置
+      const objX = cw * 0.28
+      const objY = surfaceY + D_px
+
+      // 光线入射水面点
+      const hitOffset = D_px * tan1
+      const hitX = objX + hitOffset
+      const intY = surfaceY
+
+      // 人眼位置
+      const eyeX = hitX + eyeHeight * tan2
+      const eyeY = surfaceY - eyeHeight
+
+      // 动态陆地边界：确保人站在岸上，水域至少保留 35% 宽度
+      const groundLeft = Math.max(cw * 0.35, Math.min(landLeft, eyeX - 16))
+
+      // 视深（反向延长线与 x=objX 垂直线交点）
+      const appD_px = D_px * tan1 / tan2
+      const appY = surfaceY + appD_px
+
+      // ── 调色板 ──
+      const waterFill = isDark ? "rgba(52,152,219,0.20)" : "rgba(52,152,219,0.10)"
+      const waterLine = isDark ? "rgba(52,152,219,0.7)" : "rgba(52,152,219,0.5)"
+      const rippleColor = isDark ? "rgba(52,152,219,0.15)" : "rgba(52,152,219,0.08)"
+      const landFill = isDark ? "rgba(139,90,43,0.30)" : "rgba(139,90,43,0.10)"
+      const landLine = isDark ? "rgba(139,90,43,0.7)" : "rgba(139,90,43,0.4)"
+      const rayColor = "#e74c3c"
+      const dashColor = isDark ? "rgba(231,76,60,0.5)" : "rgba(231,76,60,0.35)"
+      const normalColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.10)"
+      const labelColor = isDark ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)"
+      const dimColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.35)"
+      const arrowColor = isDark ? "#eee" : "#333"
+
+      // ── 1. 水池（到陆地边缘）──
+      ctx.fillStyle = waterFill
+      ctx.fillRect(0, surfaceY, groundLeft, ch - surfaceY)
+
+      // ── 2. 陆地（延伸到人脚下）──
+      ctx.fillStyle = landFill
+      ctx.fillRect(groundLeft, groundTop, cw - groundLeft, ch - groundTop)
+      ctx.strokeStyle = landLine
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(groundLeft, groundTop)
+      ctx.lineTo(cw, groundTop)
+      ctx.stroke()
+
+      // ── 3. 水面线（到陆地边缘）──
+      ctx.strokeStyle = waterLine
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(0, surfaceY)
+      ctx.lineTo(groundLeft, surfaceY)
+      ctx.stroke()
+
+      // 水面波纹（不画到陆地上）
+      ctx.strokeStyle = rippleColor
+      ctx.lineWidth = 1
+      for (let i = 0; i < 5; i++) {
+        const wx = 40 + i * 70
+        if (wx + 30 > groundLeft) break
+        ctx.beginPath()
+        ctx.moveTo(wx, surfaceY + 2)
+        ctx.quadraticCurveTo(wx + 15, surfaceY - 6, wx + 30, surfaceY + 2)
+        ctx.stroke()
+      }
+
+      // ── 4. 法线（虚线）──
+      ctx.setLineDash([4, 4])
+      ctx.strokeStyle = normalColor
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(hitX, surfaceY - 50)
+      ctx.lineTo(hitX, surfaceY + D_px + 40)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // ── 5. 实线光线：物体 → 入射点 → 眼睛 ──
+      ctx.strokeStyle = rayColor
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.moveTo(objX, objY)
+      ctx.lineTo(hitX, intY)
+      ctx.lineTo(eyeX, eyeY)
+      ctx.stroke()
+
+      // ── 6. 虚线反向延长线（从入射点沿观察角进入水中）──
+      const extEndY = surfaceY + D_px + 40
+      const extEndX = hitX - (extEndY - surfaceY) * tan2
+      ctx.setLineDash([6, 5])
+      ctx.strokeStyle = dashColor
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(hitX, intY)
+      ctx.lineTo(extEndX, extEndY)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // ── 7. 实物（黑色/白色）──
+      ctx.beginPath()
+      ctx.arc(objX, objY, 6, 0, Math.PI * 2)
+      ctx.fillStyle = arrowColor
+      ctx.fill()
+      ctx.strokeStyle = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.fillStyle = arrowColor
+      ctx.font = "bold 11px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("实物", objX, objY + 18)
+
+      // ── 7.5. 虚像（红色虚线，观察者看到的物体位置）──
+      if (appD_px > 6 && appY > surfaceY) {
+        // 虚像：红色空心虚线圆
+        ctx.setLineDash([4, 4])
+        ctx.strokeStyle = "#e74c3c"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(objX, appY, 8, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.setLineDash([])
+        // 实物到虚像的连线
+        ctx.setLineDash([3, 4])
+        ctx.strokeStyle = "rgba(231,76,60,0.15)"
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(objX, appY)
+        ctx.lineTo(objX, objY)
+        ctx.stroke()
+        ctx.setLineDash([])
+        // 标注
+        ctx.fillStyle = "#e74c3c"
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("虚像", objX, appY - 12)
+      }
+      ctx.textAlign = "left"
+
+      // ── 8. 人物（站在岸上，眼睛接收光线）──
+      ctx.fillStyle = arrowColor
+      ctx.strokeStyle = arrowColor
+      ctx.lineWidth = 2.5
+      ctx.lineCap = "round"
+      ctx.lineJoin = "round"
+
+      // 头（圆形）
+      const headR = 7
+      const headCY = eyeY + 5    // 眼睛在头部偏上位置
+      ctx.beginPath()
+      ctx.arc(eyeX, headCY, headR, 0, Math.PI * 2)
+      ctx.stroke()
+
+      // 身体
+      const bodyEnd = eyeY + 45
+      ctx.beginPath()
+      ctx.moveTo(eyeX, headCY + headR)
+      ctx.lineTo(eyeX, bodyEnd)
+      ctx.stroke()
+
+      // 腿（双脚分开，脚踩在地面上）
+      const groundY = groundTop
+      if (bodyEnd < groundY) {
+        ctx.beginPath()
+        ctx.moveTo(eyeX, bodyEnd)
+        ctx.lineTo(eyeX - 10, groundY)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(eyeX, bodyEnd)
+        ctx.lineTo(eyeX + 10, groundY)
+        ctx.stroke()
+      }
+
+      // 光线终点标记（小圆点表示眼睛）
+      ctx.beginPath()
+      ctx.arc(eyeX, eyeY, 3, 0, Math.PI * 2)
+      ctx.fill()
+
+      // 标注
+      ctx.fillStyle = labelColor
+      ctx.font = "bold 11px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("人", eyeX, eyeY - 14)
+      ctx.textAlign = "left"
+
+      // ── 9. 深度刻度尺（最左侧）──
+      const rulerX = cw * 0.03        // 深度数据位置
+      const lineFrom = cw * 0.13      // 水平线起点
+      const lineTo = cw * 0.50        // 水平线终点
+
+      // 水面标记
+      ctx.strokeStyle = labelColor
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(rulerX, surfaceY)
+      ctx.lineTo(rulerX + 8, surfaceY)
+      ctx.stroke()
+      ctx.fillStyle = dimColor
+      ctx.font = "10px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText("水面", rulerX + 12, surfaceY + 4)
+
+      // 左侧刻度竖线（水面到实深）
+      ctx.strokeStyle = "rgba(0,0,0,0.08)"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(rulerX + 4, surfaceY + 2)
+      ctx.lineTo(rulerX + 4, objY)
+      ctx.stroke()
+
+      // 实深：数据+线（实物色）
+      ctx.fillStyle = arrowColor
+      ctx.font = "bold 12px sans-serif"
+      ctx.fillText(`${p.depth} cm`, rulerX + 2, objY + 4)
+      ctx.setLineDash([4, 4])
+      ctx.strokeStyle = arrowColor
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(lineFrom, objY)
+      ctx.lineTo(lineTo, objY)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // 视深：数据+线（红色）
+      if (appD_px > 6 && appY > surfaceY) {
+        const appDepthVal = p.depth * (cos2 / n1) / cos1
+        ctx.fillStyle = "#e74c3c"
+        ctx.font = "bold 12px sans-serif"
+        ctx.fillText(`${appDepthVal.toFixed(1)} cm`, rulerX + 2, appY + 4)
+        ctx.setLineDash([4, 4])
+        ctx.strokeStyle = "#e74c3c"
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(lineFrom, appY)
+        ctx.lineTo(lineTo, appY)
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+
+      // ── 11. 角度标注 ──
+      const arcR2 = 30
+      const arcR1 = 25
+      // θ₂（空气中，法线与折射光线夹角）
+      if (p.viewAngle > 3) {
+        ctx.strokeStyle = labelColor
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        // 屏幕坐标 y↓：法线向上 = -π/2，折射光线方向 = -π/2 + θ₂
+        ctx.arc(hitX, intY, arcR2, -Math.PI / 2, -Math.PI / 2 + theta2)
+        ctx.stroke()
+        // 标签
+        const la2 = -Math.PI / 2 + theta2 / 2
+        ctx.fillStyle = labelColor
+        ctx.font = "11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText(`θ₂=${p.viewAngle}°`, hitX + (arcR2 + 16) * Math.cos(la2),
+          intY + (arcR2 + 16) * Math.sin(la2))
+      }
+
+      // θ₁（水中，法线与水中光线夹角）
+      if (theta1 > 0.04) {
+        const theta1deg = theta1 * 180 / Math.PI
+        ctx.strokeStyle = dimColor
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        // 屏幕坐标 y↓：法线向下 = π/2，水中光线方向 = π/2 + θ₁
+        ctx.arc(hitX, intY, arcR1, Math.PI / 2, Math.PI / 2 + theta1)
+        ctx.stroke()
+        // 标签
+        const la1 = Math.PI / 2 + theta1 / 2
+        ctx.fillStyle = dimColor
+        ctx.font = "11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText(`θ₁=${theta1deg.toFixed(1)}°`, hitX + (arcR1 + 16) * Math.cos(la1),
+          intY + (arcR1 + 16) * Math.sin(la1))
+      }
+
+      // ── 12. 介质标签 ──
+      ctx.fillStyle = dimColor
+      ctx.font = "bold 11px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText(`空气 (n₂=1.0)`, cw * 0.40, surfaceY - 16)
+      ctx.fillText(`水 (n₁=${n1.toFixed(2)})`, cw * 0.40, surfaceY + 20)
+
+      ctx.textAlign = "left"
+    },
+  },
+
+  // ── 水下光照 ──
+  "underwater-light": {
+    drawObject: () => {},
+    drawExtra: (ctx, s, p, w2s, getTheme) => {
+      const isDark = getTheme && getTheme() === "dark"
+      const dpr = window.devicePixelRatio || 1
+      const cw = ctx.canvas.width / dpr
+      const ch = ctx.canvas.height / dpr
+
+      // ── 布局常量 ──
+      const surfaceY = ch * 0.33                // 水面 Y
+      const D_px = p.depth * 0.5                // 水深（像素）
+      const groundLeft = cw * 0.68              // 岸边界（水面到此为止）
+      const sourceX = groundLeft * (p.sourcePos / 100)  // 光源 X（占水池宽度百分比）
+      const sourceY = surfaceY + D_px           // 光源 Y（水面下）
+      const wallX = cw * 0.86                   // 墙 X 位置
+      const wallW = 16                          // 墙厚
+      const wallTop = 18                        // 墙顶 Y
+
+      // ── 物理计算 ──
+      const n1 = p.refractiveIndex              // 水折射率
+      const n2 = 1.0                            // 空气折射率
+      const theta_c = Math.asin(Math.min(1, n2 / n1))  // 全反射临界角
+      const theta_c_deg = theta_c * 180 / Math.PI
+
+      // ── 调色板 ──
+      const waterFill = isDark ? "rgba(52,152,219,0.22)" : "rgba(52,152,219,0.12)"
+      const waterLine = isDark ? "rgba(52,152,219,0.7)" : "rgba(52,152,219,0.5)"
+      const rippleColor = isDark ? "rgba(52,152,219,0.12)" : "rgba(52,152,219,0.06)"
+      const landFill = isDark ? "rgba(139,90,43,0.30)" : "rgba(139,90,43,0.10)"
+      const landLine = isDark ? "rgba(139,90,43,0.7)" : "rgba(139,90,43,0.4)"
+      const wallFill = isDark ? "rgba(180,180,180,0.12)" : "rgba(180,180,180,0.18)"
+      const wallLine = isDark ? "rgba(180,180,180,0.4)" : "rgba(180,180,180,0.6)"
+      const labelColor = isDark ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)"
+      const dimColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.35)"
+      const arrowColor = isDark ? "#eee" : "#333"
+      const highlightColor = "#e74c3c"
+      const tirColor = isDark ? "rgba(231,76,60,0.5)" : "rgba(231,76,60,0.45)"
+
+      // ── 1. 水池 ──
+      ctx.fillStyle = waterFill
+      ctx.fillRect(0, surfaceY, cw, ch - surfaceY)
+
+      // 水面波纹
+      ctx.strokeStyle = rippleColor
+      ctx.lineWidth = 1
+      for (let i = 0; i < 5; i++) {
+        const wx = 50 + i * 80
+        if (wx + 30 > groundLeft) break
+        ctx.beginPath()
+        ctx.moveTo(wx, surfaceY + 2)
+        ctx.quadraticCurveTo(wx + 15, surfaceY - 5, wx + 30, surfaceY + 2)
+        ctx.stroke()
+      }
+
+      // ── 2. 陆地 ──
+      ctx.fillStyle = landFill
+      ctx.fillRect(groundLeft, surfaceY, cw - groundLeft, ch - surfaceY)
+      ctx.strokeStyle = landLine
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(groundLeft, surfaceY)
+      ctx.lineTo(cw, surfaceY)
+      ctx.stroke()
+
+      // ── 3. 水面线 ──
+      ctx.strokeStyle = waterLine
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(0, surfaceY)
+      ctx.lineTo(groundLeft, surfaceY)
+      ctx.stroke()
+
+      // ── 4. 墙 ──
+      ctx.fillStyle = wallFill
+      ctx.fillRect(wallX, wallTop, wallW, surfaceY - wallTop)
+      ctx.strokeStyle = wallLine
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(wallX, wallTop, wallW, surfaceY - wallTop)
+
+      // ── 5. 光线簇 ──
+      const numRays = 40
+      const maxAngle = Math.min(theta_c + 22 * Math.PI / 180, 82 * Math.PI / 180)
+      const escapeRays = []  // { theta, hitX, phi, wallY }
+      const tirRays = []     // { theta, hitX }
+
+      // 计算所有光线
+      for (let i = 0; i <= numRays; i++) {
+        const theta = maxAngle * i / numRays
+        if (theta < 0.001) continue
+        const tanTheta = Math.tan(theta)
+        const hitX = sourceX + D_px * tanTheta
+        if (hitX > groundLeft) continue
+
+        if (theta < theta_c) {
+          const sinPhi = n1 * Math.sin(theta) / n2
+          if (sinPhi > 1) continue
+          const phi = Math.asin(sinPhi)
+          const tanPhi = Math.tan(phi)
+          const wallY = surfaceY - (wallX - hitX) / tanPhi
+          escapeRays.push({ theta, hitX, phi, wallY, tanTheta })
+        } else {
+          tirRays.push({ theta, hitX, tanTheta })
+        }
+      }
+
+      // ── 5a. 全反射光线（画在下面）──
+      ctx.lineWidth = 1
+      for (const r of tirRays) {
+        const refLen = Math.min(D_px * 0.6, 80)
+        const refX = r.hitX - refLen * Math.sin(r.theta)
+        const refY = surfaceY + refLen * Math.cos(r.theta)
+        ctx.setLineDash([4, 5])
+        ctx.strokeStyle = tirColor
+        ctx.beginPath()
+        ctx.moveTo(sourceX, sourceY)
+        ctx.lineTo(r.hitX, surfaceY)
+        ctx.lineTo(refX, refY)
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+
+      // ── 5b. 射出光线（暖黄色）──
+      ctx.lineWidth = 1.5
+      for (const r of escapeRays) {
+        if (r.wallY < wallTop || r.wallY > surfaceY + 20) continue
+        const t = Math.max(0, Math.min(1, r.theta / theta_c))
+        const alpha = 0.35 + 0.5 * (1 - t * t)
+        ctx.strokeStyle = `rgba(241,196,15,${alpha})`
+        ctx.beginPath()
+        ctx.moveTo(sourceX, sourceY)
+        ctx.lineTo(r.hitX, surfaceY)
+        ctx.lineTo(wallX, r.wallY)
+        ctx.stroke()
+      }
+
+      // ── 6. 墙上照亮区域 ──
+      const validHits = escapeRays.filter(r => r.wallY >= wallTop && r.wallY <= surfaceY)
+      if (validHits.length > 2) {
+        const ys = validHits.map(r => r.wallY)
+        const illMin = Math.min(...ys)
+        const illMax = Math.max(...ys)
+        const illH = illMax - illMin
+
+        const grad = ctx.createLinearGradient(wallX, illMin, wallX, illMax)
+        grad.addColorStop(0, "rgba(241,196,15,0.28)")
+        grad.addColorStop(0.5, "rgba(241,196,15,0.15)")
+        grad.addColorStop(1, "rgba(241,196,15,0.04)")
+        ctx.fillStyle = grad
+        ctx.fillRect(wallX + 1, illMin, wallW - 2, illH + 1)
+
+        ctx.fillStyle = "#f1c40f"
+        ctx.font = "bold 10px sans-serif"
+        ctx.textAlign = "left"
+        const labelMid = (illMin + illMax) / 2
+        if (illH > 30) {
+          ctx.fillText("← 照亮区域", wallX + wallW + 5, labelMid + 3)
+        }
+      }
+
+      // ── 7. 光源（亮黄色）──
+      for (let r = 28; r >= 6; r -= 3) {
+        ctx.beginPath()
+        ctx.arc(sourceX, sourceY, r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(241,196,15,${(1 - r / 28) * 0.35})`
+        ctx.fill()
+      }
+      ctx.beginPath()
+      ctx.arc(sourceX, sourceY, 7, 0, Math.PI * 2)
+      ctx.fillStyle = "#f1c40f"
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(sourceX, sourceY, 4, 0, Math.PI * 2)
+      ctx.fillStyle = "#fff"
+      ctx.fill()
+
+      ctx.fillStyle = arrowColor
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("光源", sourceX, sourceY + 20)
+
+      // ── 8. 临界角光线突出显示 ──
+      if (theta_c_deg > 2) {
+        const hitX_c = sourceX + D_px * Math.tan(theta_c)
+
+        if (hitX_c <= groundLeft) {
+          // 水中的临界角光线（红色实线）
+          ctx.strokeStyle = highlightColor
+          ctx.lineWidth = 3
+          ctx.beginPath()
+          ctx.moveTo(sourceX, sourceY)
+          ctx.lineTo(hitX_c, surfaceY)
+          ctx.stroke()
+
+          // 贴水面折射光（红色虚线）
+          ctx.setLineDash([5, 4])
+          ctx.strokeStyle = "rgba(231,76,60,0.35)"
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.moveTo(hitX_c, surfaceY)
+          ctx.lineTo(cw, surfaceY)
+          ctx.stroke()
+          ctx.setLineDash([])
+
+          // 临界角标签
+          const midX = (sourceX + hitX_c) / 2
+          const midY = (sourceY + surfaceY) / 2
+          ctx.fillStyle = highlightColor
+          ctx.font = "bold 11px sans-serif"
+          ctx.textAlign = "center"
+          ctx.fillText(`θ_c = ${theta_c_deg.toFixed(1)}°`, midX - 38, midY + 5)
+        }
+      }
+
+      // ── 9. 全反射标注 ──
+      if (tirRays.length > 0) {
+        const midIdx = Math.floor(tirRays.length / 2)
+        const r = tirRays[midIdx]
+        const labelX = (sourceX + r.hitX) / 2
+        const labelY = (sourceY + surfaceY) / 2
+        ctx.fillStyle = tirColor
+        ctx.font = "10px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("全反射", labelX + 50, labelY + 4)
+      }
+
+      // ── 10. 深度刻度尺 ──
+      const rulerX = cw * 0.03
+
+      // 水面标记
+      ctx.strokeStyle = labelColor
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(rulerX, surfaceY)
+      ctx.lineTo(rulerX + 8, surfaceY)
+      ctx.stroke()
+      ctx.fillStyle = dimColor
+      ctx.font = "10px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText("水面", rulerX + 12, surfaceY + 4)
+
+      // 刻度竖线
+      ctx.strokeStyle = "rgba(0,0,0,0.08)"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(rulerX + 4, surfaceY + 2)
+      ctx.lineTo(rulerX + 4, sourceY)
+      ctx.stroke()
+
+      // 水深数值（实物色）
+      ctx.fillStyle = arrowColor
+      ctx.font = "bold 12px sans-serif"
+      ctx.fillText(`${p.depth} cm`, rulerX + 2, sourceY + 4)
+
+      // ── 11. 介质标签 ──
+      ctx.fillStyle = dimColor
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText(`水 (n₁ = ${n1.toFixed(2)})`, cw * 0.39, surfaceY + 22)
+      ctx.fillText(`空气 (n₂ = 1.00)`, cw * 0.39, surfaceY - 14)
+
+      // ── 12. 墙标注 ──
+      ctx.fillStyle = labelColor
+      ctx.font = "bold 11px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("墙", wallX + wallW / 2, wallTop + 14)
+
+      // ── 13. 底部信息 ──
+      ctx.fillStyle = dimColor
+      ctx.font = "10px sans-serif"
+      ctx.textAlign = "right"
+      const maxRadius = D_px * Math.tan(theta_c)
+      ctx.fillText(`水面光斑半径 ≈ ${maxRadius.toFixed(0)} px | 临界角 ${theta_c_deg.toFixed(1)}°`, cw - 12, ch - 10)
+
+      ctx.textAlign = "left"
+    },
+  },
+
 }

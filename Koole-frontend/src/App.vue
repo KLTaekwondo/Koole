@@ -15,14 +15,6 @@
 <script setup>
 import NavBar from "./components/NavBar.vue"
 import Toast from "./components/Toast.vue"
-import {checkLogin} from "./stores/user.js"
-import {onMounted} from "vue";
-
-onMounted(async () => {
-    if(localStorage.getItem("koole_user")) {
-        await checkLogin()
-    }
-})
 </script>
 
 <style scoped>

@@ -6,8 +6,7 @@
             </div>
             <h1>关于本站</h1>
             <p class="about-desc">
-                Koole 是一个专注于知识分享的个人博客站点，涵盖物理、编程、数学等多个领域。
-                希望通过互动式的内容，让复杂的概念变得简单易懂。
+                Koole 是个人学习笔记站点，记录学习过程中的思考和收获。学点东西，酷了！
             </p>
             <div class="about-meta">
                 <div class="meta-item">

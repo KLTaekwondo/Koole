@@ -13,15 +13,6 @@
                 <div class="filter-section">
                     <div class="filter-row">
                         <button
-                            v-for="lv in levelOptions"
-                            :key="lv"
-                            class="filter-tag"
-                            :class="{ active: activeLevel === lv }"
-                            @click="activeLevel = lv"
-                        >{{ lv }}</button>
-                    </div>
-                    <div class="filter-row">
-                        <button
                             v-for="cat in categoryOptions"
                             :key="cat"
                             class="filter-tag"
@@ -54,33 +45,39 @@
             </main>
         </div>
 
-        <!-- 容器B：模型说明 -->
-        <aside class="knowledge-section">
-            <ModelInfoPanel
-                :modelId="activeModelId"
-                :knowledge="activeKnowledge"
-            />
-        </aside>
+        <!-- 容器B：学习笔记 + 开发笔记 -->
+        <div class="notes-section">
+            <aside class="knowledge-section">
+                <ModelInfoPanel
+                    :modelId="activeModelId"
+                    :knowledge="activeKnowledge"
+                />
+            </aside>
+            <aside class="dev-notes-section">
+                <DevNotesPanel
+                    :modelId="activeModelId"
+                    :notes="activeDevNotes"
+                />
+            </aside>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { ref, computed } from "vue"
 import { useRoute } from "vue-router"
-import { PHYSICS_MODELS, LEVELS, CATEGORIES } from "../../constants/physicsModels.js"
+import { PHYSICS_MODELS, CATEGORIES } from "../../constants/physicsModels.js"
 import ModelInfoPanel from "./ModelInfoPanel.vue"
+import DevNotesPanel from "./DevNotesPanel.vue"
 
 const route = useRoute()
 
-const activeLevel = ref("全部")
 const activeCategory = ref("全部")
 
-const levelOptions = ["全部", ...LEVELS]
 const categoryOptions = ["全部", ...CATEGORIES]
 
 const filteredModels = computed(() => {
     return PHYSICS_MODELS.filter(m => {
-        if (activeLevel.value !== "全部" && m.level !== activeLevel.value) return false
         if (activeCategory.value !== "全部" && m.category !== activeCategory.value) return false
         return true
     })
@@ -91,6 +88,11 @@ const activeModelId = computed(() => route.params.modelId)
 const activeKnowledge = computed(() => {
     const model = PHYSICS_MODELS.find(m => m.id === activeModelId.value)
     return model?.knowledge || ""
+})
+
+const activeDevNotes = computed(() => {
+    const model = PHYSICS_MODELS.find(m => m.id === activeModelId.value)
+    return model?.devNotes || ""
 })
 </script>
 
@@ -268,14 +270,27 @@ const activeKnowledge = computed(() => {
     overflow-x: hidden;
 }
 
-/* ── 容器B：模型说明 ── */
-.knowledge-section {
+/* ── 容器B：笔记区域 ── */
+.notes-section {
+    display: flex;
+    gap: 12px;
     flex-shrink: 0;
+}
+
+.knowledge-section {
+    flex: 1;
+    min-width: 0;
+}
+
+.dev-notes-section {
+    flex: 1;
+    min-width: 0;
 }
 
 /* ── 响应式 ── */
 @media (max-width: 768px) {
     .model-nav { display: none; }
     .page-container { padding: 0 6px; }
+    .notes-section { flex-direction: column; }
 }
 </style>
