@@ -39,4 +39,83 @@ y = rampHeight - s.dist * Math.sin(theta)
 
 斜面长度用 \`L = h/sin(θ)\` 从高度和角度推算，createState 时就算好，免得每帧重复计算。角度限制在 5°-75°，太小球几乎不动，太大斜面几乎垂直。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => {
+      const theta = p.angle * Math.PI / 180
+      const rampLen = p.rampHeight / Math.sin(theta)
+      return { dist: 0, vel: 0, rampLen, trail: [], _t: 0 }
+    },
+    step: (s, p, dt) => {
+      const theta = p.angle * Math.PI / 180
+      s.vel += p.gravity * Math.sin(theta) * dt
+      s.dist += s.vel * dt
+      s._t += dt
+      if (s.dist >= s.rampLen) { s.dist = s.rampLen; s.vel = 0 }
+    },
+    isFinished: (s) => s.dist >= s.rampLen,
+    getBallPosition: (s, p) => {
+      const theta = p.angle * Math.PI / 180
+      return { x: s.dist * Math.cos(theta), y: p.rampHeight - s.dist * Math.sin(theta) }
+    },
+    getTrailPosition: (s, p) => {
+      const theta = p.angle * Math.PI / 180
+      return { x: s.dist * Math.cos(theta), y: p.rampHeight - s.dist * Math.sin(theta) }
+    },
+    trailFields: (s) => ({ t: s._t, vel: s.vel, dist: s.dist }),
+    chartDefs: [
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vel]) }] },
+      { title: "s-t 图", xLabel: "t (s)", yLabel: "s (m)", getData: (trail) => [{ name: "距离", data: trail.map(p => [p.t, p.dist]) }] },
+    ],
+    getInfoLines: (s, p, t) => [
+      `下滑距离: ${s.dist.toFixed(1)} m`,
+      `速度: ${s.vel.toFixed(2)} m/s`,
+      `加速度: ${(p.gravity * Math.sin(p.angle * Math.PI / 180)).toFixed(2)} m/s²`,
+      `时间: ${t.toFixed(2)} s`,
+    ],
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      const theta = p.angle * Math.PI / 180
+      const rampLen = s.rampLen
+      const top = w2s(0, p.rampHeight)
+      const bottom = w2s(0, 0)
+      const rampEnd = w2s(rampLen * Math.cos(theta), 0)
+      ctx.beginPath()
+      ctx.moveTo(top.x, top.y)
+      ctx.lineTo(rampEnd.x, rampEnd.y)
+      ctx.lineTo(bottom.x, bottom.y)
+      ctx.closePath()
+      ctx.fillStyle = "rgba(52, 152, 219, 0.08)"
+      ctx.fill()
+      ctx.strokeStyle = "rgba(52, 152, 219, 0.5)"
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.fillStyle = "rgba(0,0,0,0.4)"
+      ctx.font = "12px sans-serif"
+      ctx.fillText(`θ = ${p.angle}°`, bottom.x + 20, bottom.y - 10)
+      if (s.vel > 0.2 && s.dist < s.rampLen) {
+        const ballPos = w2s(s.dist * Math.cos(theta), p.rampHeight - s.dist * Math.sin(theta))
+        const len = Math.min(s.vel * 3, 80)
+        const dx = Math.cos(theta) * len
+        const dy = Math.sin(theta) * len
+        ctx.beginPath()
+        ctx.moveTo(ballPos.x, ballPos.y)
+        ctx.lineTo(ballPos.x + dx, ballPos.y + dy)
+        ctx.strokeStyle = "#e74c3c"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        const a = Math.atan2(dy, dx)
+        ctx.beginPath()
+        ctx.moveTo(ballPos.x + dx, ballPos.y + dy)
+        ctx.lineTo(ballPos.x + dx - 8 * Math.cos(a - 0.4), ballPos.y + dy - 8 * Math.sin(a - 0.4))
+        ctx.lineTo(ballPos.x + dx - 8 * Math.cos(a + 0.4), ballPos.y + dy - 8 * Math.sin(a + 0.4))
+        ctx.closePath()
+        ctx.fillStyle = "#e74c3c"
+        ctx.fill()
+        ctx.fillStyle = "#e74c3c"
+        ctx.font = "bold 11px sans-serif"
+        ctx.fillText("V", ballPos.x + dx * 0.5 + 8, ballPos.y + dy * 0.5 - 6)
+      }
+    },
   }

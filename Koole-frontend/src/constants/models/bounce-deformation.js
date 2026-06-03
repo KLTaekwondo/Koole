@@ -1,4 +1,6 @@
 // bounce-deformation 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "bounce-deformation",
     level: "初中",
@@ -41,4 +43,86 @@ s.deform *= 0.85  // 每帧恢复一点
 
 停止条件设成速度 < 0.3，不然会看到无限微小弹跳，很烦。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [], bounceCount: 0, deform: 0, _t: 0 }),
+    step: (s, p, dt) => {
+      s.vy += p.gravity * dt
+      s.y -= s.vy * dt
+      s.deform *= 0.85
+      s._t += dt
+      if (s.y <= GROUND_Y && s.vy >= 0) {
+        if (p.restitution > 0 && s.vy > 0.3) {
+          s.deform = Math.min(s.vy * 0.8, 12)
+          s.vy = -s.vy * p.restitution
+          s.y = GROUND_Y
+          s.bounceCount++
+        } else {
+          s.y = GROUND_Y
+          s.vy = 0
+        }
+      }
+    },
+    isFinished: (s) => s.y <= GROUND_Y && Math.abs(s.vy) <= 0.3,
+    getBallPosition: (s) => ({ x: 0, y: s.y }),
+    getTrailPosition: (s) => ({ x: 0, y: s.y }),
+    trailFields: (s) => ({ t: s._t, vy: s.vy, y: s.y }),
+    chartDefs: [
+      { title: "y-t 图", xLabel: "t (s)", yLabel: "y (m)", getData: (trail) => [{ name: "高度", data: trail.map(p => [p.t, p.y]) }] },
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vy]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const mode = p.restitution === 1 ? '完全弹性' : p.restitution === 0 ? '完全非弹性' : '非弹性'
+      return [
+        `高度: ${(s.y - GROUND_Y).toFixed(2)} m`,
+        `速度: ${s.vy.toFixed(2)} m/s`,
+        `弹跳次数: ${s.bounceCount}`,
+        `恢复系数: e = ${p.restitution.toFixed(2)}  (${mode})`,
+        `变形: ${s.deform > 0.1 ? s.deform.toFixed(1) : '0'}`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawObject: (ctx, s, p, w2s) => {
+      const pos = w2s(0, s.y)
+      const radius = 12
+      const deform = s.deform
+      ctx.beginPath()
+      ctx.ellipse(pos.x, pos.y + deform * 0.3, radius + deform * 0.2, radius - deform * 0.4, 0, 0, Math.PI * 2)
+      ctx.fillStyle = "#e74c3c"
+      ctx.fill()
+      ctx.strokeStyle = "rgba(0,0,0,0.2)"
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      if (p.restitution === 0 && s.y <= GROUND_Y && Math.abs(s.vy) <= 0.3) {
+        ctx.fillStyle = "rgba(0,0,0,0.1)"
+        ctx.fillRect(pos.x - 16, pos.y - 1, 32, 2)
+      }
+      if (deform > 1) {
+        ctx.fillStyle = "rgba(0,0,0,0.3)"
+        ctx.font = "11px sans-serif"
+        ctx.fillText(`e=${p.restitution.toFixed(2)}`, pos.x + 16, pos.y - 8)
+      }
+    },
+    drawExtra: (ctx, s, p, w2s) => {
+      if (s.bounceCount > 0) {
+        const groundY = w2s(0, 0).y
+        ctx.fillStyle = "rgba(0,0,0,0.08)"
+        ctx.font = "12px sans-serif"
+        for (let i = 1; i <= Math.min(s.bounceCount, 5); i++) {
+          const h = p.height * Math.pow(p.restitution, 2 * i)
+          if (h < 0.5) break
+          const peakY = w2s(0, GROUND_Y + h).y
+          ctx.beginPath()
+          ctx.setLineDash([2, 3])
+          ctx.moveTo(30, peakY)
+          ctx.lineTo(90, peakY)
+          ctx.strokeStyle = "rgba(0,0,0,0.1)"
+          ctx.lineWidth = 0.8
+          ctx.stroke()
+          ctx.setLineDash([])
+          ctx.fillText(`#${i} ${h.toFixed(1)}m`, 92, peakY + 3)
+        }
+      }
+    },
   }

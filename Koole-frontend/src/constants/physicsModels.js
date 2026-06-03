@@ -1,6 +1,6 @@
-// ── 模型 UI 元数据 ──
-// 只包含界面展示相关的信息，物理逻辑在 modelPhysics.js，渲染在 modelRenderers.js
-// 每个模型的具体数据在 ./models/ 目录下，此文件负责汇总和导出
+// ── 模型汇总 ──
+// 每个模型文件自包含 UI 数据 + 物理逻辑 + 渲染逻辑
+// 此文件负责汇总和导出
 
 import freeFall from './models/free-fall.js'
 import projectile from './models/projectile.js'
@@ -31,6 +31,8 @@ import echoRanging from './models/echo-ranging.js'
 import refraction from './models/refraction.js'
 import waterRefraction from './models/water-refraction.js'
 import underwaterLight from './models/underwater-light.js'
+import seriesCircuit from './models/series-circuit.js'
+import parallelCircuit from './models/parallel-circuit.js'
 
 export const DRAW_SCALE = 30 // 像素/米
 export const GROUND_Y = 0.4 // 球心贴地高度（球半径/DRAW_SCALE）
@@ -64,8 +66,10 @@ export const PHYSICS_MODELS = [
   refraction,
   waterRefraction,
   underwaterLight,
+  seriesCircuit,
+  parallelCircuit,
   echoRanging,
 ]
 
 export const LEVELS = []
-export const CATEGORIES = ["力学", "声学", "波", "光学"]
+export const CATEGORIES = ["力学", "声学", "波", "光学", "电学"]

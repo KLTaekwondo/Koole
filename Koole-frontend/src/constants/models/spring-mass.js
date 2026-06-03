@@ -1,4 +1,6 @@
 // spring-mass 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "spring-mass",
     level: "高中",
@@ -46,4 +48,68 @@ s.x += s.vx * dt
 
 动画跑 3 个周期就停，足够看清重复 pattern。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ x: p.initX, vx: 0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      const a = -(p.k / p.mass) * s.x
+      s.vx += a * dt
+      s.x += s.vx * dt
+      s._t += dt
+    },
+    isFinished: (s, p) => {
+      const T = 2 * Math.PI * Math.sqrt(p.mass / p.k)
+      return s._t >= 3 * T
+    },
+    getBallPosition: (s) => ({ x: s.x, y: GROUND_Y }),
+    getTrailPosition: (s) => ({ x: s.x, y: GROUND_Y }),
+    trailFields: (s, p) => ({
+      t: s._t, vx: s.vx, x: s.x,
+      Ek: 0.5 * p.mass * s.vx * s.vx,
+      Ep: 0.5 * p.k * s.x * s.x,
+    }),
+    chartDefs: [
+      { title: "x-t 图（位移）", xLabel: "t (s)", yLabel: "x (m)", getData: (trail) => [{ name: "位移", data: trail.map(p => [p.t, p.x]) }] },
+      { title: "v-t 图（速度）", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vx]) }] },
+      { title: "Ep-t 图（弹性势能）", xLabel: "t (s)", yLabel: "Ep (J)", getData: (trail) => [{ name: "势能", data: trail.map(p => [p.t, p.Ep]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const ke = 0.5 * p.mass * s.vx * s.vx
+      const pe = 0.5 * p.k * s.x * s.x
+      const period = 2 * Math.PI * Math.sqrt(p.mass / p.k)
+      return [
+        `位移: ${s.x.toFixed(2)} m`,
+        `速度: ${s.vx.toFixed(2)} m/s`,
+        `加速度: ${(-(p.k / p.mass) * s.x).toFixed(2)} m/s²`,
+        `动能: ${ke.toFixed(2)} J | 势能: ${pe.toFixed(2)} J`,
+        `机械能: ${(ke + pe).toFixed(2)} J`,
+        `周期: ${period.toFixed(2)} s`,
+        `剩余: ${Math.max(0, 3 * period - t).toFixed(2)} s`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      const massPos = w2s(s.x, GROUND_Y)
+      const wallX = -p.initX - 0.8
+      const wallPos = w2s(wallX, GROUND_Y)
+      ctx.fillStyle = "#666"
+      ctx.fillRect(wallPos.x - 3, wallPos.y - 16, 6, 32)
+      ctx.strokeStyle = "#888"
+      ctx.lineWidth = 1
+      ctx.strokeRect(wallPos.x - 3, wallPos.y - 16, 6, 32)
+      const dx = massPos.x - wallPos.x
+      const segs = Math.max(8, Math.round(Math.abs(dx) / 6))
+      const amp = Math.min(7, Math.abs(dx) / segs * 3)
+      ctx.beginPath()
+      ctx.moveTo(wallPos.x, wallPos.y)
+      for (let i = 1; i <= segs; i++) {
+        const t = i / segs
+        ctx.lineTo(wallPos.x + dx * t, wallPos.y + (i % 2 === 0 ? -amp : amp))
+      }
+      ctx.lineTo(massPos.x - 12, massPos.y)
+      ctx.strokeStyle = "#999"
+      ctx.lineWidth = 1.8
+      ctx.stroke()
+    },
   }

@@ -1,4 +1,6 @@
 // free-fall 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "free-fall",
     level: "初中",
@@ -35,4 +37,50 @@ $g \\approx 9.8 \\, m/s^2$ 方向竖直向下，跟质量无关。伽利略比�
 
 速度箭头的长度一开始没限制，速度快了箭头直接戳出画面。加了个 Math.min 限制最大长度，视觉效果好多了。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      s.vy += p.gravity * dt
+      s.y -= s.vy * dt
+      s._t += dt
+      if (s.y <= GROUND_Y && s.vy >= 0) { s.y = GROUND_Y; s.vy = 0 }
+    },
+    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
+    getBallPosition: (s) => ({ x: 0, y: s.y }),
+    getTrailPosition: (s) => ({ x: 0, y: s.y }),
+    trailFields: (s) => ({ t: s._t, vy: s.vy, y: s.y }),
+    chartDefs: [
+      { title: "y-t 图", xLabel: "t (s)", yLabel: "y (m)", getData: (trail) => [{ name: "高度", data: trail.map(p => [p.t, p.y]) }] },
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vy]) }] },
+    ],
+    getInfoLines: (s, p, t) => [
+      `下落高度: ${(p.height + GROUND_Y - s.y).toFixed(1)} m`,
+      `速度: ${s.vy.toFixed(1)} m/s`,
+      `时间: ${t.toFixed(2)} s`,
+      `重力: ${p.gravity} m/s²`,
+    ],
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      if (s.vy < 0.2 || s.y <= 0) return
+      const pos = w2s(0, s.y)
+      const len = Math.min(s.vy * 5, 110)
+      ctx.beginPath()
+      ctx.moveTo(pos.x, pos.y)
+      ctx.lineTo(pos.x, pos.y + len)
+      ctx.strokeStyle = "#e74c3c"
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(pos.x, pos.y + len)
+      ctx.lineTo(pos.x - 6, pos.y + len - 10)
+      ctx.lineTo(pos.x + 6, pos.y + len - 10)
+      ctx.closePath()
+      ctx.fillStyle = "#e74c3c"
+      ctx.fill()
+      ctx.fillStyle = "#e74c3c"
+      ctx.font = "bold 11px sans-serif"
+      ctx.fillText("V", pos.x + 10, pos.y + len * 0.5 + 4)
+    },
   }

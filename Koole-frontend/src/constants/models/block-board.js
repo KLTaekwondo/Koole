@@ -1,4 +1,7 @@
 // block-board 模型数据
+const GROUND_Y = 0.4
+const DRAW_SCALE = 30
+
 export default {
     id: "block-board",
     level: "高中",
@@ -45,4 +48,162 @@ v_cm = (m*v0) / (m+M)
 
 图表同时显示两个物体的速度曲线，交叉点就是共速时刻，很直观。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({
+      xb: 0.5, vb: p.v0, xB: 0, vB: 0,
+      trail: [], trailB: [], _t: 0, _synced: false, events: [],
+    }),
+    step: (s, p, dt) => {
+      const relV = s.vb - s.vB
+      if (Math.abs(relV) > 0.01) {
+        s.vb += -Math.sign(relV) * p.mu * p.gravity * dt
+        s.vB += Math.sign(relV) * p.mu * p.m * p.gravity / p.M * dt
+      } else {
+        const vcm = (p.m * s.vb + p.M * s.vB) / (p.m + p.M)
+        s.vb = vcm; s.vB = vcm
+      }
+      s._t += dt
+      if (!s._synced && Math.abs(s.vb - s.vB) < 0.01) {
+        s._synced = true
+        s.events.push({ type: "sync", time: s._t, label: "共速" })
+      }
+      s.xb += s.vb * dt
+      s.xB += s.vB * dt
+      if (s.xb - s.xB >= p.boardLength) {
+        s.xb = s.xB + p.boardLength
+        if (s.vb > s.vB) s.vb = s.vB
+      }
+      if (s.trailB) {
+        s.trailB.push({ x: s.xB, y: GROUND_Y + 0.15 })
+        if (s.trailB.length > 5000) s.trailB.splice(0, s.trailB.length - 5000)
+      }
+    },
+    isFinished: (s, p) => {
+      return (s.xb - s.xB) >= p.boardLength || (Math.abs(s.vb - s.vB) < 0.01 && (s.xb - s.xB) < p.boardLength)
+    },
+    getBallPosition: (s, p) => ({ x: (s.xb + s.xB + p.boardLength) / 2, y: GROUND_Y }),
+    getTrailPosition: (s) => ({ x: s.xb - 0.5, y: GROUND_Y + 0.4 }),
+    trailFields: (s) => ({ t: s._t, vb: s.vb, vB: s.vB }),
+    chartDefs: [
+      {
+        title: "v-t 图",
+        xLabel: "t (s)",
+        yLabel: "v (m/s)",
+        getData: (trail) => [
+          { name: "滑块", data: trail.map(p => [p.t, p.vb]) },
+          { name: "木板", data: trail.map(p => [p.t, p.vB]) },
+        ],
+      },
+    ],
+    getInfoLines: (s, p, t) => {
+      const relV = s.vb - s.vB
+      const relDisp = s.xb - s.xB
+      const isDone = Math.abs(relV) < 0.01
+      const a_block = relV > 0 ? -p.mu * p.gravity : p.mu * p.gravity
+      return [
+        `滑块速度: ${s.vb.toFixed(2)} m/s`,
+        `木板速度: ${s.vB.toFixed(2)} m/s`,
+        `相对速度: ${relV.toFixed(2)} m/s`,
+        `相对位移: ${relDisp.toFixed(2)} / ${p.boardLength} m`,
+        `滑块加速度: ${isDone ? 0 : a_block.toFixed(2)} m/s²`,
+        `m=${p.m}kg  M=${p.M}kg  μ=${p.mu.toFixed(2)}`,
+        `状态: ${isDone ? '已共速 ✓' : (relDisp >= p.boardLength ? '滑块滑落 ⚡' : '相对滑动中 🔄')}`,
+        ...(isDone ? [`共速速度: ${((p.m * p.v0) / (p.m + p.M)).toFixed(2)} m/s`] : []),
+        `时间: ${t.toFixed(2)} s`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      if (!s.trailB || s.trailB.length < 2) return
+      ctx.globalAlpha = 0.45
+      for (let i = 1; i < s.trailB.length; i++) {
+        const p1 = w2s(s.trailB[i - 1].x, s.trailB[i - 1].y)
+        const p2 = w2s(s.trailB[i].x, s.trailB[i].y)
+        ctx.beginPath()
+        ctx.moveTo(p1.x, p1.y)
+        ctx.lineTo(p2.x, p2.y)
+        ctx.strokeStyle = "rgba(108, 122, 137, 0.5)"
+        ctx.lineWidth = 2
+        ctx.setLineDash([6, 4])
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+      ctx.globalAlpha = 1.0
+    },
+    drawObject: (ctx, s, p, w2s) => {
+      const boardH = 0.5, blockH = 0.6, blockW = 1.0
+      const boardBottomLeft = w2s(s.xB, 0), boardBottomRight = w2s(s.xB + p.boardLength, 0)
+      const boardScreenW = boardBottomRight.x - boardBottomLeft.x
+      const boardScreenH = boardH * DRAW_SCALE
+      ctx.fillStyle = "#6c7a89"
+      ctx.fillRect(boardBottomLeft.x, boardBottomLeft.y - boardScreenH, boardScreenW, boardScreenH)
+      ctx.strokeStyle = "rgba(0,0,0,0.2)"
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(boardBottomLeft.x, boardBottomLeft.y - boardScreenH, boardScreenW, boardScreenH)
+      ctx.fillStyle = "#fff"
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("M", boardBottomLeft.x + boardScreenW / 2, boardBottomLeft.y - boardScreenH / 2 + 4)
+      ctx.textAlign = "left"
+      const blockBottom = w2s(s.xb, boardH + 0.01)
+      const blkScreenW = blockW * DRAW_SCALE, blkScreenH = blockH * DRAW_SCALE
+      ctx.fillStyle = "#e74c3c"
+      ctx.fillRect(blockBottom.x - blkScreenW / 2, blockBottom.y - blkScreenH, blkScreenW, blkScreenH)
+      ctx.strokeStyle = "rgba(0,0,0,0.25)"
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(blockBottom.x - blkScreenW / 2, blockBottom.y - blkScreenH, blkScreenW, blkScreenH)
+      ctx.fillStyle = "#fff"
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("m", blockBottom.x, blockBottom.y - blkScreenH / 2 + 4)
+      ctx.textAlign = "left"
+      if (Math.abs(s.vb) > 0.05) {
+        const vLen = Math.min(Math.abs(s.vb) * 3, 60)
+        const dir = s.vb > 0 ? 1 : -1
+        const ax = blockBottom.x + blkScreenW / 2 + 4, ay = blockBottom.y - blkScreenH / 2
+        ctx.beginPath()
+        ctx.moveTo(ax, ay)
+        ctx.lineTo(ax + vLen * dir, ay)
+        ctx.strokeStyle = "#e67e22"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(ax + vLen * dir, ay)
+        ctx.lineTo(ax + vLen * dir - 7 * dir, ay - 4)
+        ctx.lineTo(ax + vLen * dir - 7 * dir, ay + 4)
+        ctx.closePath()
+        ctx.fillStyle = "#e67e22"
+        ctx.fill()
+        ctx.fillStyle = "#e67e22"
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("v块", ax + vLen * dir * 0.5, ay - 8)
+        ctx.textAlign = "left"
+      }
+      if (Math.abs(s.vB) > 0.05) {
+        const vLen = Math.min(Math.abs(s.vB) * 3, 60)
+        const dir = s.vB > 0 ? 1 : -1
+        const ax = boardBottomRight.x + 4, ay = boardBottomRight.y - boardScreenH / 2
+        ctx.beginPath()
+        ctx.moveTo(ax, ay)
+        ctx.lineTo(ax + vLen * dir, ay)
+        ctx.strokeStyle = "#3498db"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(ax + vLen * dir, ay)
+        ctx.lineTo(ax + vLen * dir - 7 * dir, ay - 4)
+        ctx.lineTo(ax + vLen * dir - 7 * dir, ay + 4)
+        ctx.closePath()
+        ctx.fillStyle = "#3498db"
+        ctx.fill()
+        ctx.fillStyle = "#3498db"
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("v板", ax + vLen * dir * 0.5, ay - 8)
+        ctx.textAlign = "left"
+      }
+    },
   }

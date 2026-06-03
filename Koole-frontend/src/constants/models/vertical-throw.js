@@ -1,4 +1,6 @@
 // vertical-throw 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "vertical-throw",
     level: "高中",
@@ -36,4 +38,52 @@ export default {
 
 最大高度本来想从模拟数据里提取，后来发现直接用公式 v₀²/(2g) 算出来显示更准确，还不受模拟精度影响。有时候"作弊"用公式比老实模拟效果更好。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ y: GROUND_Y, vy: p.initialVelocity, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      s.vy -= p.gravity * dt
+      s.y += s.vy * dt
+      s._t += dt
+      if (s.y <= GROUND_Y && s.vy <= 0) { s.y = GROUND_Y; s.vy = 0 }
+    },
+    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
+    getBallPosition: (s) => ({ x: 0, y: s.y }),
+    getTrailPosition: (s) => ({ x: 0, y: s.y }),
+    trailFields: (s) => ({ t: s._t, vy: s.vy, y: s.y }),
+    chartDefs: [
+      { title: "y-t 图", xLabel: "t (s)", yLabel: "y (m)", getData: (trail) => [{ name: "高度", data: trail.map(p => [p.t, p.y]) }] },
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vy]) }] },
+    ],
+    getInfoLines: (s, p, t) => [
+      `高度: ${s.y.toFixed(1)} m`,
+      `速度: ${s.vy.toFixed(1)} m/s`,
+      `时间: ${t.toFixed(2)} s`,
+      `最大高度: ${(p.initialVelocity * p.initialVelocity / (2 * p.gravity)).toFixed(1)} m`,
+    ],
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      if (Math.abs(s.vy) < 0.2 || s.y <= 0) return
+      const pos = w2s(0, s.y)
+      const len = Math.min(Math.abs(s.vy) * 5, 110)
+      const sign = s.vy > 0 ? 1 : -1
+      const tipY = pos.y - len * sign
+      ctx.beginPath()
+      ctx.moveTo(pos.x, pos.y)
+      ctx.lineTo(pos.x, tipY)
+      ctx.strokeStyle = "#e74c3c"
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(pos.x, tipY)
+      ctx.lineTo(pos.x - 6, tipY + 10 * sign)
+      ctx.lineTo(pos.x + 6, tipY + 10 * sign)
+      ctx.closePath()
+      ctx.fillStyle = "#e74c3c"
+      ctx.fill()
+      ctx.fillStyle = "#e74c3c"
+      ctx.font = "bold 11px sans-serif"
+      ctx.fillText("V", pos.x + 10, (pos.y + tipY) / 2 + 4)
+    },
   }

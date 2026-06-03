@@ -1,4 +1,6 @@
 // pendulum 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "pendulum",
     level: "初中",
@@ -41,4 +43,85 @@ s.theta += s.omega * dt
 
 理想单摆永不停止，所以 isFinished 返回 false，动画持续跑。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ theta: p.initAngle * Math.PI / 180, omega: 0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      const alpha = -(p.gravity / p.length) * s.theta
+      s.omega += alpha * dt
+      s.theta += s.omega * dt
+      s._t += dt
+    },
+    isFinished: () => false,
+    getBallPosition: (s, p) => ({
+      x: p.length * Math.sin(s.theta),
+      y: p.length - p.length * Math.cos(s.theta) + GROUND_Y,
+    }),
+    getTrailPosition: (s, p) => ({
+      x: p.length * Math.sin(s.theta),
+      y: p.length - p.length * Math.cos(s.theta) + GROUND_Y,
+    }),
+    trailFields: (s) => ({ t: s._t, theta: s.theta * 180 / Math.PI, omega: s.omega }),
+    chartDefs: [
+      { title: "θ-t 图", xLabel: "t (s)", yLabel: "θ (°)", getData: (trail) => [{ name: "摆角", data: trail.map(p => [p.t, p.theta]) }] },
+      { title: "ω-t 图", xLabel: "t (s)", yLabel: "ω (rad/s)", getData: (trail) => [{ name: "角速度", data: trail.map(p => [p.t, p.omega]) }] },
+    ],
+    getInfoLines: (s, p, t) => [
+      `摆角: ${(s.theta * 180 / Math.PI).toFixed(1)}°`,
+      `角速度: ${s.omega.toFixed(2)} rad/s`,
+      `周期: ${(2 * Math.PI * Math.sqrt(p.length / p.gravity)).toFixed(2)} s`,
+      `摆长: ${p.length} m`,
+    ],
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      const pivot = w2s(0, p.length)
+      const ball = w2s(p.length * Math.sin(s.theta), p.length - p.length * Math.cos(s.theta) + GROUND_Y)
+      ctx.beginPath()
+      ctx.moveTo(pivot.x, pivot.y)
+      ctx.lineTo(ball.x, ball.y)
+      ctx.strokeStyle = "#999"
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(pivot.x, pivot.y)
+      ctx.lineTo(pivot.x, ball.y + 20)
+      ctx.strokeStyle = "rgba(0,0,0,0.1)"
+      ctx.lineWidth = 1
+      ctx.setLineDash([3, 3])
+      ctx.stroke()
+      ctx.setLineDash([])
+      const r = 30
+      const startAngle = -Math.PI / 2
+      const endAngle = -Math.PI / 2 + Math.min(Math.max(s.theta, -Math.PI / 2), Math.PI / 2)
+      ctx.beginPath()
+      ctx.arc(pivot.x, pivot.y, r, s.theta > 0 ? startAngle : endAngle, s.theta > 0 ? endAngle : startAngle)
+      ctx.strokeStyle = "rgba(0,0,0,0.3)"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      const tangSpeed = Math.abs(s.omega) * p.length
+      if (tangSpeed > 0.05) {
+        const len = Math.min(tangSpeed * 8, 70)
+        const dir = s.omega > 0 ? 1 : -1
+        const dx = Math.cos(s.theta) * dir * len
+        const dy = -Math.sin(s.theta) * dir * len
+        ctx.beginPath()
+        ctx.moveTo(ball.x, ball.y)
+        ctx.lineTo(ball.x + dx, ball.y + dy)
+        ctx.strokeStyle = "#e67e22"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        const a = Math.atan2(dy, dx)
+        ctx.beginPath()
+        ctx.moveTo(ball.x + dx, ball.y + dy)
+        ctx.lineTo(ball.x + dx - 8 * Math.cos(a - 0.4), ball.y + dy - 8 * Math.sin(a - 0.4))
+        ctx.lineTo(ball.x + dx - 8 * Math.cos(a + 0.4), ball.y + dy - 8 * Math.sin(a + 0.4))
+        ctx.closePath()
+        ctx.fillStyle = "#e67e22"
+        ctx.fill()
+        ctx.fillStyle = "#e67e22"
+        ctx.font = "bold 11px sans-serif"
+        ctx.fillText("V", ball.x + dx * 0.5 + 8, ball.y + dy * 0.5 - 6)
+      }
+    },
   }

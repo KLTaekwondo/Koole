@@ -1,4 +1,7 @@
 // connected-bodies 模型数据
+const GROUND_Y = 0.4
+const DRAW_SCALE = 30
+
 export default {
     id: "connected-bodies",
     level: "高中",
@@ -39,4 +42,210 @@ T = m1 * (a + mu * g)
 
 摩擦系数可以调，观察它对运动的影响——摩擦越大，需要 m2 越重才能拉动。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ d: 0, v: 0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      const TABLE_W = 8, m1_hw = 0.45, m1_hh = 0.3, m2_r = 0.38
+      const PULLEY_CENTER_Y = 5 + m1_hh
+      const maxDist = Math.min(TABLE_W - m1_hw * 2, PULLEY_CENTER_Y - m2_r - GROUND_Y)
+      const a = (p.m2 * p.gravity - p.mu * p.m1 * p.gravity) / (p.m1 + p.m2)
+      s._t += dt
+      if (a <= 0) {
+        if (s.v > 0) { s.v += a * dt; if (s.v < 0) s.v = 0; s.d += s.v * dt }
+        return
+      }
+      s.v += a * dt
+      if (s.v < 0) s.v = 0
+      s.d += s.v * dt
+      if (s.d >= maxDist) { s.d = maxDist; s.v = 0 }
+    },
+    isFinished: (s) => {
+      const TABLE_W = 8, m1_hw = 0.45, m1_hh = 0.3, m2_r = 0.38
+      const maxDist = Math.min(TABLE_W - m1_hw * 2, 5 + m1_hh - m2_r - GROUND_Y)
+      return s.d >= maxDist
+    },
+    getBallPosition: (s) => {
+      const TABLE_W = 8, m1_hw = 0.45, m1_hh = 0.3, m2_r = 0.38
+      const PULLEY_CENTER_Y = 5 + m1_hh
+      const m1_x = Math.max(-TABLE_W + m1_hw, Math.min(-TABLE_W + m1_hw + s.d, -m1_hw))
+      const m2_y = Math.max(PULLEY_CENTER_Y - m2_r - s.d, GROUND_Y)
+      return { x: m1_x / 2, y: (PULLEY_CENTER_Y + m2_y) / 2 }
+    },
+    getTrailPosition: (s) => {
+      const m2_y = Math.max(5 + 0.3 - 0.38 - s.d, GROUND_Y)
+      return { x: 0, y: m2_y }
+    },
+    trailFields: (s) => ({ t: s._t, v: s.v, d: s.d }),
+    chartDefs: [
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.v]) }] },
+      { title: "d-t 图", xLabel: "t (s)", yLabel: "d (m)", getData: (trail) => [{ name: "位移", data: trail.map(p => [p.t, p.d]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const TABLE_W = 8, m1_hw = 0.45, m1_hh = 0.3, m2_r = 0.38
+      const PULLEY_CENTER_Y = 5 + m1_hh
+      const m1_max = TABLE_W - m1_hw * 2
+      const m2_max = PULLEY_CENTER_Y - m2_r - GROUND_Y
+      const maxDist = Math.min(m1_max, m2_max)
+      const a = (p.m2 * p.gravity - p.mu * p.m1 * p.gravity) / (p.m1 + p.m2)
+      const av = a > 0 ? a : 0
+      const T = av > 0 ? p.m1 * (av + p.mu * p.gravity) : p.m1 * p.gravity
+      return [
+        `加速度: ${av.toFixed(2)} m/s²`,
+        `速度: ${s.v.toFixed(2)} m/s`,
+        `移动距离: ${s.d.toFixed(1)} / ${maxDist.toFixed(1)} m`,
+        `绳中拉力: ${T.toFixed(2)} N`,
+        `m₁=${p.m1}kg  m₂=${p.m2}kg  μ=${p.mu.toFixed(2)}`,
+        `时间: ${t.toFixed(2)} s`,
+        ...(a <= 0 ? ['⚠ m₂ 太轻，无法拉动 m₁'] : []),
+        ...(s.d >= m1_max && s.d < m2_max ? ['⚡ m₁ 已到滑轮处'] : []),
+        ...(s.d >= m2_max ? ['⚡ m₂ 已落地'] : []),
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawObject: (ctx, s, p, w2s) => {
+      const TABLE_H = 5, TABLE_W = 8
+      const d = s.d
+      const m1_hw = 0.45, m1_hh = 0.3
+      const m2_r = 0.38
+      const m1_start = -TABLE_W + m1_hw
+      const m1_end = -m1_hw
+      const m1_x = Math.max(m1_start, Math.min(m1_start + d, m1_end))
+      const PULLEY_CENTER_Y = TABLE_H + m1_hh
+      const PULLEY_OFFSET_X = 1.0
+      const m2_y = Math.max(PULLEY_CENTER_Y - m2_r - d, GROUND_Y)
+      const m2_x = PULLEY_OFFSET_X
+      const ch = ctx.canvas.height / (window.devicePixelRatio || 1)
+      const tL = w2s(-TABLE_W, 0), tR = w2s(0, 0), tT = w2s(-TABLE_W, TABLE_H)
+      const tGrad = ctx.createLinearGradient(tL.x, tT.y, tL.x, tL.y)
+      tGrad.addColorStop(0, "#b8956a")
+      tGrad.addColorStop(0.12, "#d4b88c")
+      tGrad.addColorStop(0.5, "#c4a67a")
+      tGrad.addColorStop(1, "#8B7355")
+      ctx.fillStyle = tGrad
+      ctx.fillRect(tL.x, tT.y, tR.x - tL.x, tR.y - tT.y)
+      ctx.fillStyle = "#e0c8a0"
+      ctx.fillRect(tL.x, tT.y - 3, tR.x - tL.x, 5)
+      ctx.fillStyle = "rgba(0,0,0,0.07)"
+      ctx.fillRect(tL.x, tL.y - 2, tR.x - tL.x, 2)
+      ctx.fillStyle = "#6b5b45"
+      for (const lx of [-TABLE_W + 0.4, -0.4]) {
+        const leg = w2s(lx, 0)
+        ctx.fillRect(leg.x - 3, leg.y, 6, ch - leg.y)
+        ctx.fillRect(leg.x - 5, leg.y + (ch - leg.y) - 6, 10, 6)
+      }
+      const PULLEY_RADIUS_PX = 8
+      const pulleyPos = w2s(PULLEY_OFFSET_X, PULLEY_CENTER_Y)
+      const tableTopRight = w2s(0, TABLE_H)
+      const m1 = w2s(m1_x, TABLE_H + m1_hh)
+      const m2 = w2s(m2_x, m2_y)
+      ctx.lineCap = "round"
+      ctx.strokeStyle = "#c4956a"
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.moveTo(pulleyPos.x, m1.y)
+      ctx.lineTo(m1.x, m1.y)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(pulleyPos.x, pulleyPos.y + PULLEY_RADIUS_PX)
+      ctx.lineTo(m2.x, m2.y)
+      ctx.stroke()
+      ctx.lineCap = "butt"
+      ctx.strokeStyle = "#666"
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.moveTo(tableTopRight.x, tableTopRight.y)
+      ctx.lineTo(pulleyPos.x, pulleyPos.y)
+      ctx.stroke()
+      ctx.fillStyle = "#777"
+      ctx.fillRect(pulleyPos.x - 11, pulleyPos.y - 4, 22, 4)
+      ctx.beginPath()
+      ctx.arc(pulleyPos.x, pulleyPos.y, PULLEY_RADIUS_PX, 0, Math.PI * 2)
+      ctx.fillStyle = "#555"
+      ctx.fill()
+      ctx.strokeStyle = "#444"
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(pulleyPos.x, pulleyPos.y, 3.5, 0, Math.PI * 2)
+      ctx.fillStyle = "#333"
+      ctx.fill()
+      const m1W = m1_hw * 2 * DRAW_SCALE, m1H = m1_hh * 2 * DRAW_SCALE
+      const m1X = m1.x - m1_hw * DRAW_SCALE, m1Y = m1.y - m1_hh * DRAW_SCALE
+      ctx.fillStyle = "rgba(0,0,0,0.1)"
+      ctx.fillRect(m1X + 3, m1Y + 3, m1W, m1H)
+      const m1Grad = ctx.createLinearGradient(m1X, m1Y, m1X, m1Y + m1H)
+      m1Grad.addColorStop(0, "#5dade2")
+      m1Grad.addColorStop(1, "#2980b9")
+      ctx.fillStyle = m1Grad
+      ctx.fillRect(m1X, m1Y, m1W, m1H)
+      ctx.strokeStyle = "rgba(0,0,0,0.25)"
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(m1X, m1Y, m1W, m1H)
+      ctx.fillStyle = "#fff"
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("m₁", m1.x, m1.y + 4)
+      ctx.textAlign = "left"
+      const m2R = m2_r * DRAW_SCALE
+      ctx.beginPath()
+      ctx.ellipse(m2.x + 3, m2.y + m2R * 0.3, m2R * 0.8, m2R * 0.2, 0, 0, Math.PI * 2)
+      ctx.fillStyle = "rgba(0,0,0,0.08)"
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(m2.x, m2.y, m2R, 0, Math.PI * 2)
+      const m2Grad = ctx.createRadialGradient(m2.x - 5, m2.y - 4, 2, m2.x, m2.y, m2R)
+      m2Grad.addColorStop(0, "#f1948a")
+      m2Grad.addColorStop(0.4, "#ec7063")
+      m2Grad.addColorStop(1, "#c0392b")
+      ctx.fillStyle = m2Grad
+      ctx.fill()
+      ctx.strokeStyle = "rgba(0,0,0,0.2)"
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      ctx.fillStyle = "#fff"
+      ctx.font = "bold 12px sans-serif"
+      ctx.textAlign = "center"
+      ctx.fillText("m₂", m2.x, m2.y + 4)
+      ctx.textAlign = "left"
+      if (s.v > 0.05) {
+        const vLen = Math.min(s.v * 3, 60)
+        const ax1 = m1.x + m1_hw * DRAW_SCALE + 4
+        ctx.beginPath()
+        ctx.moveTo(ax1, m1.y)
+        ctx.lineTo(ax1 + vLen, m1.y)
+        ctx.strokeStyle = "#e67e22"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(ax1 + vLen, m1.y)
+        ctx.lineTo(ax1 + vLen - 8, m1.y - 4)
+        ctx.lineTo(ax1 + vLen - 8, m1.y + 4)
+        ctx.closePath()
+        ctx.fillStyle = "#e67e22"
+        ctx.fill()
+        ctx.fillStyle = "#e67e22"
+        ctx.font = "bold 11px sans-serif"
+        ctx.textAlign = "center"
+        ctx.fillText("v", ax1 + vLen * 0.5, m1.y - 8)
+        const ax2 = m2.x + m2R + 6
+        ctx.beginPath()
+        ctx.moveTo(ax2, m2.y)
+        ctx.lineTo(ax2, m2.y + vLen)
+        ctx.strokeStyle = "#e67e22"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(ax2, m2.y + vLen)
+        ctx.lineTo(ax2 - 4, m2.y + vLen - 8)
+        ctx.lineTo(ax2 + 4, m2.y + vLen - 8)
+        ctx.closePath()
+        ctx.fillStyle = "#e67e22"
+        ctx.fill()
+        ctx.fillStyle = "#e67e22"
+        ctx.fillText("v", ax2 + 10, m2.y + vLen * 0.5)
+        ctx.textAlign = "left"
+      }
+    },
   }

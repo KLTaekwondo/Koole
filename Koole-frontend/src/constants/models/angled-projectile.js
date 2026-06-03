@@ -1,4 +1,6 @@
 // angled-projectile 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "angled-projectile",
     level: "高中",
@@ -40,4 +42,94 @@ s.vy -= gravity * dt  // 注意减号
 
 抛射角限制在 5°-85°，接近 0° 或 90° 时动画效果不好（要么几乎水平要么几乎垂直）。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => {
+      const theta = p.angle * Math.PI / 180
+      return { x: 0, y: GROUND_Y, vx: p.initialVelocity * Math.cos(theta), vy: p.initialVelocity * Math.sin(theta), trail: [], _t: 0 }
+    },
+    step: (s, p, dt) => {
+      s.vy -= p.gravity * dt
+      s.x += s.vx * dt
+      s.y += s.vy * dt
+      s._t += dt
+      if (s.y <= GROUND_Y && s.vy <= 0) { s.y = GROUND_Y; s.vy = 0 }
+    },
+    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
+    getBallPosition: (s) => ({ x: s.x, y: s.y }),
+    getTrailPosition: (s) => ({ x: s.x, y: s.y }),
+    trailFields: (s) => ({ t: s._t, y: s.y }),
+    chartDefs: [
+      { title: "轨迹图", xLabel: "x (m)", yLabel: "y (m)", getData: (trail) => [{ name: "轨迹", data: trail.map(p => [p.x, p.y]) }] },
+      { title: "y-t 图", xLabel: "t (s)", yLabel: "y (m)", getData: (trail) => [{ name: "高度", data: trail.map(p => [p.t, p.y]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const theta = p.angle * Math.PI / 180
+      const v0 = p.initialVelocity, g = p.gravity
+      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
+      return [
+        `水平位移: ${s.x.toFixed(1)} m`,
+        `高度: ${Math.max(s.y, 0).toFixed(1)} m`,
+        `速度: ${speed.toFixed(1)} m/s`,
+        `最大高度: ${((v0 * Math.sin(theta)) ** 2 / (2 * g)).toFixed(1)} m`,
+        `射程: ${(v0 * v0 * Math.sin(2 * theta) / g).toFixed(1)} m`,
+        `时间: ${t.toFixed(2)} / ${(2 * v0 * Math.sin(theta) / g).toFixed(2)} s`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      const start = w2s(0, 0)
+      const theta = p.angle * Math.PI / 180
+      const arcR = 36
+      ctx.beginPath()
+      ctx.arc(start.x, start.y, arcR, -Math.PI / 2, -Math.PI / 2 + Math.min(theta, Math.PI / 2))
+      ctx.strokeStyle = "rgba(0,0,0,0.2)"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      const midA = -Math.PI / 2 + theta / 2
+      ctx.fillStyle = "rgba(0,0,0,0.35)"
+      ctx.font = "11px sans-serif"
+      ctx.fillText(`θ=${p.angle}°`, start.x + (arcR + 8) * Math.cos(midA) - 12, start.y + (arcR + 8) * Math.sin(midA) + 4)
+      const pos = w2s(s.x, s.y)
+      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
+      if (speed > 0.1 && s.y > 0.5) {
+        const sc = 8
+        ctx.beginPath()
+        ctx.moveTo(pos.x, pos.y)
+        ctx.lineTo(pos.x + s.vx * sc, pos.y)
+        ctx.strokeStyle = "#3498db"
+        ctx.lineWidth = 2
+        ctx.stroke()
+        ctx.fillStyle = "#3498db"
+        ctx.font = "11px sans-serif"
+        ctx.fillText("Vx", pos.x + s.vx * sc * 0.5 - 8, pos.y + 14)
+        ctx.beginPath()
+        ctx.moveTo(pos.x, pos.y)
+        ctx.lineTo(pos.x, pos.y - s.vy * sc)
+        ctx.strokeStyle = "#2ecc71"
+        ctx.lineWidth = 2
+        ctx.stroke()
+        ctx.fillStyle = "#2ecc71"
+        ctx.fillText("Vy", pos.x + 6, pos.y - s.vy * sc * 0.5)
+        const endX = pos.x + s.vx * sc
+        const endY = pos.y - s.vy * sc
+        ctx.beginPath()
+        ctx.moveTo(pos.x, pos.y)
+        ctx.lineTo(endX, endY)
+        ctx.strokeStyle = "#e74c3c"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        const angle = Math.atan2(-s.vy, s.vx)
+        ctx.beginPath()
+        ctx.moveTo(endX, endY)
+        ctx.lineTo(endX - 8 * Math.cos(angle - 0.4), endY - 8 * Math.sin(angle - 0.4))
+        ctx.lineTo(endX - 8 * Math.cos(angle + 0.4), endY - 8 * Math.sin(angle + 0.4))
+        ctx.closePath()
+        ctx.fillStyle = "#e74c3c"
+        ctx.fill()
+        ctx.fillStyle = "#e74c3c"
+        ctx.fillText("V", endX * 0.5 + pos.x * 0.5 + 8, endY * 0.5 + pos.y * 0.5 - 6)
+      }
+    },
   }

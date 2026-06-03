@@ -1,4 +1,6 @@
 // friction-slide 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "friction-slide",
     level: "初中",
@@ -41,4 +43,71 @@ s.x += s.vx * dt
 
 摩擦系数 0.05-1 覆盖了从冰面到橡胶的范围。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ x: 0, vx: p.v0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      const a = p.mu * p.gravity
+      s.vx -= a * dt
+      s._t += dt
+      if (s.vx <= 0) { s.vx = 0; return }
+      s.x += s.vx * dt
+    },
+    isFinished: (s) => s.vx <= 0,
+    getBallPosition: (s) => ({ x: s.x, y: GROUND_Y }),
+    getTrailPosition: (s) => ({ x: s.x, y: GROUND_Y }),
+    trailFields: (s) => ({ t: s._t, vx: s.vx, x: s.x }),
+    chartDefs: [
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vx]) }] },
+      { title: "x-t 图", xLabel: "t (s)", yLabel: "x (m)", getData: (trail) => [{ name: "位移", data: trail.map(p => [p.t, p.x]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const a = p.mu * p.gravity
+      return [
+        `位移: ${s.x.toFixed(2)} m`,
+        `速度: ${s.vx.toFixed(2)} m/s`,
+        `减速度: ${a.toFixed(2)} m/s²`,
+        `μ = ${p.mu},  g = ${p.gravity} m/s²`,
+        `理论停止距离: ${(p.v0 * p.v0 / (2 * a)).toFixed(2)} m`,
+        `预计剩余: ${s.vx > 0 ? (s.vx / a).toFixed(2) : 0} s`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      const groundY = w2s(0, 0).y
+      const cw = ctx.canvas.width / (window.devicePixelRatio || 1)
+      for (let wx = 0; wx < 30; wx += 2.5) {
+        const sx = w2s(wx, 0).x
+        if (sx < -20 || sx > cw + 20) continue
+        ctx.beginPath()
+        ctx.moveTo(sx, groundY)
+        ctx.lineTo(sx + 4, groundY - 5)
+        ctx.strokeStyle = "rgba(0,0,0,0.08)"
+        ctx.lineWidth = 0.8
+        ctx.stroke()
+      }
+      ctx.fillStyle = "rgba(0,0,0,0.15)"
+      ctx.font = "11px sans-serif"
+      ctx.fillText(`μ = ${p.mu}`, w2s(0, 0).x + 4, groundY - 8)
+    },
+    drawObject: (ctx, s, p, w2s) => {
+      const pos = w2s(s.x, 0)
+      const w = 28, h = 18
+      const x = pos.x - w / 2, y = pos.y - h
+      ctx.fillStyle = "#e74c3c"
+      ctx.fillRect(x, y, w, h)
+      ctx.strokeStyle = "rgba(0,0,0,0.2)"
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(x, y, w, h)
+      ctx.strokeStyle = "rgba(0,0,0,0.12)"
+      ctx.lineWidth = 0.6
+      for (let i = 0; i < 3; i++) {
+        const lx = x + 6 + i * 8
+        ctx.beginPath()
+        ctx.moveTo(lx, y + h - 4)
+        ctx.lineTo(lx + 4, y + h - 8)
+        ctx.stroke()
+      }
+    },
   }

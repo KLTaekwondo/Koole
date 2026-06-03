@@ -1,4 +1,6 @@
 // circular 模型数据
+const DRAW_SCALE = 30
+
 export default {
     id: "circular",
     level: "高中",
@@ -35,4 +37,125 @@ export default {
 
 动画时长设成 2 个周期（\`4π/ω\`），让用户看清重复 pattern。向心力用红色、切向速度用橙色，两个箭头始终垂直——这个视觉效果挺直观的。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ angle: 0, trail: [], _t: 0, _lapCount: 0 }),
+    step: (s, p, dt) => {
+      s.angle += p.omega * dt
+      s._t += dt
+    },
+    isFinished: (s) => s._t >= (4 * Math.PI) / Math.abs(s.omega || 1),
+    getBallPosition: (s, p) => ({
+      x: p.radius * Math.cos(s.angle),
+      y: p.radius * Math.sin(s.angle) + p.radius,
+    }),
+    getTrailPosition: (s, p) => ({
+      x: p.radius * Math.cos(s.angle),
+      y: p.radius * Math.sin(s.angle) + p.radius,
+    }),
+    trailFields: (s, p) => {
+      const v = p.omega * p.radius
+      const vx = -v * Math.sin(s.angle)
+      const vy = v * Math.cos(s.angle)
+      return { t: s._t, vx, vy, angle: s.angle }
+    },
+    chartDefs: [
+      {
+        title: "vx-t 图（水平速度分量）",
+        xLabel: "t (s)",
+        yLabel: "vx (m/s)",
+        getData: (trail) => [{ name: "vx", data: trail.map(p => [p.t, p.vx]) }],
+      },
+      {
+        title: "vy-t 图（竖直速度分量）",
+        xLabel: "t (s)",
+        yLabel: "vy (m/s)",
+        getData: (trail) => [{ name: "vy", data: trail.map(p => [p.t, p.vy]) }],
+      },
+    ],
+    getInfoLines: (s, p, t) => {
+      const v = p.omega * p.radius
+      const ac = v * v / p.radius
+      const vx = -v * Math.sin(s.angle)
+      const vy = v * Math.cos(s.angle)
+      return [
+        `轨道半径: ${p.radius} m`,
+        `线速度: ${v.toFixed(2)} m/s`,
+        `vx: ${vx.toFixed(2)} m/s`,
+        `vy: ${vy.toFixed(2)} m/s`,
+        `向心加速度: ${ac.toFixed(2)} m/s²`,
+        `周期: ${(2 * Math.PI / p.omega).toFixed(2)} s`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s, getTheme) => {
+      const center = w2s(0, p.radius)
+      const ball = w2s(p.radius * Math.cos(s.angle), p.radius * Math.sin(s.angle) + p.radius)
+      const rPx = p.radius * DRAW_SCALE
+      ctx.beginPath()
+      ctx.arc(center.x, center.y, rPx, 0, Math.PI * 2)
+      ctx.strokeStyle = "rgba(52, 152, 219, 0.3)"
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([6, 4])
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.beginPath()
+      ctx.moveTo(center.x, center.y)
+      ctx.lineTo(ball.x, ball.y)
+      ctx.strokeStyle = "rgba(0,0,0,0.15)"
+      ctx.lineWidth = 1
+      ctx.stroke()
+      const dx = center.x - ball.x
+      const dy = center.y - ball.y
+      const len = Math.sqrt(dx * dx + dy * dy)
+      if (len > 1) {
+        const nx = dx / len, ny = dy / len
+        const arrowLen = Math.min(60, len * 0.6)
+        const tipX = ball.x + nx * arrowLen
+        const tipY = ball.y + ny * arrowLen
+        ctx.beginPath()
+        ctx.moveTo(ball.x, ball.y)
+        ctx.lineTo(tipX, tipY)
+        ctx.strokeStyle = "#e74c3c"
+        ctx.lineWidth = 2.5
+        ctx.stroke()
+        const angle = Math.atan2(ny, nx)
+        ctx.beginPath()
+        ctx.moveTo(tipX, tipY)
+        ctx.lineTo(tipX - 10 * Math.cos(angle - 0.35), tipY - 10 * Math.sin(angle - 0.35))
+        ctx.lineTo(tipX - 10 * Math.cos(angle + 0.35), tipY - 10 * Math.sin(angle + 0.35))
+        ctx.closePath()
+        ctx.fillStyle = "#e74c3c"
+        ctx.fill()
+        ctx.fillStyle = "#e74c3c"
+        ctx.font = "bold 12px sans-serif"
+        const labelX = ball.x + nx * arrowLen * 0.5
+        const labelY = ball.y + ny * arrowLen * 0.5
+        ctx.fillText("F心", labelX + ny * 10, labelY - nx * 10)
+      }
+      const v = p.omega * p.radius
+      const sc = 3
+      const vLen = Math.min(v * sc, 80)
+      const dir = p.omega > 0 ? 1 : -1
+      const tx = dir * -Math.sin(s.angle) * vLen
+      const ty = dir * -Math.cos(s.angle) * vLen
+      ctx.beginPath()
+      ctx.moveTo(ball.x, ball.y)
+      ctx.lineTo(ball.x + tx, ball.y + ty)
+      ctx.strokeStyle = "#e67e22"
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+      const vAng = Math.atan2(ty, tx)
+      ctx.beginPath()
+      ctx.moveTo(ball.x + tx, ball.y + ty)
+      ctx.lineTo(ball.x + tx - 8 * Math.cos(vAng - 0.4), ball.y + ty - 8 * Math.sin(vAng - 0.4))
+      ctx.lineTo(ball.x + tx - 8 * Math.cos(vAng + 0.4), ball.y + ty - 8 * Math.sin(vAng + 0.4))
+      ctx.closePath()
+      ctx.fillStyle = "#e67e22"
+      ctx.fill()
+      ctx.fillStyle = "#e67e22"
+      ctx.font = "bold 11px sans-serif"
+      ctx.fillText("V", ball.x + tx * 0.5 + 8, ball.y + ty * 0.5 - 6)
+    },
   }

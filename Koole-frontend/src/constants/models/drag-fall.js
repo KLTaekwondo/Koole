@@ -1,4 +1,6 @@
 // drag-fall 模型数据
+const GROUND_Y = 0.4
+
 export default {
     id: "drag-fall",
     level: "高中",
@@ -43,4 +45,52 @@ s.y -= s.vy * dt
 
 初始高度设 50m，给足够时间看到加速→匀速的过渡过程。
 `,
+
+    // ── 物理逻辑 ──
+    createState: (p) => ({ y: p.height + GROUND_Y, vy: 0, trail: [], _t: 0 }),
+    step: (s, p, dt) => {
+      const a = p.gravity - (p.dragCoeff / p.mass) * s.vy
+      s.vy += a * dt
+      s.y -= s.vy * dt
+      s._t += dt
+      if (s.y <= GROUND_Y && s.vy >= 0) { s.y = GROUND_Y; s.vy = 0 }
+    },
+    isFinished: (s) => s.y <= GROUND_Y && s.vy <= 0,
+    getBallPosition: (s) => ({ x: 0, y: s.y }),
+    getTrailPosition: (s) => ({ x: 0, y: s.y }),
+    trailFields: (s) => ({ t: s._t, vy: s.vy, y: s.y }),
+    chartDefs: [
+      { title: "y-t 图", xLabel: "t (s)", yLabel: "y (m)", getData: (trail) => [{ name: "高度", data: trail.map(p => [p.t, p.y]) }] },
+      { title: "v-t 图", xLabel: "t (s)", yLabel: "v (m/s)", getData: (trail) => [{ name: "速度", data: trail.map(p => [p.t, p.vy]) }] },
+    ],
+    getInfoLines: (s, p, t) => {
+      const vt = p.mass * p.gravity / p.dragCoeff
+      return [
+        `下落高度: ${(p.height + GROUND_Y - s.y).toFixed(1)} m`,
+        `速度: ${s.vy.toFixed(2)} m/s`,
+        `时间: ${t.toFixed(2)} s`,
+        `收尾速度: ${vt.toFixed(2)} m/s`,
+        `已接近收尾: ${s.vy > 0 ? (s.vy / vt * 100).toFixed(0) : 0}%`,
+      ]
+    },
+
+    // ── 渲染逻辑 ──
+    drawExtra: (ctx, s, p, w2s) => {
+      if (s.vy > 0.5) {
+        const pos = w2s(0, s.y)
+        const intensity = Math.min(s.vy / (p.mass * p.gravity / p.dragCoeff), 1)
+        for (let i = 0; i < 3; i++) {
+          const offset = (i - 1) * 14
+          ctx.beginPath()
+          ctx.moveTo(pos.x + offset - 8, pos.y + 6)
+          ctx.quadraticCurveTo(pos.x + offset, pos.y + 20 + intensity * 15, pos.x + offset + 8, pos.y + 6)
+          ctx.strokeStyle = `rgba(52, 152, 219, ${0.1 + intensity * 0.25})`
+          ctx.lineWidth = 1.2
+          ctx.stroke()
+        }
+        ctx.fillStyle = "rgba(0,0,0,0.2)"
+        ctx.font = "11px sans-serif"
+        ctx.fillText(`v收尾 = ${(p.mass * p.gravity / p.dragCoeff).toFixed(1)} m/s`, pos.x + 16, pos.y - 8)
+      }
+    },
   }
