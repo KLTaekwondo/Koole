@@ -2,6 +2,17 @@
     <div class="page-container">
         <!-- 容器A：导航条 + 模拟区域 -->
         <div class="sim-section">
+            <!-- 移动端模型选择器 -->
+            <select class="mobile-model-select" :value="activeModelId" @change="onMobileSelectModel($event.target.value)">
+                <optgroup v-for="cat in CATEGORIES" :key="cat" :label="cat">
+                    <option
+                        v-for="m in modelsForCategory(cat)"
+                        :key="m.id"
+                        :value="m.id"
+                    >{{ m.name }}</option>
+                </optgroup>
+            </select>
+
             <!-- 模型导航条 -->
             <aside class="model-nav">
                 <button class="back-btn" @click="$router.push('/physics-lab')">
@@ -65,14 +76,23 @@
 
 <script setup>
 import { ref, computed } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { PHYSICS_MODELS, CATEGORIES } from "../../constants/physicsModels.js"
 import ModelInfoPanel from "./ModelInfoPanel.vue"
 import DevNotesPanel from "./DevNotesPanel.vue"
 
 const route = useRoute()
+const router = useRouter()
 
 const activeCategory = ref("全部")
+
+const modelsForCategory = (cat) => {
+    return PHYSICS_MODELS.filter(m => m.category === cat)
+}
+
+const onMobileSelectModel = (modelId) => {
+    router.push(`/physics-lab/classic/${modelId}`)
+}
 
 const categoryOptions = ["全部", ...CATEGORIES]
 
@@ -287,10 +307,38 @@ const activeDevNotes = computed(() => {
     min-width: 0;
 }
 
+/* ── 移动端模型选择器 ── */
+.mobile-model-select {
+    display: none;
+}
+
 /* ── 响应式 ── */
 @media (max-width: 768px) {
     .model-nav { display: none; }
     .page-container { padding: 0 6px; }
+    .sim-section {
+        flex-direction: column;
+        max-height: 800px;
+    }
     .notes-section { flex-direction: column; }
+
+    .mobile-model-select {
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg-card);
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+        flex-shrink: 0;
+    }
+
+    .mobile-model-select:focus {
+        border-color: var(--primary);
+    }
 }
 </style>

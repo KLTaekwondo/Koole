@@ -76,6 +76,7 @@ vy = boatSpeed * cos(theta)
     },
 
     // ── 渲染逻辑 ──
+    drawObject: () => {},
     drawExtra: (ctx, s, p, w2s) => {
       const canvas = ctx.canvas
       const dpr = window.devicePixelRatio || 1

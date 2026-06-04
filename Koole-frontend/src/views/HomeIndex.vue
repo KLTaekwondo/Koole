@@ -11,9 +11,9 @@
             <h1 class="hero-title">学点东西，<span class="hero-highlight">酷了</span>！</h1>
             <p class="hero-desc">记录学习过程中的思考和收获，每天进步一点点。</p>
             <div class="hero-buttons">
-                <button class="hero-button primary" @click="goArticle">
+                <button class="hero-button primary" @click="goLab">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    看看笔记
+                    开始演示
                 </button>
                 <button class="hero-button secondary" @click="goAbout">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -29,8 +29,8 @@
 import { useRouter } from "vue-router"
 const router = useRouter()
 
-const goArticle = () => {
-    router.push({ name: "学习笔记" })
+const goLab = () => {
+    router.push({ name: "演示工具" })
 }
 
 const goAbout = () => {

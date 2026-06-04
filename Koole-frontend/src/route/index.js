@@ -1,12 +1,9 @@
-import { createRouter, createWebHistory } from "vue-router"
+import { createRouter, createWebHashHistory } from "vue-router"
 import HomeIndex from "../views/HomeIndex.vue"
-import ArticleView from "../views/ArticleView.vue"
 import AboutIndex from "../views/AboutIndex.vue"
-import UpdatePostView from "../views/UpdatePostView.vue"
 import PhysicsLab from "../views/PhysicsLab.vue"
 import ClassicPhysicsLayout from "../views/classic/ClassicPhysicsLayout.vue"
 import ClassicModelView from "../views/classic/ClassicModelView.vue"
-import ArticleDetail from "../views/ArticleDetail.vue"
 import SandboxView from "../views/Sandbox.vue"
 
 const routes = [
@@ -19,21 +16,6 @@ const routes = [
         path: "/about",
         name: "关于本站",
         component: AboutIndex,
-    },
-    {
-        path: "/articles",
-        name: "学习笔记",
-        component: ArticleView,
-    },
-    {
-        path: "/articles/:id",
-        name: "笔记详情",
-        component: ArticleDetail,
-    },
-    {
-        path: "/updateposts",
-        name: "更新记录",
-        component: UpdatePostView,
     },
     {
         path: "/physics-lab",
@@ -60,7 +42,7 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(),
     routes,
 })
 

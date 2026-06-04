@@ -57,6 +57,32 @@ export function createCamera(canvasRef, modelRef, simState, viewTransform, draw)
     if (canvasRef.value) canvasRef.value.style.cursor = "grab"
   }
 
+  // ── 触摸事件（映射到拖拽逻辑）──
+  const onTouchStart = (e) => {
+    if (e.touches.length !== 1) return
+    e.preventDefault()
+    const t = e.touches[0]
+    isDragging = true
+    followTarget.value = false
+    dragStartX = t.clientX
+    dragStartY = t.clientY
+    dragOffX = offsetX.value
+    dragOffY = offsetY.value
+  }
+
+  const onTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return
+    e.preventDefault()
+    const t = e.touches[0]
+    offsetX.value = dragOffX + (t.clientX - dragStartX)
+    offsetY.value = dragOffY + (t.clientY - dragStartY)
+    draw()
+  }
+
+  const onTouchEnd = () => {
+    isDragging = false
+  }
+
   return {
     followTarget,
     offsetX,
@@ -67,5 +93,8 @@ export function createCamera(canvasRef, modelRef, simState, viewTransform, draw)
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
   }
 }

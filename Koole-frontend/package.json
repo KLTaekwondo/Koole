@@ -1,24 +1,50 @@
 {
   "name": "koole-frontend",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "vite build && electron .",
+    "electron:build": "vite build && electron-builder --win"
   },
   "dependencies": {
-    "axios": "^1.16.1",
     "echarts": "^6.1.0",
     "md-editor-v3": "^6.5.0",
-    "vditor": "^3.11.2",
     "vue": "^3.5.34",
-    "vue-router": "^4.6.4",
-    "vue-virtual-scroller": "^3.0.3"
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.6",
-    "vite": "^8.0.12"
+    "@vitejs/plugin-vue": "^5.2.4",
+    "electron": "^22.3.27",
+    "electron-builder": "^26.8.1",
+    "vite": "^5.4.21"
+  },
+  "build": {
+    "appId": "com.koole.physics",
+    "productName": "Koole物理模拟器",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Koole物理模拟器"
+    }
   }
 }

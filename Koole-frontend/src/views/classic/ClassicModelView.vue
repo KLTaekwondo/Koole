@@ -26,12 +26,16 @@
 
         <!-- 画布 -->
         <div class="canvas-area" ref="canvasAreaRef">
+            <SimInfoOverlay :lines="infoLines" />
             <canvas
                 ref="canvasRef"
                 @mousedown="onMouseDown"
                 @mousemove="onMouseMove"
                 @mouseup="onMouseUp"
                 @mouseleave="onMouseUp"
+                @touchstart="onTouchStart"
+                @touchmove="onTouchMove"
+                @touchend="onTouchEnd"
             ></canvas>
         </div>
 
@@ -100,6 +104,7 @@ import { useRoute } from "vue-router"
 import { getModelById } from "../../constants/index.js"
 import { usePhysicsSim } from "../../stores/physics/usePhysicsSim.js"
 import ComparisonPanel from "./ComparisonPanel.vue"
+import SimInfoOverlay from "./SimInfoOverlay.vue"
 
 const route = useRoute()
 
@@ -122,6 +127,7 @@ watch(() => route.params.modelId, loadModel, { immediate: true })
 const {
     canvasRef,
     canvasAreaRef,
+    infoLines,
     running,
     followTarget,
     recordedTrails,
@@ -136,6 +142,9 @@ const {
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
 } = usePhysicsSim(activeModel)
 </script>
 
@@ -194,16 +203,20 @@ const {
     background: var(--primary-gradient);
 }
 
-/* ── 画布：flex: 1 填满剩余空间 ── */
+/* ── 画布区域 ── */
 .canvas-area {
-    flex: 1;
     flex-shrink: 0;
     height: 600px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     position: relative;
+}
 
+@media (max-width: 768px) {
+    .canvas-area {
+        height: 55vh;
+    }
 }
 
 .canvas-area canvas {
@@ -213,6 +226,7 @@ const {
     cursor: grab;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
+    touch-action: none;
 }
 
 .canvas-area canvas:active {
@@ -297,6 +311,31 @@ const {
     cursor: pointer;
     border: 2px solid #fff;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+    .params-bar-inner {
+        flex-wrap: wrap;
+    }
+
+    .param-item {
+        min-width: 120px;
+        flex: 1;
+    }
+
+    .param-item-slider::-webkit-slider-thumb {
+        width: 20px;
+        height: 20px;
+    }
+
+    .canvas-toolbar {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .canvas-actions {
+        flex-wrap: wrap;
+    }
 }
 
 .param-item-select {

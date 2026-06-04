@@ -1,4 +1,4 @@
-import { watch, nextTick } from "vue"
+import { ref, watch, nextTick } from "vue"
 import { createCanvasManager } from "./canvas.js"
 import { createCamera } from "./camera.js"
 import { createPhysicsEngine } from "./PhysicsEngine.js"
@@ -32,6 +32,9 @@ export function usePhysicsSim(modelRef) {
   // ── 视图变换 ──
   const viewTransform = createViewTransform()
 
+  // ── 信息浮层数据 ──
+  const infoLines = ref([])
+
   // ── 创建各模块 ──
 
   // 1. Canvas（resize 时同步 ViewTransform）
@@ -64,7 +67,8 @@ export function usePhysicsSim(modelRef) {
     modelRef,
     simState,
     recordedTrails,
-    () => theme.value
+    () => theme.value,
+    (lines) => { infoLines.value = lines }
   )
 
   // ── 参数更新 ──
@@ -116,6 +120,7 @@ export function usePhysicsSim(modelRef) {
   return {
     canvasRef: canvasManager.canvasRef,
     canvasAreaRef: canvasManager.canvasAreaRef,
+    infoLines,
     running,
     followTarget: camera.followTarget,
     recordedTrails,
@@ -130,5 +135,8 @@ export function usePhysicsSim(modelRef) {
     onMouseDown: camera.onMouseDown,
     onMouseMove: camera.onMouseMove,
     onMouseUp: camera.onMouseUp,
+    onTouchStart: camera.onTouchStart,
+    onTouchMove: camera.onTouchMove,
+    onTouchEnd: camera.onTouchEnd,
   }
 }

@@ -9,7 +9,7 @@ import { DRAW_SCALE } from "../../constants/physicsModels.js"
  * @param {Ref} recordedTrails - 录制轨迹引用
  * @param {Function} getTheme - 获取当前主题
  */
-export function createRenderer(canvasRef, viewTransform, modelRef, simState, recordedTrails, getTheme) {
+export function createRenderer(canvasRef, viewTransform, modelRef, simState, recordedTrails, getTheme, onInfoUpdate) {
   const { worldToScreen, offsetX, offsetY, viewWidth, viewHeight } = viewTransform
 
   const drawGrid = (ctx, cw, ch) => {
@@ -92,35 +92,6 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
     }
   }
 
-  const drawInfoPanel = (ctx, model, state, params, simTime) => {
-    ctx.font = "bold 14px ui-monospace, SF Mono, 'Cascadia Code', Consolas, monospace"
-    const infoLines = model.getInfoLines(state, params, simTime)
-    const lineHeight = 22
-    let maxW = 0
-    infoLines.forEach(line => { const m = ctx.measureText(line); if (m.width > maxW) maxW = m.width })
-    const padX = 12, padY = 8
-    const bgW = maxW + padX * 2, bgH = infoLines.length * lineHeight + padY * 2
-    const rx = 6, bx = 10, by = 10
-    ctx.beginPath()
-    ctx.moveTo(bx + rx, by); ctx.lineTo(bx + bgW - rx, by)
-    ctx.arcTo(bx + bgW, by, bx + bgW, by + rx, rx)
-    ctx.lineTo(bx + bgW, by + bgH - rx)
-    ctx.arcTo(bx + bgW, by + bgH, bx + bgW - rx, by + bgH, rx)
-    ctx.lineTo(bx + rx, by + bgH)
-    ctx.arcTo(bx, by + bgH, bx, by + bgH - rx, rx)
-    ctx.lineTo(bx, by + rx)
-    ctx.arcTo(bx, by, bx + rx, by, rx)
-    ctx.closePath()
-    const isDark = getTheme() === "dark"
-    ctx.fillStyle = isDark ? "rgba(20,20,20,0.92)" : "rgba(0,0,0,0.6)"
-    ctx.fill()
-    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)"
-    ctx.lineWidth = 1
-    ctx.stroke()
-    ctx.fillStyle = isDark ? "#ffffff" : "whitesmoke"
-    infoLines.forEach((line, i) => { ctx.fillText(line, bx + padX, by + padY + 14 + i * lineHeight) })
-  }
-
   const draw = () => {
     const canvas = canvasRef.value
     const model = modelRef.value
@@ -140,7 +111,8 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
     drawRecordedTrails(ctx)
     drawCurrentTrail(ctx, simState.state)
     drawObject(ctx, model, simState.state, simState.params)
-    drawInfoPanel(ctx, model, simState.state, simState.params, simState.simTime)
+    // 更新信息浮层数据（通过回调传给 Vue 组件）
+    if (onInfoUpdate) onInfoUpdate(model.getInfoLines(simState.state, simState.params, simState.simTime))
     ctx.restore()
   }
 
