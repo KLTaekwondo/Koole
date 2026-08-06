@@ -161,7 +161,7 @@ const {
     flex-shrink: 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: sticky;
-    z-index: 2;
+    z-index: 5;
     top:0;
 }
 

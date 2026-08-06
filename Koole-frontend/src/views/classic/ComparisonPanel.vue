@@ -293,6 +293,10 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
+.comparison-panel::-webkit-scrollbar {
+  display: none;
+}
+
 .panel-header {
   display: flex;
   align-items: center;

@@ -16,7 +16,7 @@
             <!-- 模型导航条 -->
             <aside class="model-nav">
                 <button class="back-btn" @click="$router.push('/physics-lab')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <img :src="navBackIcon" alt="" class="back-icon" />
                     返回
                 </button>
 
@@ -56,18 +56,12 @@
             </main>
         </div>
 
-        <!-- 容器B：学习笔记 + 开发笔记 -->
+        <!-- 容器B：知识说明 -->
         <div class="notes-section">
             <aside class="knowledge-section">
                 <ModelInfoPanel
                     :modelId="activeModelId"
                     :knowledge="activeKnowledge"
-                />
-            </aside>
-            <aside class="dev-notes-section">
-                <DevNotesPanel
-                    :modelId="activeModelId"
-                    :notes="activeDevNotes"
                 />
             </aside>
         </div>
@@ -79,7 +73,7 @@ import { ref, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { PHYSICS_MODELS, CATEGORIES } from "../../constants/physicsModels.js"
 import ModelInfoPanel from "./ModelInfoPanel.vue"
-import DevNotesPanel from "./DevNotesPanel.vue"
+import navBackIcon from "../../assets/icons/nav-back.svg"
 
 const route = useRoute()
 const router = useRouter()
@@ -110,10 +104,6 @@ const activeKnowledge = computed(() => {
     return model?.knowledge || ""
 })
 
-const activeDevNotes = computed(() => {
-    const model = PHYSICS_MODELS.find(m => m.id === activeModelId.value)
-    return model?.devNotes || ""
-})
 </script>
 
 <style scoped>
@@ -162,6 +152,13 @@ const activeDevNotes = computed(() => {
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
+}
+
+.back-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.95;
 }
 
 .back-btn:hover {
@@ -292,18 +289,12 @@ const activeDevNotes = computed(() => {
 
 /* ── 容器B：笔记区域 ── */
 .notes-section {
-    display: flex;
-    gap: 12px;
+    display: block;
     flex-shrink: 0;
 }
 
 .knowledge-section {
-    flex: 1;
-    min-width: 0;
-}
-
-.dev-notes-section {
-    flex: 1;
+    width: 100%;
     min-width: 0;
 }
 
@@ -320,8 +311,6 @@ const activeDevNotes = computed(() => {
         flex-direction: column;
         max-height: 800px;
     }
-    .notes-section { flex-direction: column; }
-
     .mobile-model-select {
         display: block;
         width: 100%;

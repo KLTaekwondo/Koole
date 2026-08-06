@@ -1,109 +1,34 @@
 ﻿<template>
   <div class="sandbox-page">
-  <div class="sandbox-layout">
-    <!-- 左侧：模型面板 -->
-    <div class="panel panel-left">
-      <div class="panel-header">
-        <h3>模型库</h3>
-      </div>
-      <div class="model-list">
-        <div
-          v-for="mt in MODEL_TYPES"
-          :key="mt.id"
-          class="model-item"
-          :class="{ active: paletteActiveModel === mt.id }"
-          @mousedown.prevent="onPaletteMouseDown($event, mt.id)"
-          :title="mt.description"
-        >
-          <span class="model-icon" v-html="mt.iconSvg || mt.icon"></span>
-          <span class="model-name">{{ mt.name }}</span>
-        </div>
-      </div>
-      <div class="panel-divider"></div>
-      <div class="model-hint">
-        <p>点击模型 → 点击画布放置</p>
-        <p>或拖拽模型到画布</p>
-      </div>
-    </div>
-
-    <!-- 中间：画布区域 -->
-    <div class="canvas-wrapper" ref="canvasWrapperRef">
-      <!-- 工具栏 -->
-      <div class="canvas-toolbar">
-        <button class="tool-back-btn" @click="goBackLab" title="返回实验室">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        </button>
-        <div class="tool-title-area">
-          <span class="tool-title">沙盒模式</span>
-          <span class="tool-subtitle">自由搭建物理实验</span>
-        </div>
-        <span class="toolbar-divider"></span>
-        <button class="tool-btn" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
-          <span v-if="isPlaying">⏸</span>
-          <span v-else>▶</span>
-        </button>
-        <button class="tool-btn" @click="resetAll" title="重置物体位置">⟳</button>
-        <button class="tool-btn" @click="clearAll" title="清空所有物体">✕</button>
-        <!-- 环境设置组 -->
-        <div class="tool-group">
-          <span class="tool-group-label">环境</span>
-          <button
-            class="tool-chip"
-            :class="{ active: gravityEnabled }"
-            @click="gravityEnabled = !gravityEnabled"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
-            重力
-          </button>
-          <span class="gravity-slider-wrap" title="重力加速度">
-            <input
-              type="range"
-              v-model.number="gravityStrength"
-              min="0" max="2000" step="50"
-              class="gravity-slider"
-            />
-            <span class="gravity-val">{{ gravityStrength }}</span>
-            <span class="gravity-unit">px/s²</span>
-          </span>
-          <button
-            class="tool-chip"
-            :class="{ active: showGrid }"
-            @click="showGrid = !showGrid"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-            网格
-          </button>
-        </div>
-
-        <!-- 边界弹性选择 -->
-        <div class="tool-group">
-          <span class="tool-group-label">边界</span>
-          <label class="tool-select-wrap">
-            <span>墙</span>
-            <select v-model.number="wallRestitution">
-              <option :value="1.0">完全弹性形变</option>
-              <option :value="0.0">完全非弹性形变</option>
-            </select>
-          </label>
-          <label class="tool-select-wrap">
-            <span>地</span>
-            <select v-model.number="floorRestitution">
-              <option :value="1.0">完全弹性形变</option>
-              <option :value="0.0">完全非弹性形变</option>
-            </select>
-          </label>
-        </div>
-        <span class="tool-status">
-          {{ objects.length }} 个物体
-          <span v-if="paletteActiveModel" class="placement-hint">
-            · 点击画布放置{{ getModelName(paletteActiveModel) }}
-          </span>
-        </span>
-      </div>
-
-      <!-- Canvas -->
-      <div class="canvas-container" ref="canvasContainerRef">
+    <!-- 全屏无限画布 -->
+    <div class="canvas-container" ref="canvasContainerRef">
         <canvas ref="canvasRef" @mousedown="onCanvasMouseDown" @click="onCanvasClick" @contextmenu.prevent="onCanvasContextMenu"></canvas>
+
+        <!-- 即时操作（左上角悬浮小胶囊） -->
+        <div class="quick-toolbar">
+          <button class="tool-back-btn" @click="goBackLab" title="返回实验室">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <span class="toolbar-divider"></span>
+          <button class="tool-btn" @click="togglePlay" :title="isPlaying ? '暂停' : '播放'">
+            <span v-if="isPlaying">⏸</span>
+            <span v-else>▶</span>
+          </button>
+          <button class="tool-btn" @click="stepOnce" :disabled="isPlaying" title="暂停时单步推进 1/60 秒">▸|</button>
+          <button v-if="activePreset" class="tool-btn" @click="restorePreset" title="恢复实验初始状态">↺</button>
+          <button class="tool-btn" @click="resetAll" title="重置物体位置">⟳</button>
+          <button class="tool-btn" @click="clearAll" title="清空所有物体">✕</button>
+          <span class="toolbar-divider"></span>
+          <button class="tool-btn" @click="resetView" title="复位视图">⌂</button>
+          <button v-if="selectedObject" class="tool-btn" @click="focusSelected" title="居中选中物体">◎</button>
+        </div>
+
+        <!-- 状态栏（左上角工具栏下方） -->
+        <div class="sandbox-status">
+          {{ objects.length }} 个物体 · {{ Math.round(camera.scale * 100) }}%
+          <span v-if="paletteActiveModel" class="placement-hint">· 点击画布放置{{ getModelName(paletteActiveModel) }}</span>
+        </div>
+
         <!-- 放置预览 -->
         <div
           v-if="paletteActiveModel && !paletteDrag.active"
@@ -114,11 +39,22 @@
 
         <!-- 浮动属性面板（悬浮在画布上方，不影响画布布局） -->
         <div v-if="selectedObject" class="float-panel">
+          <!-- 隐藏依赖：panelRefreshTick 变化时触发面板重渲染，实时显示 raw 物体最新值；元素不重建，输入焦点不丢失 -->
+          <span style="display:none">{{ panelRefreshTick }}</span>
           <div class="float-panel-header">
             <span class="float-panel-title">属性 · {{ getModelName(selectedTypeId) }}</span>
             <button class="close-btn" @click="deselectAll" title="关闭">✕</button>
           </div>
           <div class="float-panel-body">
+            <div class="prop-section live-data-section">
+              <div class="prop-section-title">实时数据</div>
+              <div class="live-data-grid">
+                <span>时间</span><b>{{ elapsedTime.toFixed(2) }} s</b>
+                <span>位置</span><b>({{ round(selectedObject.pos.x) }}, {{ round(selectedObject.pos.y) }}) px</b>
+                <span>速度</span><b>({{ round(selectedObject.velocity.x) }}, {{ round(selectedObject.velocity.y) }}) px/s</b>
+                <span>速率</span><b>{{ round(getSelectedSpeed()) }} px/s</b>
+              </div>
+            </div>
             <div class="prop-section">
               <div class="prop-section-title">位置</div>
               <div class="prop-row">
@@ -252,8 +188,93 @@
             <button class="delete-btn" @click="deleteSelected">删除物体</button>
           </div>
         </div>
+
+        <!-- 底部胶囊工具栏（大分类入口） -->
+        <div class="capsule-toolbar">
+          <button class="tool-chip tab-chip" :class="{ active: activeToolPanel === 'experiments' }" @click="togglePanel('experiments')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><line x1="8" y1="15" x2="16" y2="15"/></svg>
+            实验
+          </button>
+          <button class="tool-chip tab-chip" :class="{ active: activeToolPanel === 'model' }" @click="togglePanel('model')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            模型
+          </button>
+          <button class="tool-chip tab-chip" :class="{ active: activeToolPanel === 'settings' }" @click="togglePanel('settings')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            设置
+          </button>
+        </div>
+
+        <!-- 实验预设面板 -->
+        <div v-if="activeToolPanel === 'experiments'" class="tool-panel experiment-panel">
+          <button
+            v-for="preset in SANDBOX_PRESETS"
+            :key="preset.id"
+            class="preset-item"
+            :class="{ active: activePreset?.id === preset.id }"
+            :title="preset.description"
+            @click="requestLoadPreset(preset)"
+          >
+            <b>{{ preset.name }}</b>
+            <span>{{ preset.description }}</span>
+          </button>
+        </div>
+
+        <!-- 模型选择面板（点"模型"展开） -->
+        <div v-if="activeToolPanel === 'model'" class="tool-panel model-panel">
+          <div
+            v-for="mt in MODEL_TYPES"
+            :key="mt.id"
+            class="model-item"
+            :class="{ active: paletteActiveModel === mt.id }"
+            @mousedown.prevent="onPaletteMouseDown($event, mt.id)"
+            :title="mt.description"
+          >
+            <span class="model-icon" v-html="mt.iconSvg || mt.icon"></span>
+            <span class="model-name">{{ mt.name }}</span>
+          </div>
+        </div>
+
+        <!-- 设置面板（点"设置"展开） -->
+        <div v-if="activeToolPanel === 'settings'" class="tool-panel settings-panel">
+          <div class="settings-row">
+            <button class="tool-chip" :class="{ active: gravityEnabled }" @click="gravityEnabled = !gravityEnabled">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              重力
+            </button>
+            <span class="gravity-slider-wrap" title="重力加速度 (px/s²)">
+              <input type="range" v-model.number="gravityStrength" min="0" max="2000" step="50" class="gravity-slider" />
+              <span class="gravity-val">{{ gravityStrength }}</span>
+            </span>
+          </div>
+          <div class="settings-row">
+            <button class="tool-chip" :class="{ active: showGrid }" @click="showGrid = !showGrid">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+              网格
+            </button>
+            <label class="tool-select-wrap">
+              <span>地面弹性</span>
+              <select v-model.number="floorRestitution">
+                <option :value="1.0">完全弹性</option>
+                <option :value="0.0">完全非弹性</option>
+              </select>
+            </label>
+          </div>
+          <div class="settings-row">
+            <button class="tool-chip" :class="{ active: showLegend }" @click="showLegend = !showLegend">属性说明</button>
+            <label class="tool-select-wrap">
+              <span>播放速度</span>
+              <select v-model.number="timeScale">
+                <option :value="0.5">0.5x</option>
+                <option :value="1">1x</option>
+                <option :value="2">2x</option>
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
+
+    <ConfirmDialog ref="confirmDialogRef" />
 
     <!-- 调色板拖拽幽灵 -->
     <div
@@ -264,10 +285,9 @@
       <span v-html="paletteDrag.icon"></span>
       <span>{{ paletteDrag.name }}</span>
     </div>
-  </div>
 
-  <!-- 属性说明卡 -->
-  <div class="prop-legend">
+    <!-- 属性说明卡（浮层，胶囊 "?" 按钮切换显示） -->
+  <div class="prop-legend" v-if="showLegend">
     <div class="legend-header">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       属性说明
@@ -291,25 +311,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, toRaw } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Ball from '../physics/core/Ball.js'
-import Box from '../physics/core/Box.js'
-import Triangle from '../physics/core/Triangle.js'
-import SpringMass from '../physics/core/SpringMass.js'
-import Pendulum from '../physics/core/Pendulum.js'
-import Ramp from '../physics/core/Ramp.js'
-import { GRAVITY, MAX_SPEED, REST_THRESHOLD } from '../constants/physics.js'
-import MODEL_TYPES from '../constants/modelTypes.js'
-import {
-  collideBallBall,
-  collideBallBox,
-  collideBoxBox,
-  collideBoundingCircle,
-  collideBallTriangle,
-  collideBoxTriangle,
-  collideTriTriangle,
-} from '../physics/collision.js'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { theme } from '../stores/theme.js'
+import { GRAVITY, DEFAULT_FLOOR_RESTITUTION, GROUND_Y } from '../constants/physics.js'
+import { MODEL_TYPES, getModelName } from '../physics/sandbox/modelRegistry.js'
+import { stepSandboxWorld } from '../physics/sandbox/world.js'
+import { drawSandbox } from '../physics/sandbox/renderer.js'
+import { useSandboxObjects } from '../composables/sandbox/useSandboxObjects.js'
+import { useSandboxProperties } from '../composables/sandbox/useSandboxProperties.js'
+import { useSandboxPaletteDrag } from '../composables/sandbox/useSandboxPaletteDrag.js'
+import { useSandboxCanvasInteraction } from '../composables/sandbox/useSandboxCanvasInteraction.js'
+import { useSandboxLoop } from '../composables/sandbox/useSandboxLoop.js'
+import { SANDBOX_PRESETS } from '../physics/sandbox/presets.js'
 
 const router = useRouter()
 
@@ -324,385 +339,164 @@ const gravityEnabled = ref(true)
 const gravityStrength = ref(GRAVITY)    // 可调重力强度 (px/s²)
 const showGrid = ref(true)
 const paletteActiveModel = ref('')      // 当前选中的待放置模型
-const version = ref(0)                  // 强制触发重渲染用
+const panelRefreshTick = ref(0)          // 属性面板刷新信号（模板读取它建立依赖，见 float-panel）
+const activePreset = ref(null)            // 当前加载的标准实验配置
+const timeScale = ref(1)                  // 播放时间倍率
+const elapsedTime = ref(0)                // 当前实验运行时间（秒）
+const confirmDialogRef = ref(null)
 
-// 全局环境弹性（容器边界碰撞）
-const wallRestitution = ref(1.0)        // 墙壁弹性（水平方向）
-const floorRestitution = ref(0.0)       // 地板弹性（竖直方向）
+// 无限画布视口相机（左上角世界坐标 + 缩放）
+const camera = reactive({ x: 0, y: 0, scale: 1 })
+
+// 地面弹性（无限画布地面线，竖直方向）
+const floorRestitution = ref(DEFAULT_FLOOR_RESTITUTION)
 
 // 调色板拖拽状态
 const paletteDrag = reactive({ active: false, x: 0, y: 0, modelId: '', icon: '', name: '' })
 
-// Canvas 拖拽状态
-const canvasDrag = reactive({
-  active: false,
-  object: null,
-  offsetX: 0,
-  offsetY: 0,
-  mouseStartX: 0,
-  mouseStartY: 0,
-})
-
-// 标记本次鼠标操作是否是"纯点击"（而非拖拽），click 事件里判断
-let clickOnly = true
-
-// mousedown 时记录被拖拽物体的类型，mouseup 时选中用
-let dragStartTypeId = ''
+// Canvas 拖拽状态 / 纯点击标记 / 拖拽类型记录：已移入 useSandboxCanvasInteraction
 
 // DOM refs
 const canvasRef = ref(null)
 const canvasContainerRef = ref(null)
-const canvasWrapperRef = ref(null)
+
+// 属性说明浮层（右下角，胶囊 "?" 按钮切换）
+const showLegend = ref(true)
+
+// 底部胶囊大分类面板（'' 收起 / 'model' / 'settings'）
+const activeToolPanel = ref('')
+function togglePanel(name) {
+  activeToolPanel.value = activeToolPanel.value === name ? '' : name
+}
 
 // Canvas 尺寸
 let canvasW = 800
 let canvasH = 600
 
-// 动画
-let animationId = null
-let lastTimestamp = 0
-let isUnmounted = false
+// ============================================================
+// 组合式函数：对象管理 / 属性更新
+// ============================================================
+const { addObjectAt, loadPreset, selectObject, deselectAll, deleteSelected, clearAll, resetAll } = useSandboxObjects({
+  objects,
+  selectedObject,
+  selectedTypeId,
+  onSelectionChanged: () => { panelRefreshTick.value++ },
+  getCanvasSize: () => ({ width: canvasW, height: canvasH }),
+  camera,
+  groundY: GROUND_Y,
+})
 
-// 重力常数 (像素/秒²) — 见 constants/physics.js
+const { updateProp, getRampAngle, setRampAngle, updateRampDim, round } = useSandboxProperties({
+  selectedObject,
+  onUpdated: () => { panelRefreshTick.value++ },
+})
 
-// 模型类型查找
-const modelTypeMap = {}
-for (const mt of MODEL_TYPES) {
-  modelTypeMap[mt.id] = mt
-}
+const { onPaletteMouseDown, cleanupPaletteDrag } = useSandboxPaletteDrag({
+  paletteActiveModel,
+  paletteDrag,
+  camera,
+  canvasRef,
+  getCanvasSize: () => ({ width: canvasW, height: canvasH }),
+  onDrop: addObjectAt,
+})
 
-function getModel(id) {
-  return modelTypeMap[id]
-}
+const {
+  onCanvasMouseDown,
+  onCanvasClick,
+  onCanvasContextMenu,
+  onCanvasMouseMove,
+  onCanvasWheel,
+  canvasDrag,
+  getPreviewMouse,
+  cleanupCanvasInteraction,
+} = useSandboxCanvasInteraction({
+  objects,
+  paletteActiveModel,
+  camera,
+  canvasRef,
+  onAddObject: addObjectAt,
+  onSelect: selectObject,
+  onDeselect: deselectAll,
+  onDelete: deleteSelected,
+})
 
-function getModelName(id) {
-  return getModel(id)?.name || id
-}
+// 首次 resize 时自适应相机：让地面贴视口底部可见（一次性）
+let initialCameraSet = false
+
+const { resetTimestamp, start: startLoop, cleanup: cleanupLoop } = useSandboxLoop({
+  canvasRef,
+  canvasContainerRef,
+  onFrame: (dt) => { updatePhysics(dt); draw() },
+  onResize: (width, height) => {
+    canvasW = width
+    canvasH = height
+    if (!initialCameraSet) {
+      initialCameraSet = true
+      camera.y = Math.max(0, height - GROUND_Y - 48)
+    }
+  },
+})
 
 // ============================================================
-// 调色板交互
+// 交互与状态管理：已抽离到 useSandboxObjects / useSandboxProperties /
+// useSandboxPaletteDrag / useSandboxCanvasInteraction / useSandboxLoop
 // ============================================================
-function onPaletteMouseDown(e, modelId) {
-  const model = getModel(modelId)
-  if (!model) return
-
-  // 点击已激活的模型 → 取消放置模式，不触发拖拽
-  if (paletteActiveModel.value === modelId) {
-    paletteActiveModel.value = ''
-    return
-  }
-
-  paletteActiveModel.value = modelId
-
-  // 开始拖拽
-  paletteDrag.active = true
-  paletteDrag.x = e.clientX
-  paletteDrag.y = e.clientY
-  paletteDrag.modelId = modelId
-  paletteDrag.icon = model.icon
-  paletteDrag.name = model.name
-
-  document.addEventListener('mousemove', onDocumentMouseMove)
-  document.addEventListener('mouseup', onDocumentMouseUp)
-  document.addEventListener('keydown', onDocumentKeyDown)
-}
-
-function onDocumentMouseMove(e) {
-  // —— 调色板拖拽跟随 ——
-  if (paletteDrag.active) {
-    paletteDrag.x = e.clientX
-    paletteDrag.y = e.clientY
-  }
-  // —— Canvas 物体拖拽跟随 ——
-  if (canvasDrag.active && canvasDrag.object) {
-    // 移动超过 5px 就标记为拖拽而非点击
-    const dx = e.clientX - canvasDrag.mouseStartX
-    const dy = e.clientY - canvasDrag.mouseStartY
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      clickOnly = false
-    }
-    const rect = canvasRef.value?.getBoundingClientRect()
-    if (rect) {
-      let newX = e.clientX - rect.left + canvasDrag.offsetX
-      let newY = e.clientY - rect.top + canvasDrag.offsetY
-      // 边界约束，防止物体拖出画布
-      const obj = canvasDrag.object
-      if (obj instanceof Ball || obj instanceof SpringMass || obj instanceof Pendulum) {
-        newX = Math.max(obj.radius, Math.min(canvasW - obj.radius, newX))
-        newY = Math.max(obj.radius, Math.min(canvasH - obj.radius, newY))
-      } else {
-        const hw = (obj.width || 40) / 2
-        const hh = (obj.height || 40) / 2
-        newX = Math.max(hw, Math.min(canvasW - hw, newX))
-        newY = Math.max(hh, Math.min(canvasH - hh, newY))
-      }
-      canvasDrag.object.pos.x = newX
-      canvasDrag.object.pos.y = newY
-    }
-  }
-}
-
-function onDocumentMouseUp(e) {
-  // —— 调色板拖拽结束 ——
-  if (paletteDrag.active) {
-    const canvasRect = canvasRef.value?.getBoundingClientRect()
-    if (canvasRect) {
-      const cx = e.clientX - canvasRect.left
-      const cy = e.clientY - canvasRect.top
-      if (cx >= 0 && cx <= canvasW && cy >= 0 && cy <= canvasH) {
-        addObjectAt(cx, cy, paletteDrag.modelId)
-      }
-    }
-    paletteDrag.active = false
-    paletteActiveModel.value = ''
-    cleanupDragListeners()
-    return
-  }
-
-  // —— Canvas 物体拖拽结束 ——
-  if (canvasDrag.active) {
-    const obj = canvasDrag.object
-    const typeId = dragStartTypeId
-    canvasDrag.active = false
-    canvasDrag.object = null
-    dragStartTypeId = ''
-    // 拖拽完成后选中该物体（此时才展开属性面板，避免拖拽期间画布偏移）
-    if (obj && typeId) {
-      selectObject(obj, typeId)
-    }
-    cleanupDragListeners()
-  }
-}
-
-function onDocumentKeyDown(e) {
-  if (e.key === 'Escape') {
-    if (paletteDrag.active) {
-      paletteDrag.active = false
-      paletteActiveModel.value = ''
-    }
-    if (canvasDrag.active) {
-      canvasDrag.active = false
-      canvasDrag.object = null
-    }
-    paletteActiveModel.value = ''
-    dragStartTypeId = ''
-    cleanupDragListeners()
-  }
-}
-
-function cleanupDragListeners() {
-  document.removeEventListener('mousemove', onDocumentMouseMove)
-  document.removeEventListener('mouseup', onDocumentMouseUp)
-  document.removeEventListener('keydown', onDocumentKeyDown)
-}
-
-// ============================================================
-// Canvas 交互
-// ============================================================
-function onCanvasMouseDown(e) {
-  clickOnly = true
-
-  const rect = canvasRef.value?.getBoundingClientRect()
-  if (!rect) return
-  const mx = e.clientX - rect.left
-  const my = e.clientY - rect.top
-
-  // 放置模式：点击画布直接放置
-  if (paletteActiveModel.value) {
-    addObjectAt(mx, my, paletteActiveModel.value)
-    paletteActiveModel.value = ''
-    return
-  }
-
-  // 查找物体，准备拖拽
-  for (let i = objects.length - 1; i >= 0; i--) {
-    const obj = objects[i]
-    const typeModel = getModelByObject(obj)
-    if (typeModel && typeModel.hitTest(obj, mx, my)) {
-      // ⚠ 拖拽期间不 selectObject，防止属性面板展开导致画布偏移
-      dragStartTypeId = typeModel.id
-
-      canvasDrag.active = true
-      canvasDrag.object = obj
-      canvasDrag.offsetX = obj.pos.x - mx
-      canvasDrag.offsetY = obj.pos.y - my
-      canvasDrag.mouseStartX = e.clientX
-      canvasDrag.mouseStartY = e.clientY
-
-      // 抓取时速度归零
-      obj.velocity.x = 0
-      obj.velocity.y = 0
-
-      document.addEventListener('mousemove', onDocumentMouseMove)
-      document.addEventListener('mouseup', onDocumentMouseUp)
-      document.addEventListener('keydown', onDocumentKeyDown)
-      return
-    }
-  }
-}
-
-function onCanvasClick(e) {
-  // 如果是拖拽操作，不处理点击事件
-  if (!clickOnly) return
-
-  const rect = canvasRef.value?.getBoundingClientRect()
-  if (!rect) return
-  const mx = e.clientX - rect.left
-  const my = e.clientY - rect.top
-
-  // 放置模式（mousedown 时如果放置了物体，这里忽略）
-  if (paletteActiveModel.value) return
-
-  // 命中检测
-  for (let i = objects.length - 1; i >= 0; i--) {
-    const obj = objects[i]
-    const typeModel = getModelByObject(obj)
-    if (typeModel && typeModel.hitTest(obj, mx, my)) {
-      selectObject(obj, typeModel.id)
-      return
-    }
-  }
-
-  // 点击空白取消选中
-  deselectAll()
-}
-
-function onCanvasContextMenu(e) {
-  e.preventDefault()
-  // 右键删除：检查是否点击到物体
-  const rect = canvasRef.value?.getBoundingClientRect()
-  if (!rect) return
-  const mx = e.clientX - rect.left
-  const my = e.clientY - rect.top
-
-  for (let i = objects.length - 1; i >= 0; i--) {
-    const obj = objects[i]
-    const typeModel = getModelByObject(obj)
-    if (typeModel && typeModel.hitTest(obj, mx, my)) {
-      selectObject(obj, typeModel.id)
-      deleteSelected()
-      return
-    }
-  }
-}
-
-// ============================================================
-// 物体管理
-// ============================================================
-function getModelByObject(obj) {
-  if (obj instanceof Ball) return getModel('ball')
-  if (obj instanceof Box) return getModel('box')
-  if (obj instanceof Triangle) return getModel('triangle')
-  if (obj instanceof SpringMass) return getModel('spring')
-  if (obj instanceof Pendulum) return getModel('pendulum')
-  if (obj instanceof Ramp) return getModel('ramp')
-  return null
-}
-
-function addObjectAt(x, y, modelId) {
-  const model = getModel(modelId)
-  if (!model) return
-  const obj = model.create(x, y)
-  objects.push(obj)
-  // 获取响应式代理后存储原始对象，避免 Vue 深度追踪物理更新（面板通过 version 限频刷新）
-  selectObject(toRaw(objects[objects.length - 1]), modelId)
-}
-
-function selectObject(obj, typeId) {
-  selectedObject.value = toRaw(obj)
-  selectedTypeId.value = typeId || ''
-  version.value++
-}
-
-function deselectAll() {
-  selectedObject.value = null
-  selectedTypeId.value = ''
-}
-
-function deleteSelected() {
-  if (!selectedObject.value) return
-  const idx = objects.indexOf(selectedObject.value)
-  if (idx !== -1) {
-    objects.splice(idx, 1)
-  }
-  deselectAll()
-}
-
-function clearAll() {
-  objects.splice(0, objects.length)
-  deselectAll()
-}
-
-function resetAll() {
-  for (const obj of objects) {
-    obj.velocity.x = 0
-    obj.velocity.y = 0
-    obj.pos.x = canvasW / 2 + (Math.random() - 0.5) * 100
-    obj.pos.y = 50 + Math.random() * 100
-  }
-}
-
-// ============================================================
-// 属性更新
-// ============================================================
-function updateProp(path, value) {
-  if (!selectedObject.value) return
-  const parts = path.split('.')
-  let target = selectedObject.value
-  for (let i = 0; i < parts.length - 1; i++) {
-    target = target[parts[i]]
-  }
-  target[parts[parts.length - 1]] = value
-
-  // 自动更新 Box 的有效半径（宽高变化时）
-  if ((parts[parts.length - 1] === 'width' || parts[parts.length - 1] === 'height') && target.reactRadius !== undefined) {
-    target.reactRadius = Math.max(target.width, target.height) / 2
-  }
-
-  // 单摆摆长变化时立即调整位置
-  if (parts[parts.length - 1] === 'stringLength' && target instanceof Pendulum) {
-    const dx = target.pos.x - target.pivotX
-    const dy = target.pos.y - target.pivotY
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (dist > 0.001) {
-      const nx = dx / dist, ny = dy / dist
-      target.pos.x = target.pivotX + nx * value
-      target.pos.y = target.pivotY + ny * value
-    }
-  }
-
-  version.value++
-}
-
-function round(v) {
-  return Math.round(v * 100) / 100
-}
-
-// ── 斜面角度辅助 ──
-function getRampAngle(obj) {
-  if (!obj || !obj.width || !obj.height) return 0
-  return Math.round(Math.atan2(obj.height, obj.width) * 180 / Math.PI)
-}
-
-function setRampAngle(obj, deg) {
-  const rad = deg * Math.PI / 180
-  const area = obj.width * obj.height
-  const newH = Math.sqrt(area * Math.tan(rad))
-  const newW = area / newH
-  obj.width = Math.max(30, Math.round(newW / 5) * 5)
-  obj.height = Math.max(10, Math.round(newH / 2) * 2)
-  obj.reactRadius = Math.sqrt(obj.width ** 2 + obj.height ** 2) / 2
-  version.value++
-}
-
-function updateRampDim(obj, dim, val) {
-  obj[dim] = val
-  obj.reactRadius = Math.sqrt(obj.width ** 2 + obj.height ** 2) / 2
-  version.value++
-}
 
 function goBackLab() {
   router.push('/physics-lab')
+}
+
+// ============================================================
+// 视图控制（无限画布）
+// ============================================================
+function resetView() {
+  camera.x = 0
+  camera.y = 0
+  camera.scale = 1
+}
+
+function focusSelected() {
+  const obj = selectedObject.value
+  if (!obj) return
+  camera.x = obj.pos.x - canvasW / 2 / camera.scale
+  camera.y = obj.pos.y - canvasH / 2 / camera.scale
+}
+
+function applyPreset(preset) {
+  loadPreset(preset)
+  activePreset.value = preset
+  gravityEnabled.value = preset.environment.gravityEnabled
+  gravityStrength.value = preset.environment.gravityStrength
+  floorRestitution.value = preset.environment.floorRestitution
+  elapsedTime.value = 0
+  isPlaying.value = false
+  camera.scale = preset.camera.scale
+  camera.x = preset.camera.centerX - canvasW / 2 / camera.scale
+  camera.y = preset.camera.centerY - canvasH / 2 / camera.scale
+  panelRefreshTick.value++
+}
+
+async function requestLoadPreset(preset) {
+  if (objects.length) {
+    const confirmed = await confirmDialogRef.value?.show(
+      `加载「${preset.name}」会清空当前场景中的 ${objects.length} 个物体。`,
+      '替换当前场景',
+      '加载实验',
+    )
+    if (!confirmed) return
+  }
+  applyPreset(preset)
+  activeToolPanel.value = ''
+}
+
+function restorePreset() {
+  if (activePreset.value) applyPreset(activePreset.value)
+}
+
+function getSelectedSpeed() {
+  const velocity = selectedObject.value?.velocity
+  if (!velocity) return 0
+  return Math.sqrt(velocity.x ** 2 + velocity.y ** 2)
 }
 
 // ============================================================
@@ -710,9 +504,9 @@ function goBackLab() {
 // ============================================================
 function togglePlay() {
   isPlaying.value = !isPlaying.value
-  // 恢复播放时重置时间戳，避免 dt 跳变
+  // 恢复播放时重置时间戳，避免 dt 跳变（时间戳由 useSandboxLoop 管理）
   if (isPlaying.value) {
-    lastTimestamp = performance.now()
+    resetTimestamp()
   }
 }
 
@@ -722,397 +516,70 @@ function togglePlay() {
 // 物理更新（含选中物体面板刷新限频）
 let lastPanelUpdate = 0
 
+let stepRequested = false
+
+function stepOnce() {
+  if (isPlaying.value) return
+  stepRequested = true
+  updatePhysics(1 / 60)
+  elapsedTime.value += 1 / 60
+  draw()
+  panelRefreshTick.value++
+}
+
 function updatePhysics(dt) {
-  if (!isPlaying.value) return
+  const isSingleStep = stepRequested
+  const physicsDt = isSingleStep ? 1 / 60 : dt * timeScale.value
+  const selectedUpdated = stepSandboxWorld(objects, physicsDt, {
+    isPlaying: isPlaying.value || isSingleStep,
+    gravityEnabled: gravityEnabled.value,
+    gravityStrength: gravityStrength.value,
+    groundY: GROUND_Y,
+    floorRestitution: floorRestitution.value,
+    draggedObject: canvasDrag.active ? canvasDrag.object : null,
+    selectedObject: selectedObject.value,
+  })
+  stepRequested = false
+  if (isPlaying.value) elapsedTime.value += physicsDt
 
-  const selected = selectedObject.value
-  let selectedUpdated = false
-
-  for (const obj of objects) {
-    // 拖拽中的物体不应用物理
-    if (canvasDrag.active && canvasDrag.object === obj) continue
-
-    // 静态物体不更新
-    if (obj.isStatic) continue
-
-    // 应用重力
-    if (gravityEnabled.value) {
-      obj.velocity.y += gravityStrength.value * dt
-    }
-
-    // 应用加速度
-    const ax = obj.acceleration.x
-    const ay = obj.acceleration.y
-    obj.velocity.x += ax * dt
-    obj.velocity.y += ay * dt
-
-    // 更新位置
-    obj.pos.x += obj.velocity.x * dt
-    obj.pos.y += obj.velocity.y * dt
-
-    // 速度上限（防止穿透）
-    const maxSpeed = MAX_SPEED
-    const spd = Math.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2)
-    if (spd > maxSpeed) {
-      obj.velocity.x = (obj.velocity.x / spd) * maxSpeed
-      obj.velocity.y = (obj.velocity.y / spd) * maxSpeed
-    }
-
-    // — 弹簧球：弹力 + 阻尼 —
-    if (obj instanceof SpringMass) {
-      const dx = obj.anchorX - obj.pos.x
-      const dy = obj.anchorY - obj.pos.y
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > 0.001) {
-        const nx = dx / dist
-        const ny = dy / dist
-        const stretch = dist - obj.springRestLength
-        const fx = obj.springK * stretch * nx
-        const fy = obj.springK * stretch * ny
-        obj.velocity.x += (fx / obj.mass) * dt
-        obj.velocity.y += (fy / obj.mass) * dt
-      }
-      // 阻尼
-      obj.velocity.x *= (1 - obj.springDamping * dt)
-      obj.velocity.y *= (1 - obj.springDamping * dt)
-    }
-
-    // — 单摆：绳长约束 —
-    if (obj instanceof Pendulum) {
-      const dx = obj.pos.x - obj.pivotX
-      const dy = obj.pos.y - obj.pivotY
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > 0.001) {
-        const nx = dx / dist
-        const ny = dy / dist
-        // 约束位置到固定绳长
-        obj.pos.x = obj.pivotX + nx * obj.stringLength
-        obj.pos.y = obj.pivotY + ny * obj.stringLength
-        // 移除径向速度分量，保留切向
-        const vn = obj.velocity.x * nx + obj.velocity.y * ny
-        obj.velocity.x -= vn * nx
-        obj.velocity.y -= vn * ny
-      }
-    }
-
-    // 边界碰撞（只反转方向，不缩放弹性）
-    const typeModel = getModelByObject(obj)
-    if (typeModel && typeModel.clampToBounds) {
-      typeModel.clampToBounds(obj, canvasW, canvasH)
-    }
-
-    // 应用全局边界弹性（环境属性，非物体属性）
-    const halfW = obj.radius || (obj.width || 40) / 2
-    const halfH = obj.radius || (obj.height || 40) / 2
-    if (obj.pos.x - halfW <= 0.5 || obj.pos.x + halfW >= canvasW - 0.5) {
-      obj.velocity.x *= wallRestitution.value
-    }
-    if (obj.pos.y - halfH <= 0.5 || obj.pos.y + halfH >= canvasH - 0.5) {
-      obj.velocity.y *= floorRestitution.value
-    }
-
-    // 静止检测：贴在边界上且速度极小时归零，防止一帧内来回弹的抖动
-    if (obj instanceof Ball) {
-      if (obj.pos.y + obj.radius >= canvasH - 0.5 && Math.abs(obj.velocity.y) < REST_THRESHOLD) obj.velocity.y = 0
-      if (obj.pos.y - obj.radius <= 0.5 && Math.abs(obj.velocity.y) < REST_THRESHOLD) obj.velocity.y = 0
-      if (obj.pos.x + obj.radius >= canvasW - 0.5 && Math.abs(obj.velocity.x) < REST_THRESHOLD) obj.velocity.x = 0
-      if (obj.pos.x - obj.radius <= 0.5 && Math.abs(obj.velocity.x) < REST_THRESHOLD) obj.velocity.x = 0
-    } else {
-      const hw = (obj.width || 40) / 2
-      const hh = (obj.height || 40) / 2
-      if (obj.pos.y + hh >= canvasH - 0.5 && Math.abs(obj.velocity.y) < REST_THRESHOLD) obj.velocity.y = 0
-      if (obj.pos.y - hh <= 0.5 && Math.abs(obj.velocity.y) < REST_THRESHOLD) obj.velocity.y = 0
-      if (obj.pos.x + hw >= canvasW - 0.5 && Math.abs(obj.velocity.x) < REST_THRESHOLD) obj.velocity.x = 0
-      if (obj.pos.x - hw <= 0.5 && Math.abs(obj.velocity.x) < REST_THRESHOLD) obj.velocity.x = 0
-    }
-
-    if (!selectedUpdated && selected && toRaw(obj) === selected) {
-      selectedUpdated = true
-    }
-  }
-
-  // 物体间碰撞检测与响应
-  // 先记录碰撞前角度，用于判断碰撞是否修改了角度
-  for (const obj of objects) {
-    if (toRaw(obj)?.constructor?.name === 'Box') {
-      obj._preAngle = obj.angle || 0
-    }
-  }
-  resolveCollisions()
-
-  // ★ 角度阻尼：只有未发生碰撞吸附的 Frame 才缓慢归零
-  //    记录碰撞前角度 → 碰撞后若角度没变 → 没有吸附发生 → 缓慢归零
-  for (const obj of objects) {
-    if (toRaw(obj)?.constructor?.name !== 'Box') continue
-    if (obj.angle === 0) continue
-    // 只在盒子触及地面边界时阻尼（滑下斜面到平地后自然回正）
-    const r = obj.reactRadius || Math.max(obj.width, obj.height) / 2
-    const onGround = obj.pos.y + r >= canvasH - 1
-    if (!onGround) { delete obj._preAngle; continue }
-    // 如果角度在碰撞时被吸附改了，跳过阻尼
-    if (obj._preAngle !== undefined && Math.abs(obj.angle - obj._preAngle) < 0.001) {
-      const spd = Math.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2)
-      if (spd < REST_THRESHOLD) {
-        obj.angle *= 0.98
-        if (Math.abs(obj.angle) < 0.01) obj.angle = 0
-      }
-    }
-    delete obj._preAngle
-  }
-
-  // 限频刷新属性面板 (~5次/秒)，避免 slider 高频跳动
   if (selectedUpdated) {
     const now = performance.now()
     if (now - lastPanelUpdate > 200) {
       lastPanelUpdate = now
-      version.value++
+      panelRefreshTick.value++
     }
   }
+  return selectedUpdated
 }
 
 // ============================================================
-// 物体碰撞检测与力学响应
-// ============================================================
-function resolveCollisions() {
-  for (let i = 0; i < objects.length; i++) {
-    for (let j = i + 1; j < objects.length; j++) {
-      const a = objects[i]
-      const b = objects[j]
-
-      if (a.isStatic && b.isStatic) continue
-      if ((canvasDrag.active && (canvasDrag.object === a || canvasDrag.object === b))) continue
-
-      // 用 constructor.name 检测类型（避免 Vue reactive Proxy 干扰 instanceof）
-      const ta = toRaw(a)?.constructor?.name || ''
-      const tb = toRaw(b)?.constructor?.name || ''
-      const aBall = ta === 'Ball' || ta === 'SpringMass' || ta === 'Pendulum'
-      const bBall = tb === 'Ball' || tb === 'SpringMass' || tb === 'Pendulum'
-      const aBox = ta === 'Box', bBox = tb === 'Box'
-      const aTri = ta === 'Triangle' || ta === 'Ramp'
-      const bTri = tb === 'Triangle' || tb === 'Ramp'
-
-      // — 球 vs 球 —
-      if (aBall && bBall) {
-        collideBallBall(a, b)
-      // — 球 vs 方块 —
-      } else if (aBall && bBox) {
-        collideBallBox(a, b)
-      } else if (aBox && bBall) {
-        collideBallBox(b, a)
-      // — 方块 vs 方块 —
-      } else if (aBox && bBox) {
-        // 任一方块有旋转 → 使用包围圆近似（SAT Box-Box 暂未实现）
-        if (toRaw(a).angle || toRaw(b).angle) {
-          collideBoundingCircle(a, b)
-        } else {
-          collideBoxBox(a, b)
-        }
-      // — 球 vs 任意三角形（斜面/等腰） —
-      } else if (aBall && bTri) {
-        const verts = b.getVertices ? b.getVertices() : getTriVerts(b)
-        collideBallTriangle(a, b, verts)
-      } else if (aTri && bBall) {
-        const verts = a.getVertices ? a.getVertices() : getTriVerts(a)
-        collideBallTriangle(b, a, verts)
-      // — 包围圆近似（兜底：不规则形状互碰、球 vs 不规则等） —
-      } else if (aTri && bTri) {
-        // 三角形 vs 三角形（SAT）
-        const va = a.getVertices ? a.getVertices() : getTriVerts(a)
-        const vb = b.getVertices ? b.getVertices() : getTriVerts(b)
-        collideTriTriangle(a, b, va, vb)
-      } else if (aBox && bTri) {
-        // 方块 vs 三角形（SAT）
-        const verts = b.getVertices ? b.getVertices() : getTriVerts(b)
-        collideBoxTriangle(a, b, verts)
-      } else if (aTri && bBox) {
-        // 三角形 vs 方块（SAT）
-        const verts = a.getVertices ? a.getVertices() : getTriVerts(a)
-        collideBoxTriangle(b, a, verts)
-      } else {
-        collideBoundingCircle(a, b)
-      }
-    }
-  }
-}
-
-/** Triangle.js 已有 getVertices()，此为兜底 */
-function getTriVerts(obj) {
-  const hw = (obj.width || 40) / 2
-  const hh = (obj.height || 40) / 2
-  return [
-    { x: obj.pos.x, y: obj.pos.y - hh },
-    { x: obj.pos.x - hw, y: obj.pos.y + hh },
-    { x: obj.pos.x + hw, y: obj.pos.y + hh },
-  ]
-}
-
-// 碰撞函数已提取到 ../physics/collision.js
-
-// ============================================================
-// 渲染
+// Canvas 渲染
 // ============================================================
 function draw() {
   const canvas = canvasRef.value
   if (!canvas) return
   const ctx = canvas.getContext('2d')
-
-  // 清空
-  ctx.clearRect(0, 0, canvasW, canvasH)
-
-  // 网格
-  if (showGrid.value) {
-    drawGrid(ctx)
-  }
-
-  // 绘制所有物体
-  for (const obj of objects) {
-    // 选中高亮（selectedObject 存的是 raw object，需要 toRaw 比较）
-    if (selectedObject.value && toRaw(obj) === selectedObject.value) {
-      const typeModel = getModelByObject(obj)
-      if (typeModel && typeModel.drawHighlight) {
-        typeModel.drawHighlight(ctx, obj)
-      }
-    }
-    obj.draw(ctx)
-  }
-
-  // 选中物体的标签
-  if (selectedObject.value) {
-    const obj = selectedObject.value
-    ctx.save()
-    ctx.fillStyle = '#2c3e50'
-    ctx.font = '12px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(`● ${getModelName(selectedTypeId.value)}`, obj.pos.x, obj.pos.y - 30)
-    ctx.restore()
-  }
-
-  // 调色板拖拽预览（在 canvas 上）
-  if (paletteDrag.active) {
-    const canvasRect = canvas.getBoundingClientRect()
-    const cx = paletteDrag.x - canvasRect.left
-    const cy = paletteDrag.y - canvasRect.top
-    if (cx >= 0 && cx <= canvasW && cy >= 0 && cy <= canvasH) {
-      const model = getModel(paletteDrag.modelId)
-      if (model && model.drawGhost) {
-        model.drawGhost(ctx, cx, cy, 0.5)
-      }
-    }
-  }
-
-  // 放置模式跟随鼠标
-  // 注意：paletteActiveModel 时，鼠标在 canvas 上移动显示预览
-  // 这个由 mousemove 在 draw 中检查处理
-}
-
-function drawGrid(ctx) {
-  ctx.save()
-  const gridSize = 40
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)'
-  ctx.lineWidth = 1
-
-  for (let x = 0; x <= canvasW; x += gridSize) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, canvasH)
-    ctx.stroke()
-  }
-  for (let y = 0; y <= canvasH; y += gridSize) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(canvasW, y)
-    ctx.stroke()
-  }
-
-  // 画布中心十字
-  ctx.strokeStyle = 'rgba(0,0,0,0.12)'
-  ctx.lineWidth = 1
-  ctx.setLineDash([4, 6])
-  ctx.beginPath()
-  ctx.moveTo(canvasW / 2, 0)
-  ctx.lineTo(canvasW / 2, canvasH)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(0, canvasH / 2)
-  ctx.lineTo(canvasW, canvasH / 2)
-  ctx.stroke()
-  ctx.setLineDash([])
-  ctx.restore()
-}
-
-// ============================================================
-// Canvas 鼠标在放置模式下的预览（通过绘制循环实现）
-// ============================================================
-let previewMouseX = -100
-let previewMouseY = -100
-
-function onCanvasMouseMove(e) {
-  const rect = canvasRef.value?.getBoundingClientRect()
-  if (!rect) return
-  previewMouseX = e.clientX - rect.left
-  previewMouseY = e.clientY - rect.top
-}
-
-// 在动画循环中额外绘制放置预览
-function drawPlacementPreview(ctx) {
-  if (!paletteActiveModel.value || paletteDrag.active) return
-
-  // 只在 canvas 范围内显示
-  if (previewMouseX < 0 || previewMouseX > canvasW || previewMouseY < 0 || previewMouseY > canvasH) return
-
-  const model = getModel(paletteActiveModel.value)
-  if (model && model.drawGhost) {
-    model.drawGhost(ctx, previewMouseX, previewMouseY, 0.35)
-    ctx.save()
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'
-    ctx.font = '11px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('点击放置', previewMouseX, previewMouseY - 30)
-    ctx.restore()
-  }
-}
-
-// ============================================================
-// 动画循环
-// ============================================================
-function animate(now) {
-  if (isUnmounted) return
-  const dt = Math.min(0.033, (now - lastTimestamp) / 1000)
-  if (dt > 0) {
-    updatePhysics(dt)
-    draw()
-
-    // 额外绘制放置预览
-    if (paletteActiveModel.value) {
-      const ctx = canvasRef.value?.getContext('2d')
-      if (ctx) drawPlacementPreview(ctx)
-    }
-  }
-  lastTimestamp = now
-  animationId = requestAnimationFrame(animate)
-}
-
-// ============================================================
-// Canvas 尺寸自适应
-// ============================================================
-function resizeCanvas() {
-  const canvas = canvasRef.value
-  const container = canvasContainerRef.value
-  if (!canvas || !container) return
-
-  const rect = container.getBoundingClientRect()
-  canvasW = Math.floor(rect.width)
-  canvasH = Math.floor(rect.height)
-  canvas.width = canvasW
-  canvas.height = canvasH
+  drawSandbox(ctx, canvas, {
+    width: canvasW,
+    height: canvasH,
+    camera,
+    theme: theme.value,
+    objects,
+    selectedObject: selectedObject.value,
+    selectedTypeId: selectedTypeId.value,
+    showGrid: showGrid.value,
+    paletteDrag,
+    paletteActiveModel: paletteActiveModel.value,
+    previewMouse: getPreviewMouse(),
+  })
 }
 
 // ============================================================
 // 生命周期
 // ============================================================
 onMounted(() => {
-  resizeCanvas()
-  window.addEventListener('resize', resizeCanvas)
+  // 启动动画循环（内部完成尺寸初始化与 resize 监听）
+  startLoop()
 
   // 添加预览用的 mousemove
   const container = canvasContainerRef.value
@@ -1120,171 +587,224 @@ onMounted(() => {
     container.addEventListener('mousemove', onCanvasMouseMove)
   }
 
-  lastTimestamp = performance.now()
-  animationId = requestAnimationFrame(animate)
+  // 滚轮缩放绑定在 canvas 元素上（不劫持属性面板等 float 面板的滚动），passive:false 以便 preventDefault
+  const canvas = canvasRef.value
+  if (canvas) {
+    canvas.addEventListener('wheel', onCanvasWheel, { passive: false })
+  }
 })
 
 onUnmounted(() => {
-  isUnmounted = true
-  if (animationId) {
-    cancelAnimationFrame(animationId)
-  }
-  window.removeEventListener('resize', resizeCanvas)
-  document.removeEventListener('mousemove', onDocumentMouseMove)
-  document.removeEventListener('mouseup', onDocumentMouseUp)
-  document.removeEventListener('keydown', onDocumentKeyDown)
+  // 清理动画循环 / resize 监听，以及拖拽期间注册的 document 监听
+  cleanupLoop()
+  cleanupPaletteDrag()
+  cleanupCanvasInteraction()
 
   const container = canvasContainerRef.value
   if (container) {
     container.removeEventListener('mousemove', onCanvasMouseMove)
   }
+
+  const canvas = canvasRef.value
+  if (canvas) {
+    canvas.removeEventListener('wheel', onCanvasWheel)
+  }
 })
 </script>
 
 <style scoped>
-/* ========== 布局 ========== */
+/* ========== 全屏无限画布 ========== */
 .sandbox-page {
   width: 100%;
-  min-height: 100%;
-}
-
-.sandbox-layout {
-  display: flex;
-  height: calc(100vh - 60px);
+  /* 高度 = 视口 - 导航栏(var)；
+     负 margin 抵消 main-content 的上下 padding(32px×2)，让画布从导航栏下贴满到视口底部 */
+  height: calc(100vh - var(--nav-height));
+  margin: -32px 0;
+  position: relative;
   overflow: hidden;
   background: #f0f2f5;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  border-radius: 12px;
-  border: 1px solid #dce0e5;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  margin: 0 4px;
 }
 
-/* ========== 面板通用 ========== */
-.panel {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-right: 1px solid #e9ecef;
-  transition: width 0.2s;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.panel-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #2c3e50;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.panel-divider {
-  height: 1px;
-  background: #e9ecef;
-  margin: 0 12px;
-}
-
-/* ========== 调色板（左） ========== */
-.panel-left {
-  width: 130px;
-  flex-shrink: 0;
-  border-radius: 0;
-}
-
-.model-list {
-  padding: 8px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.model-item {
+/* ========== 模型选择面板 ========== */
+.model-panel .model-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
-  margin-bottom: 4px;
-  border-radius: 8px;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 10px;
   cursor: grab;
   transition: all 0.15s;
   user-select: none;
   border: 2px solid transparent;
+  min-width: 48px;
 }
 
-.model-item:hover {
+.model-panel .model-item:hover {
   background: #f0f7ff;
   border-color: #d0e4f7;
 }
 
-.model-item.active {
+.model-panel .model-item.active {
   background: #eaf4ff;
   border-color: #3498db;
 }
 
-.model-icon {
-  font-size: 28px;
+.model-panel .model-icon {
+  font-size: 22px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
 }
 
-.model-name {
-  font-size: 12px;
+.model-panel .model-name {
+  font-size: 10px;
   font-weight: 600;
   color: #2c3e50;
+  white-space: nowrap;
 }
 
-.model-hint {
+/* ========== 底部胶囊工具栏（大分类入口） ========== */
+.capsule-toolbar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 40px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+}
+
+/* 大分类 tab */
+.tab-chip {
+  padding: 7px 18px;
+  font-size: 13px;
+}
+
+/* 展开面板（模型 / 设置，胶囊上方弹出） */
+.tool-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100px;
+  z-index: 19;
   padding: 12px;
-  font-size: 11px;
-  color: #95a5a6;
-  text-align: center;
-  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: legend-in 0.18s;
 }
 
-.model-hint p {
-  margin: 0;
+.model-panel {
+  display: flex;
+  gap: 6px;
 }
 
-/* ========== 画布区域 ========== */
-.canvas-wrapper {
-  flex: 1;
+.experiment-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 240px));
+  gap: 8px;
+}
+
+.preset-item {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid #dce2e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #2c3e50;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.preset-item:hover,
+.preset-item.active {
+  border-color: #3498db;
+  background: #f0f7ff;
+}
+
+.preset-item b { font-size: 13px; }
+.preset-item span { color: #7f8c8d; font-size: 11px; line-height: 1.45; }
+
+.settings-panel {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background: #ffffff;
-  border-radius: 8px;
-  margin: 8px 8px 8px 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  gap: 10px;
+  min-width: 280px;
 }
 
-.canvas-toolbar {
+.settings-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+}
+
+/* ========== 即时操作（左上角悬浮小胶囊） ========== */
+.quick-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.quick-toolbar .tool-btn {
+  border-radius: 50%;
   background: #fff;
-  border-bottom: 1px solid #e9ecef;
-  flex-shrink: 0;
-  flex-wrap: wrap;
+}
+
+.quick-toolbar .toolbar-divider {
+  height: 24px;
+}
+
+/* 状态栏（左上角工具栏下方） */
+.sandbox-status {
+  position: absolute;
+  top: 66px;
+  left: 16px;
+  z-index: 19;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #95a5a6;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 .tool-back-btn {
   width: 32px;
   height: 32px;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
+  border-radius: 50%;
   background: #fff;
   cursor: pointer;
   display: flex;
@@ -1299,27 +819,6 @@ onUnmounted(() => {
   background: #f0f7ff;
   border-color: #3498db;
   color: #3498db;
-}
-
-.tool-title-area {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-right: 4px;
-  flex-shrink: 0;
-}
-
-.tool-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a2e;
-  line-height: 1.2;
-}
-
-.tool-subtitle {
-  font-size: 11px;
-  color: #95a5a6;
-  line-height: 1.2;
 }
 
 .toolbar-divider {
@@ -1348,25 +847,9 @@ onUnmounted(() => {
   border-color: #3498db;
 }
 
-/* ── 工具分组 ── */
-.tool-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border-right: 1px solid #e9ecef;
-}
-.tool-group:last-of-type {
-  border-right: none;
-}
-
-.tool-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #adb5bd;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-right: 2px;
+.tool-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 /* ── 标签式按钮（重力/网格） ── */
@@ -1429,7 +912,7 @@ onUnmounted(() => {
   padding: 4px 24px 4px 10px;
   border: 1.5px solid #dee2e6;
   border-radius: 8px;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236c757d'/%3E%3C/svg%3E") no-repeat right 10px center;
+  background: #fff url("../assets/icons/select-arrow.svg") no-repeat right 10px center;
   background-size: 10px 6px;
   color: #2c3e50;
   font-size: 12px;
@@ -1474,28 +957,15 @@ onUnmounted(() => {
   text-align: right;
 }
 
-.gravity-unit {
-  font-size: 10px;
-  color: #95a5a6;
-  font-weight: 600;
-}
-
-.tool-status {
-  margin-left: auto;
-  font-size: 12px;
-  color: #95a5a6;
-  white-space: nowrap;
-}
-
 .placement-hint {
   color: #e67e22;
   font-weight: 600;
 }
 
 .canvas-container {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  overflow: hidden; /* ⚠ 保护属性：不要删除，画布交互依赖 */
 }
 
 .canvas-container canvas {
@@ -1508,7 +978,7 @@ onUnmounted(() => {
 
 .placement-overlay {
   position: absolute;
-  bottom: 16px;
+  bottom: 180px; /* 展开面板上方 */
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.75);
@@ -1579,6 +1049,19 @@ onUnmounted(() => {
   color: #1a1a2e;
   letter-spacing: 0.3px;
 }
+
+.live-data-section { background: #f8fbff; }
+
+.live-data-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 10px;
+  padding: 0 16px 10px;
+  font-size: 11px;
+}
+
+.live-data-grid span { color: #7f8c8d; }
+.live-data-grid b { color: #2c3e50; font-family: var(--mono, monospace); font-weight: 600; text-align: right; }
 
 .float-panel-body {
   overflow-y: auto;
@@ -1763,17 +1246,28 @@ onUnmounted(() => {
   font-size: 32px;
 }
 
-/* ========== 属性说明卡 ========== */
+/* ========== 属性说明卡（右下角浮层，胶囊 "?" 切换） ========== */
 .prop-legend {
-  max-width: 1000px;
-  margin: 20px auto 32px;
-  padding: 20px 28px;
-  background: rgba(255, 255, 255, 0.55);
+  position: fixed;
+  right: 16px;
+  bottom: 112px;
+  z-index: 15;
+  width: 380px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(192, 57, 43, 0.25);
-  border-radius: 12px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: legend-in 0.2s;
+}
+
+@keyframes legend-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .legend-header {
@@ -1794,7 +1288,7 @@ onUnmounted(() => {
 
 .legend-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px 24px;
 }
 
@@ -1822,5 +1316,144 @@ onUnmounted(() => {
   font-size: 11px;
   color: #333;
   line-height: 1.4;
+}
+
+/* ========== 深色模式适配 ========== */
+:root[data-theme="dark"] .sandbox-page {
+  background: var(--bg);
+}
+
+:root[data-theme="dark"] .canvas-container canvas {
+  background: #14181f;
+}
+
+/* 悬浮胶囊 / 面板 / 状态 */
+:root[data-theme="dark"] .capsule-toolbar,
+:root[data-theme="dark"] .quick-toolbar,
+:root[data-theme="dark"] .tool-panel,
+:root[data-theme="dark"] .sandbox-status {
+  background: rgba(28, 32, 40, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="dark"] .toolbar-divider {
+  background: #3a3f47;
+}
+
+:root[data-theme="dark"] .tool-btn,
+:root[data-theme="dark"] .tool-back-btn {
+  background: #262b33;
+  border-color: #3a3f47;
+  color: #d8dde3;
+}
+
+:root[data-theme="dark"] .tool-chip {
+  background: #262b33;
+  border-color: #3a3f47;
+  color: #aab2bd;
+}
+
+:root[data-theme="dark"] .tool-select-wrap select {
+  background-color: #262b33;
+  color: #e0e0e0;
+}
+
+:root[data-theme="dark"] .tool-select-wrap span {
+  color: #aab2bd;
+}
+
+:root[data-theme="dark"] .model-panel .model-name {
+  color: #e0e0e0;
+}
+
+:root[data-theme="dark"] .model-panel .model-item:hover {
+  background: rgba(52, 152, 219, 0.15);
+  border-color: rgba(52, 152, 219, 0.35);
+}
+
+:root[data-theme="dark"] .model-panel .model-item.active {
+  background: rgba(52, 152, 219, 0.22);
+  border-color: #3498db;
+}
+
+:root[data-theme="dark"] .preset-item {
+  background: #262b33;
+  border-color: #3a414c;
+  color: #e8e8e8;
+}
+
+:root[data-theme="dark"] .preset-item:hover,
+:root[data-theme="dark"] .preset-item.active {
+  background: rgba(52, 152, 219, 0.18);
+  border-color: #3498db;
+}
+
+:root[data-theme="dark"] .preset-item span { color: #a0a8b4; }
+
+:root[data-theme="dark"] .sandbox-status {
+  color: #8a93a0;
+}
+
+/* 浮动属性面板 */
+:root[data-theme="dark"] .float-panel {
+  background: #1e232b;
+  border-color: #333a44;
+}
+
+:root[data-theme="dark"] .float-panel-header {
+  background: linear-gradient(135deg, #22272f 0%, #1e232b 100%);
+}
+
+:root[data-theme="dark"] .float-panel-title {
+  color: #e8e8e8;
+}
+
+:root[data-theme="dark"] .prop-section {
+  border-bottom-color: #2a2f37;
+}
+
+:root[data-theme="dark"] .live-data-section { background: #202832; }
+:root[data-theme="dark"] .live-data-grid span { color: #8f9aa8; }
+:root[data-theme="dark"] .live-data-grid b { color: #d8dde3; }
+
+:root[data-theme="dark"] .prop-row label {
+  color: #a0a8b4;
+}
+
+:root[data-theme="dark"] .prop-row input[type="number"] {
+  background: #262b33;
+  border-color: #3a3f47;
+  color: #d8dde3;
+}
+
+:root[data-theme="dark"] .prop-row input[type="number"]:focus {
+  background: #2a3038;
+}
+
+:root[data-theme="dark"] .range-val {
+  color: #a0a0a0;
+}
+
+:root[data-theme="dark"] .delete-btn {
+  background: #262b33;
+}
+
+/* 属性说明卡 */
+:root[data-theme="dark"] .prop-legend {
+  background: rgba(28, 32, 40, 0.92);
+}
+
+:root[data-theme="dark"] .legend-header,
+:root[data-theme="dark"] .legend-tag {
+  color: #e8e8e8;
+}
+
+:root[data-theme="dark"] .legend-desc {
+  color: #b0b8c2;
+}
+
+/* 拖拽幽灵文字 */
+:root[data-theme="dark"] .drag-ghost {
+  color: #e0e0e0;
 }
 </style>

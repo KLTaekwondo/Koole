@@ -7,7 +7,7 @@ export default class Box extends BaseObject {
         this.width = width
         this.height = height
         this.angle = 0              // 旋转角度（弧度）
-        this.reactRadius = Math.max(width, height) / 2
+        this.reactRadius = Math.sqrt(width ** 2 + height ** 2) / 2
     }
 
     /** 获取旋转后的 4 个顶点（用于 SAT 碰撞检测）
@@ -17,10 +17,10 @@ export default class Box extends BaseObject {
         const cos = Math.cos(this.angle), sin = Math.sin(this.angle)
         const cx = this.pos.x, cy = this.pos.y
         return [
-            { x: cx - hw*cos - hh*sin, y: cy + hw*sin - hh*cos },   // TL
-            { x: cx + hw*cos - hh*sin, y: cy - hw*sin - hh*cos },   // TR
-            { x: cx + hw*cos + hh*sin, y: cy - hw*sin + hh*cos },   // BR
-            { x: cx - hw*cos + hh*sin, y: cy + hw*sin + hh*cos },   // BL
+            { x: cx - hw*cos + hh*sin, y: cy - hw*sin - hh*cos },   // TL
+            { x: cx + hw*cos + hh*sin, y: cy + hw*sin - hh*cos },   // TR
+            { x: cx + hw*cos - hh*sin, y: cy + hw*sin + hh*cos },   // BR
+            { x: cx - hw*cos - hh*sin, y: cy - hw*sin + hh*cos },   // BL
         ]
     }
 

@@ -9,9 +9,9 @@ export default class Pendulum extends BaseObject {
     this.radius = 16
     this.reactRadius = 16
 
-    // 单摆参数
+    // 单摆参数（支点相对放置点上方，无限画布下任意位置放置均可见横梁）
     this.pivotX = x
-    this.pivotY = 50
+    this.pivotY = y - 120
     this.stringLength = Math.sqrt(
       (x - this.pivotX) ** 2 + (y - this.pivotY) ** 2
     )

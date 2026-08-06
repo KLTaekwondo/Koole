@@ -31,12 +31,16 @@ export default class Ramp extends BaseObject {
 
   /** 通过角度设置宽高（保持面积近似不变） */
   setAngle(deg) {
-    const rad = deg * Math.PI / 180
-    const area = this.width * this.height
-    const newH = Math.sqrt(area * Math.tan(rad))
+    const safeDeg = Number.isFinite(deg) ? Math.max(1, Math.min(89, deg)) : 30
+    const rad = safeDeg * Math.PI / 180
+    const area = Math.max(300, this.width * this.height)
+    const tangent = Math.max(Math.tan(rad), 0.001)
+    const newH = Math.sqrt(area * tangent)
     const newW = area / newH
-    this.width = Math.max(30, Math.round(newW / 5) * 5)
-    this.height = Math.max(10, Math.round(newH / 2) * 2)
+    if (!Number.isFinite(newW) || !Number.isFinite(newH)) return
+
+    this.width = Math.min(2000, Math.max(30, Math.round(newW / 5) * 5))
+    this.height = Math.min(1000, Math.max(10, Math.round(newH / 2) * 2))
     this.reactRadius = Math.sqrt(this.width ** 2 + this.height ** 2) / 2
   }
 

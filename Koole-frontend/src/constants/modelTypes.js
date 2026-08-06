@@ -8,13 +8,19 @@ import Triangle from '../physics/core/Triangle.js'
 import SpringMass from '../physics/core/SpringMass.js'
 import Pendulum from '../physics/core/Pendulum.js'
 import Ramp from '../physics/core/Ramp.js'
+import ballIcon from '../assets/icons/model-ball.svg?raw'
+import boxIcon from '../assets/icons/model-box.svg?raw'
+import triangleIcon from '../assets/icons/model-triangle.svg?raw'
+import springIcon from '../assets/icons/model-spring.svg?raw'
+import pendulumIcon from '../assets/icons/model-pendulum.svg?raw'
+import rampIcon from '../assets/icons/model-ramp.svg?raw'
 
 const MODEL_TYPES = [
   {
     id: 'ball',
     name: '球',
     icon: '⚪',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#3498db" stroke="#2980b9" stroke-width="1.5"/></svg>',
+    iconSvg: ballIcon,
     description: '圆形物体，支持弹性碰撞',
     defaultColor: '#3498db',
     create(x, y) {
@@ -67,7 +73,7 @@ const MODEL_TYPES = [
     id: 'box',
     name: '方块',
     icon: '◼',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="#e74c3c" stroke="#c0392b" stroke-width="1.5"/></svg>',
+    iconSvg: boxIcon,
     description: '矩形物体，可调节宽高',
     defaultColor: '#e74c3c',
     create(x, y) {
@@ -130,7 +136,7 @@ const MODEL_TYPES = [
     id: 'triangle',
     name: '三角形',
     icon: '△',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="12,3 3,21 21,21" fill="#2ecc71" stroke="#27ae60" stroke-width="1.5"/></svg>',
+    iconSvg: triangleIcon,
     description: '楔形物体，可用作斜坡、障碍物',
     defaultColor: '#2ecc71',
     create(x, y) {
@@ -157,10 +163,12 @@ const MODEL_TYPES = [
       ctx.restore()
     },
     hitTest(obj, mx, my) {
-      const hw = obj.width / 2
-      const hh = obj.height / 2
-      return mx >= obj.pos.x - hw && mx <= obj.pos.x + hw &&
-             my >= obj.pos.y - hh && my <= obj.pos.y + hh
+      const vertices = obj.getVertices()
+      const signs = vertices.map((vertex, index) => {
+        const next = vertices[(index + 1) % vertices.length]
+        return (mx - vertex.x) * (next.y - vertex.y) - (my - vertex.y) * (next.x - vertex.x)
+      })
+      return signs.every(sign => sign >= -0.0001) || signs.every(sign => sign <= 0.0001)
     },
     drawHighlight(ctx, obj) {
       ctx.save()
@@ -194,7 +202,7 @@ const MODEL_TYPES = [
     id: 'spring',
     name: '弹簧球',
     icon: '🔄',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="17" r="5" fill="#e67e22"/><path d="M12 3 L12 6 L8 8 L16 10 L8 12 L16 14 L12 16" fill="none" stroke="#888" stroke-width="1.5" stroke-linejoin="round"/><line x1="8" y1="3" x2="16" y2="3" stroke="#555" stroke-width="2.5"/></svg>',
+    iconSvg: springIcon,
     description: '弹簧振子，在弹力和重力作用下做往复运动',
     defaultColor: '#e67e22',
     create(x, y) {
@@ -247,7 +255,7 @@ const MODEL_TYPES = [
     id: 'pendulum',
     name: '单摆',
     icon: '⏱',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="14" cy="19" r="4" fill="#9b59b6"/><line x1="14" y1="15" x2="10" y2="4" stroke="#8a7a6a" stroke-width="1.5"/><rect x="6" y="2" width="12" height="4" rx="1" fill="#7f8c8d"/></svg>',
+    iconSvg: pendulumIcon,
     description: '单摆，在重力作用下沿圆弧往复摆动',
     defaultColor: '#9b59b6',
     create(x, y) {
@@ -300,7 +308,7 @@ const MODEL_TYPES = [
     id: 'ramp',
     name: '斜面',
     icon: '◢',
-    iconSvg: '<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="4,20 20,20 4,4" fill="#27ae60" stroke="#1e8449" stroke-width="1.5"/></svg>',
+    iconSvg: rampIcon,
     description: '直角三角形斜面，角度可调，固定不可移动',
     defaultColor: '#27ae60',
     create(x, y) {

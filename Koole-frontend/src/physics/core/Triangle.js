@@ -6,7 +6,7 @@ export default class Triangle extends BaseObject {
         super(x, y)
         this.width = width
         this.height = height
-        this.reactRadius = Math.max(width, height) / 2
+        this.reactRadius = Math.sqrt(width ** 2 + height ** 2) / 2
     }
 
     draw(ctx) {

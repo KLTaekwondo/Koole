@@ -31,7 +31,7 @@ const collapsed = ref(false)
     position: absolute;
     top: 10px;
     left: 10px;
-    z-index: 10;
+    z-index: 2;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);

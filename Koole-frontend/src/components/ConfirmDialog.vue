@@ -4,17 +4,13 @@
             <div v-if="visible" class="confirm-overlay" @click.self="handleCancel">
                 <div class="confirm-dialog">
                     <div class="confirm-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
+                        <SvgIcon name="alert-circle" :size="28" />
                     </div>
                     <h3 class="confirm-title">{{ title }}</h3>
                     <p class="confirm-message">{{ message }}</p>
                     <div class="confirm-actions">
                         <button class="confirm-cancel-btn" @click="handleCancel">取消</button>
-                        <button class="confirm-ok-btn" @click="handleConfirm">确定删除</button>
+                        <button class="confirm-ok-btn" @click="handleConfirm">{{ confirmText }}</button>
                     </div>
                 </div>
             </div>
@@ -24,15 +20,18 @@
 
 <script setup>
 import { ref } from "vue"
+import SvgIcon from "./SvgIcon.vue"
 
 const visible = ref(false)
 const title = ref("确认操作")
 const message = ref("")
+const confirmText = ref("确定")
 let resolvePromise = null
 
-const show = (msg, ttl) => {
+const show = (msg, ttl, okText = "确定") => {
     title.value = ttl || "确认操作"
     message.value = msg
+    confirmText.value = okText
     visible.value = true
     return new Promise((resolve) => {
         resolvePromise = resolve

@@ -9,9 +9,9 @@ export default class SpringMass extends BaseObject {
     this.radius = 15
     this.reactRadius = 15
 
-    // 弹簧参数
+    // 弹簧参数（锚点相对放置点上方，无限画布下任意位置放置均可见横梁）
     this.anchorX = x
-    this.anchorY = 60
+    this.anchorY = y - 120
     const dy = y - this.anchorY
     this.springK = 65
     this.springRestLength = Math.max(80, dy)
