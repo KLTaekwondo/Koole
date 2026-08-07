@@ -734,8 +734,13 @@ onBeforeUnmount(() => {
     color: #c94c40;
 }
 
-.carousel-arrow.previous { left: 2px; }
-.carousel-arrow.next { right: 2px; }
+.carousel-arrow.previous {
+    left: 2px;
+}
+
+.carousel-arrow.next {
+    right: 2px;
+}
 
 .carousel-footer {
     width: min(390px, 37vw);
@@ -924,37 +929,124 @@ onBeforeUnmount(() => {
     transform: translateY(-4px);
 }
 @keyframes copy-in {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 980px) {
-    .hero-copy { width: min(720px, 76%); }
-    .subject-carousel { padding-inline: 0; }
-    .subject-card { width: min(330px, 78vw); }
-    .subject-card.is-previous { transform: translateX(calc(-50% - 70vw)) scale(0.82); }
-    .subject-card.is-next { transform: translateX(calc(-50% + 70vw)) scale(0.82); }
-    .carousel-footer { width: min(330px, 78vw); }
+    .hero-copy {
+        width: min(720px, 76%);
+    }
+
+    .subject-carousel {
+        padding-inline: 0;
+    }
+
+    .subject-card {
+        width: min(330px, 78vw);
+    }
+
+    .subject-card.is-previous {
+        transform: translateX(calc(-50% - 70vw)) scale(0.82);
+    }
+
+    .subject-card.is-next {
+        transform: translateX(calc(-50% + 70vw)) scale(0.82);
+    }
+
+    .carousel-footer {
+        width: min(330px, 78vw);
+    }
 }
 
 @media (max-width: 680px) {
-    .home-page { width: min(100% - 32px, 1180px); }
-    .hero-section { min-height: calc(100svh - var(--nav-height)); height: auto; padding: 58px 16px 72px; }
-    .hero-copy { width: 100%; }
-    .hero-copy h1 { font-size: clamp(40px, 12vw, 54px); }
-    .hero-description { max-width: 88%; font-size: 14px; }
-    .hero-actions { align-items: stretch; flex-direction: column; width: min(100%, 320px); }
-    .scene-label { display: none; }
-    .subjects-section { padding: 78px 16px 84px; }
-    .section-heading { grid-template-columns: 1fr; gap: 18px; }
-    .carousel-stage { height: 360px; }
-    .subject-card { width: calc(100% - 52px); min-height: 315px; padding: 22px; }
-    .subject-card.is-previous { transform: translateX(-120%) scale(0.86); }
-    .subject-card.is-next { transform: translateX(20%) scale(0.86); }
-    .carousel-arrow { top: 160px; width: 38px; height: 38px; }
-    .carousel-footer { width: calc(100% - 52px); }
-    .manifesto-section { min-height: 560px; padding: 32px 24px; }
-    .manifesto-content { grid-template-columns: 1fr; gap: 40px; padding-top: 54px; }
+    .home-page {
+        width: min(100% - 32px, 1180px);
+    }
+
+    .hero-section {
+        min-height: calc(100svh - var(--nav-height));
+        height: auto;
+        padding: 58px 16px 72px;
+    }
+
+    .hero-copy {
+        width: 100%;
+    }
+
+    .hero-copy h1 {
+        font-size: clamp(40px, 12vw, 54px);
+    }
+
+    .hero-description {
+        max-width: 88%;
+        font-size: 14px;
+    }
+
+    .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+        width: min(100%, 320px);
+    }
+
+    .scene-label {
+        display: none;
+    }
+
+    .subjects-section {
+        padding: 78px 16px 84px;
+    }
+
+    .section-heading {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .carousel-stage {
+        height: 360px;
+    }
+
+    .subject-card {
+        width: calc(100% - 52px);
+        min-height: 315px;
+        padding: 22px;
+    }
+
+    .subject-card.is-previous {
+        transform: translateX(-120%) scale(0.86);
+    }
+
+    .subject-card.is-next {
+        transform: translateX(20%) scale(0.86);
+    }
+
+    .carousel-arrow {
+        top: 160px;
+        width: 38px;
+        height: 38px;
+    }
+
+    .carousel-footer {
+        width: calc(100% - 52px);
+    }
+
+    .manifesto-section {
+        min-height: 560px;
+        padding: 32px 24px;
+    }
+
+    .manifesto-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding-top: 54px;
+    }
 
     .features-section {
         padding: 78px 0 96px;
@@ -981,9 +1073,18 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-copy { animation: none; }
-    .reveal-section { opacity: 1; transform: none; }
+    .hero-copy {
+        animation: none;
+    }
+
+    .reveal-section {
+        opacity: 1;
+        transform: none;
+    }
+
     .subject-card,
-    .carousel-progress i { transition: none; }
+    .carousel-progress i {
+        transition: none;
+    }
 }
 </style>

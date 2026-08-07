@@ -1,9 +1,9 @@
 <template>
   <div class="comparison-panel" v-if="trails.length > 0">
     <!-- 标题栏 -->
-    <div class="panel-header" @click="expanded = !expanded">
+    <div class="panel-header">
       <div class="header-left">
-        <svg class="toggle-icon" :class="{ rotated: expanded }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="header-kicker">EXPERIMENT DATA</span>
         <span class="header-title">对比记录</span>
         <span class="record-count">{{ trails.length }}</span>
       </div>
@@ -13,7 +13,7 @@
     </div>
 
     <!-- 展开内容 -->
-    <div class="panel-body" v-show="expanded">
+    <div class="panel-body">
       <!-- 记录列表（标题下方） -->
       <div class="record-list">
         <div
@@ -95,7 +95,6 @@ const props = defineProps({
 
 const emit = defineEmits(["clearAll", "removeRecord", "toggleVisibility"])
 
-const expanded = ref(true)
 const selectedIndex = ref(0)
 const chartRefs = ref({})
 const fallbackChartRef = ref(null)
@@ -284,10 +283,9 @@ onMounted(async () => {
 <style scoped>
 .comparison-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border: 0;
+  border-radius: 17px;
   overflow: hidden;
-  flex-shrink: 0;
   height: auto;
   scrollbar-width: none;
   overflow-y: auto;
@@ -301,34 +299,30 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  cursor: pointer;
+  min-height: 64px;
+  padding: 12px 18px;
   user-select: none;
   border-bottom: 1px solid var(--border);
-}
-
-.panel-header:hover {
   background: var(--bg-card-hover);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
-.toggle-icon {
-  transition: transform 0.2s;
-  color: var(--text-muted);
-}
-
-.toggle-icon.rotated {
-  transform: rotate(90deg);
+.header-kicker {
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 .header-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 750;
   color: var(--text);
 }
 

@@ -144,6 +144,8 @@ function makeConceptLabel(text, isCore = false) {
 }
 
 @media (max-width: 680px) {
-    .subject-page { width: min(100% - 32px, 1180px); }
+    .subject-page {
+        width: min(100% - 32px, 1180px);
+    }
 }
 </style>

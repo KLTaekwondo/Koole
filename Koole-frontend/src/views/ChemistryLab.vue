@@ -3,12 +3,16 @@
         <DepthLabHero
             eyebrow="CHEMISTRY LAB / 化学实验室"
             :title-lines="['把分子转起来', '从微观认识物质']"
-            description="化学结构很适合用球棍模型看：原子是球，化学键是棒，空间构型一转就明白。"
+            description="从元素的周期规律到分子与晶体的空间结构，在微观尺度认识物质。"
             accent="#2aa27f"
             accent2="#56c9a8"
-            scene-label="MOLECULES / 005"
-            :actions="[{ label: '进入分子模型库', scroll: '#models', variant: 'primary' }]"
+            scene-label="CHEMISTRY / 005"
+            :actions="[
+                { label: '查看元素周期表', to: '/chem-lab/periodic-table', variant: 'primary' },
+                { label: '进入分子模型库', scroll: '#models', variant: 'outline' },
+            ]"
             :meta-items="[
+                { value: '118', label: '个化学元素' },
                 { value: '05', label: '个分子模型' },
                 { value: '3D', label: '自由旋转' },
             ]"
@@ -16,6 +20,18 @@
             :particle-color="0x4fa88f"
             :particle-color-dark="0x7fd0b4"
         />
+
+        <router-link to="/chem-lab/periodic-table" class="periodic-entry">
+            <div class="entry-copy">
+                <span>01 / ELEMENTS</span>
+                <h2>从周期表，看见元素之间的规律。</h2>
+                <p>搜索 118 个元素，比较族、周期、电子层排布与常见物理性质。</p>
+                <b>打开元素周期表 ↗</b>
+            </div>
+            <div class="mini-table" aria-hidden="true">
+                <i v-for="index in 36" :key="index" :class="{ active: [1, 2, 7, 12, 18, 24, 29, 36].includes(index) }"></i>
+            </div>
+        </router-link>
 
         <section id="models" class="chem-layout">
             <aside class="model-picker">
@@ -526,6 +542,78 @@ onBeforeUnmount(() => {
     margin: -32px auto 0;
 }
 
+.periodic-entry {
+    width: calc(100% - 40px);
+    min-height: 260px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: center;
+    gap: 50px;
+    margin: 0 20px 18px;
+    padding: 38px 44px;
+    border: 1px solid color-mix(in srgb, #2aa27f 38%, var(--border));
+    border-radius: var(--radius-lg);
+    background: radial-gradient(circle at 82% 40%, rgba(42, 162, 127, .15), transparent 34%), var(--bg-card);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: var(--shadow);
+    transition: transform .3s, box-shadow .3s, border-color .3s;
+}
+.periodic-entry:hover {
+    border-color: #2aa27f;
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-3px);
+    text-decoration: none;
+}
+
+.entry-copy > span {
+    color: #2aa27f;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.entry-copy h2 {
+    max-width: 620px;
+    margin: 14px 0 10px;
+    font-size: clamp(26px, 4vw, 42px);
+    line-height: 1.2;
+}
+
+.entry-copy p {
+    max-width: 600px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.entry-copy b {
+    display: inline-block;
+    margin-top: 24px;
+    color: #2aa27f;
+    font-size: 12px;
+}
+
+.mini-table {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 7px;
+    transform: perspective(700px) rotateY(-10deg) rotateX(4deg);
+}
+
+.mini-table i {
+    aspect-ratio: 1;
+    border: 1px solid rgba(42, 162, 127, .3);
+    border-radius: 5px;
+    background: rgba(42, 162, 127, .08);
+}
+
+.mini-table i.active {
+    background: #2aa27f;
+    box-shadow: 0 6px 18px rgba(42, 162, 127, .26);
+}
+
 .chem-layout {
     display: grid;
     grid-template-columns: 230px minmax(0, 1fr) 290px;
@@ -685,6 +773,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1020px) {
+    .periodic-entry {
+        grid-template-columns: 1fr 260px;
+        gap: 24px;
+        padding: 30px;
+    }
+
     .chem-layout {
         grid-template-columns: 1fr;
     }
@@ -706,7 +800,21 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
-    .chem-page { width: min(100% - 32px, 1280px); }
+    .chem-page {
+        width: min(100% - 32px, 1280px);
+    }
+
+    .periodic-entry {
+        width: calc(100% - 20px);
+        grid-template-columns: 1fr;
+        margin-inline: 10px;
+        padding: 24px;
+    }
+
+    .mini-table {
+        display: none;
+    }
+
     .chem-layout {
         padding: 0 10px 20px;
     }

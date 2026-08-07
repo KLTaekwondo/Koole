@@ -120,6 +120,7 @@ export function usePhysicsSim(modelRef) {
   return {
     canvasRef: canvasManager.canvasRef,
     canvasAreaRef: canvasManager.canvasAreaRef,
+    simState,
     infoLines,
     running,
     followTarget: camera.followTarget,

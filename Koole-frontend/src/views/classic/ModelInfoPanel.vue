@@ -1,28 +1,6 @@
 <template>
     <div class="model-info-panel" v-if="knowledge">
-        <div class="info-header" @click="collapsed = !collapsed">
-            <div class="info-header-left">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-                <span>原理讲解</span>
-            </div>
-            <svg
-                class="collapse-arrow"
-                :class="{ collapsed }"
-                width="14" height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            >
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
-        </div>
-        <div class="info-content" v-show="!collapsed">
+        <div class="info-content">
             <MdPreview
                 :modelValue="knowledge"
                 :theme="theme"
@@ -36,74 +14,27 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue"
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../stores/theme.js"
 
-const props = defineProps({
+defineProps({
     modelId: { type: String, default: "" },
     knowledge: { type: String, default: "" },
-})
-
-const collapsed = ref(false)
-
-// 切换模型时自动展开
-watch(() => props.modelId, () => {
-    collapsed.value = false
 })
 </script>
 
 <style scoped>
 .model-info-panel {
-    flex-shrink: 0;
+    min-height: 360px;
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border: 0;
+    border-radius: 17px;
     overflow: hidden;
 }
 
-.info-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.2s;
-}
-
-.info-header:hover {
-    background: var(--primary-light);
-}
-
-.info-header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--primary);
-}
-
-.info-header-left svg {
-    color: var(--primary);
-    opacity: 0.8;
-}
-
-.collapse-arrow {
-    transition: transform 0.2s;
-    color: var(--primary);
-    flex-shrink: 0;
-}
-
-.collapse-arrow.collapsed {
-    transform: rotate(-90deg);
-}
-
 .info-content {
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
+    padding: clamp(20px, 4vw, 48px);
 }
 
 /* md-editor-v3 预览样式覆盖 */

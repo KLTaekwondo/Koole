@@ -158,6 +158,7 @@ watch(() => route.path, () => { menuOpen.value = false })
     display: block;
     opacity: 0.95;
 }
+
 .theme-toggle:hover {
     border-color: var(--primary);
     color: var(--primary);

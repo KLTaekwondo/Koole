@@ -2,8 +2,12 @@ import { createRouter, createWebHashHistory } from "vue-router"
 import HomeIndex from "../views/HomeIndex.vue"
 import AboutIndex from "../views/AboutIndex.vue"
 import PhysicsLab from "../views/PhysicsLab.vue"
+import PhysicsLevels from "../views/PhysicsLevels.vue"
+import PhysicsLevelView from "../views/PhysicsLevelView.vue"
 import BiologyLab from "../views/BiologyLab.vue"
 import ChemistryLab from "../views/ChemistryLab.vue"
+import PeriodicTable from "../views/PeriodicTable.vue"
+import ElementDetail from "../views/ElementDetail.vue"
 import ChineseLab from "../views/ChineseLab.vue"
 import MathLab from "../views/MathLab.vue"
 import EnglishLab from "../views/EnglishLab.vue"
@@ -31,9 +35,18 @@ const routes = [
         component: PhysicsLab,
     },
     {
+        path: "/physics-lab/levels",
+        name: "物理关卡",
+        component: PhysicsLevels,
+    },
+    {
+        path: "/physics-lab/levels/:levelId",
+        name: "物理关卡实验",
+        component: PhysicsLevelView,
+    },
+    {
         path: "/physics-lab/classic",
         component: ClassicPhysicsLayout,
-        redirect: "/physics-lab/classic/free-fall",
         children: [
             {
                 path: ":modelId",
@@ -51,6 +64,16 @@ const routes = [
         path: "/bio-lab",
         name: "生物模型",
         component: BiologyLab,
+    },
+    {
+        path: "/chem-lab/periodic-table",
+        name: "元素周期表",
+        component: PeriodicTable,
+    },
+    {
+        path: "/chem-lab/periodic-table/:symbol",
+        name: "元素详情",
+        component: ElementDetail,
     },
     {
         path: "/chem-lab",

@@ -3,18 +3,19 @@
         <DepthLabHero
             eyebrow="PHYSICS LAB / 物理实验室"
             :title-lines="['把公式变成', '能看见的变化']"
-            description="经典模型逐参数推演，沙盒模式自由搭建。两种入口，通往同一套物理规律。"
+            description="经典模型逐参数推演，物理关卡带目标挑战，沙盒模式自由搭建。三种入口，通往同一套物理规律。"
             accent="#3b82f6"
             accent2="#f59e0b"
             scene-label="MODE SELECT / 001"
             :actions="[
                 { label: '进入经典模型', to: '/physics-lab/classic', variant: 'primary' },
+                { label: '进入物理关卡', to: '/physics-lab/levels', variant: 'outline' },
                 { label: '进入沙盒模式', to: '/physics-lab/sandbox', variant: 'outline' },
             ]"
             :meta-items="[
                 { value: String(physicsCount), label: '个经典模型' },
                 { value: '∞', label: '无限画布' },
-                { value: '2', label: '种入口' },
+                { value: '3', label: '种入口' },
             ]"
             :devices="devices"
         />
@@ -25,7 +26,7 @@
                     <small>01 / MODES</small>
                     <h2>选择你的实验方式。</h2>
                 </div>
-                <p>经典模型适合逐参数验证规律，沙盒模式适合自由搭建与试错。两个入口，两种节奏。</p>
+                <p>经典模型适合逐参数验证规律，物理关卡用目标推动理解，沙盒模式适合自由搭建与试错。三种入口，三种节奏。</p>
             </header>
 
             <div class="modes-stage">
@@ -51,6 +52,29 @@
                     </ul>
                     <div class="mode-bottom">
                         <span>参数 · 曲线 · 知识点</span>
+                        <b>进入 ↗</b>
+                    </div>
+                </router-link>
+
+                <!-- 物理关卡 -->
+                <router-link to="/physics-lab/levels" class="mode-card mode-levels">
+                    <div class="mode-deco deco-levels" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div class="mode-top">
+                        <span class="mode-index">02 / LEVELS</span>
+                        <span class="mode-chip">6 个关卡</span>
+                    </div>
+                    <div class="mode-icon"><SvgIcon name="target" :size="27" /></div>
+                    <h3>物理关卡</h3>
+                    <p>带着明确目标调节参数，让实验结果落在指定范围内，完成后逐关解锁。</p>
+                    <ul class="mode-features">
+                        <li>目标实验</li>
+                        <li>自动判定</li>
+                        <li>章节解锁</li>
+                    </ul>
+                    <div class="mode-bottom">
+                        <span>挑战 · 星级 · 解释</span>
                         <b>进入 ↗</b>
                     </div>
                 </router-link>
@@ -254,7 +278,7 @@ const devices = [buildGalaxyDevice]
 /* 两翼景深舞台：左右卡片带 rotateY 朝向中心，hover 转正前推 */
 .modes-stage {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 36px;
     perspective: 1400px;
 }
@@ -276,6 +300,11 @@ const devices = [buildGalaxyDevice]
     overflow: hidden;
     transform: rotateY(6deg);
     transition: transform 0.5s ease-out, border-color 0.3s, box-shadow 0.3s;
+}
+
+.mode-levels {
+    --mode: #7c65d9;
+    transform: translateY(8px);
 }
 
 .mode-sandbox {
@@ -416,8 +445,50 @@ const devices = [buildGalaxyDevice]
 }
 
 @keyframes deco-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* 关卡：递进节点 */
+.deco-levels {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    opacity: 0.46;
+}
+
+.deco-levels::before {
+    content: "";
+    position: absolute;
+    left: 40px;
+    right: 26px;
+    top: 54px;
+    height: 2px;
+    background: currentColor;
+}
+
+.deco-levels span {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border: 3px solid currentColor;
+    border-radius: 50%;
+    background: var(--bg-card);
+}
+
+.deco-levels span:nth-child(2) {
+    transform: translateY(-18px);
+}
+
+.deco-levels span:nth-child(3) {
+    transform: translateY(-35px);
 }
 
 /* 沙盒：网格 + 地面 + 小球 */
@@ -455,29 +526,73 @@ const devices = [buildGalaxyDevice]
 }
 
 @keyframes section-in {
-    from { opacity: 0; transform: translateY(34px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(34px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ========== 移动端 ========== */
 @media (max-width: 980px) {
-    .mode-card { transform: rotateY(4deg); }
-    .mode-sandbox { transform: rotateY(-4deg); }
+    .mode-card {
+        transform: rotateY(4deg);
+    }
+
+    .mode-sandbox {
+        transform: rotateY(-4deg);
+    }
 }
 
 @media (max-width: 680px) {
-    .lab-page { width: min(100% - 32px, 1180px); }
-    .modes-section { padding: 78px 16px 84px; }
-    .section-heading { grid-template-columns: 1fr; gap: 18px; }
-    .modes-stage { grid-template-columns: 1fr; gap: 22px; }
-    .mode-card { min-height: 300px; transform: none; }
-    .mode-sandbox { transform: none; }
-    .mode-card:hover { transform: translateY(-5px); }
+    .lab-page {
+        width: min(100% - 32px, 1180px);
+    }
+
+    .modes-section {
+        padding: 78px 16px 84px;
+    }
+
+    .section-heading {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .modes-stage {
+        grid-template-columns: 1fr;
+        gap: 22px;
+    }
+
+    .mode-card {
+        min-height: 300px;
+        transform: none;
+    }
+
+    .mode-levels {
+        transform: none;
+    }
+
+    .mode-sandbox {
+        transform: none;
+    }
+
+    .mode-card:hover {
+        transform: translateY(-5px);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .modes-section { animation: none; }
+    .modes-section {
+        animation: none;
+    }
+
     .deco-arc .deco-ball,
-    .deco-grid .deco-ball { animation: none; }
+    .deco-grid .deco-ball {
+        animation: none;
+    }
 }
 </style>

@@ -728,7 +728,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
-    .biology-page { width: min(100% - 32px, 1280px); }
+    .biology-page {
+        width: min(100% - 32px, 1280px);
+    }
+
     .bio-layout {
         padding: 0 10px 20px;
     }

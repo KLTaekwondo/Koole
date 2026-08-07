@@ -387,25 +387,65 @@ onBeforeUnmount(() => {
 }
 
 @keyframes copy-in {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 980px) {
-    .hero-copy { width: min(720px, 76%); }
+    .hero-copy {
+        width: min(720px, 76%);
+    }
 }
 
 @media (max-width: 680px) {
-    .depth-hero { min-height: calc(100svh - var(--nav-height)); height: auto; padding: 58px 16px 72px; }
-    .depth-scene::after { right: -38vw; bottom: -8vh; width: 110vw; height: 110vw; opacity: 0.82; }
-    .hero-copy { width: 100%; }
-    .hero-copy h1 { font-size: clamp(40px, 12vw, 54px); }
-    .hero-description { max-width: 88%; font-size: 14px; }
-    .hero-actions { align-items: stretch; flex-direction: column; width: min(100%, 320px); }
-    .scene-label { display: none; }
+    .depth-hero {
+        min-height: calc(100svh - var(--nav-height));
+        height: auto;
+        padding: 58px 16px 72px;
+    }
+
+    .depth-scene::after {
+        right: -38vw;
+        bottom: -8vh;
+        width: 110vw;
+        height: 110vw;
+        opacity: 0.82;
+    }
+
+    .hero-copy {
+        width: 100%;
+    }
+
+    .hero-copy h1 {
+        font-size: clamp(40px, 12vw, 54px);
+    }
+
+    .hero-description {
+        max-width: 88%;
+        font-size: 14px;
+    }
+
+    .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+        width: min(100%, 320px);
+    }
+
+    .scene-label {
+        display: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-copy { animation: none; }
+    .hero-copy {
+        animation: none;
+    }
 }
 </style>

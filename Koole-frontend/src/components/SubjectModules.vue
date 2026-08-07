@@ -124,19 +124,44 @@ defineProps({
 }
 
 @keyframes module-in {
-    from { opacity: 0; transform: translateY(34px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(34px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 680px) {
-    .modules-section { padding: 78px 16px 84px; }
-    .section-heading { grid-template-columns: 1fr; gap: 18px; }
-    .module-grid { grid-template-columns: 1fr; }
-    .module-item { min-height: 230px; border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent); }
-    .module-item:last-child { border-bottom: 0; }
+    .modules-section {
+        padding: 78px 16px 84px;
+    }
+    .section-heading {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .module-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .module-item {
+        min-height: 230px;
+        border-right: 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    }
+
+    .module-item:last-child {
+        border-bottom: 0;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .modules-section { animation: none; }
+    .modules-section {
+        animation: none;
+    }
 }
 </style>

@@ -741,8 +741,15 @@ onUnmounted(() => {
   background: #f0f7ff;
 }
 
-.preset-item b { font-size: 13px; }
-.preset-item span { color: #7f8c8d; font-size: 11px; line-height: 1.45; }
+.preset-item b {
+  font-size: 13px;
+}
+
+.preset-item span {
+  color: #7f8c8d;
+  font-size: 11px;
+  line-height: 1.45;
+}
 
 .settings-panel {
   display: flex;
@@ -992,8 +999,14 @@ onUnmounted(() => {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* ========== 浮动属性面板（悬浮在画布上方） ========== */
@@ -1016,9 +1029,16 @@ onUnmounted(() => {
   backdrop-filter: blur(2px);
 }
 
-@keyframes panel-in {
-  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  @keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .float-panel-header {
@@ -1050,7 +1070,9 @@ onUnmounted(() => {
   letter-spacing: 0.3px;
 }
 
-.live-data-section { background: #f8fbff; }
+.live-data-section {
+  background: #f8fbff;
+}
 
 .live-data-grid {
   display: grid;
@@ -1060,8 +1082,16 @@ onUnmounted(() => {
   font-size: 11px;
 }
 
-.live-data-grid span { color: #7f8c8d; }
-.live-data-grid b { color: #2c3e50; font-family: var(--mono, monospace); font-weight: 600; text-align: right; }
+.live-data-grid span {
+  color: #7f8c8d;
+}
+
+.live-data-grid b {
+  color: #2c3e50;
+  font-family: var(--mono, monospace);
+  font-weight: 600;
+  text-align: right;
+}
 
 .float-panel-body {
   overflow-y: auto;
@@ -1266,8 +1296,15 @@ onUnmounted(() => {
 }
 
 @keyframes legend-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .legend-header {
@@ -1388,7 +1425,9 @@ onUnmounted(() => {
   border-color: #3498db;
 }
 
-:root[data-theme="dark"] .preset-item span { color: #a0a8b4; }
+:root[data-theme="dark"] .preset-item span {
+  color: #a0a8b4;
+}
 
 :root[data-theme="dark"] .sandbox-status {
   color: #8a93a0;
@@ -1412,9 +1451,17 @@ onUnmounted(() => {
   border-bottom-color: #2a2f37;
 }
 
-:root[data-theme="dark"] .live-data-section { background: #202832; }
-:root[data-theme="dark"] .live-data-grid span { color: #8f9aa8; }
-:root[data-theme="dark"] .live-data-grid b { color: #d8dde3; }
+:root[data-theme="dark"] .live-data-section {
+  background: #202832;
+}
+
+:root[data-theme="dark"] .live-data-grid span {
+  color: #8f9aa8;
+}
+
+:root[data-theme="dark"] .live-data-grid b {
+  color: #d8dde3;
+}
 
 :root[data-theme="dark"] .prop-row label {
   color: #a0a8b4;
