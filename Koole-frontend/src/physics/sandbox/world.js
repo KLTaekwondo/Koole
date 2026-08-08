@@ -1,7 +1,7 @@
 import { MAX_SPEED, REST_THRESHOLD } from '../../constants/physics.js'
 import { getGroundHalfExtent, resolveGroundCollision } from './bounds.js'
 import { resolveSandboxCollisions } from './collisions.js'
-import { getRawObject, isBox, isPendulum, isSameObject, isSpringMass } from './objectTypes.js'
+import { getRawObject, isBox, isPendulum, isSameObject, isSpringMass, isWheel, isWindField } from './objectTypes.js'
 
 function limitSpeed(obj) {
   const speed = Math.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2)
@@ -45,6 +45,15 @@ function applyPendulumConstraint(obj) {
   obj.velocity.y -= normalVelocity * ny
 }
 
+function applyWindFields(obj, fields, dt) {
+  for (const field of fields) {
+    if (!field.contains(obj)) continue
+    const angle = field.direction * Math.PI / 180
+    obj.velocity.x += Math.cos(angle) * field.strength * dt
+    obj.velocity.y += Math.sin(angle) * field.strength * dt
+  }
+}
+
 function rememberBoxAngles(objects) {
   for (const obj of objects) {
     if (isBox(obj)) obj._preAngle = obj.angle || 0
@@ -53,7 +62,7 @@ function rememberBoxAngles(objects) {
 
 function dampGroundedBoxes(objects, groundY) {
   for (const obj of objects) {
-    if (!isBox(obj) || obj.angle === 0) continue
+    if (!isBox(obj) || obj.isStatic || obj.angle === 0) continue
 
     // 着地判定与地面碰撞同一口径（真角半径）
     if (obj.pos.y + getGroundHalfExtent(obj) < groundY) {
@@ -76,16 +85,19 @@ export function stepSandboxWorld(objects, dt, options) {
   if (!options.isPlaying) return false
 
   let selectedUpdated = false
+  const windFields = objects.filter(isWindField)
 
   for (const obj of objects) {
     if (options.draggedObject && isSameObject(obj, options.draggedObject)) continue
     if (obj.isStatic) continue
 
+    applyWindFields(obj, windFields, dt)
     if (options.gravityEnabled) obj.velocity.y += options.gravityStrength * dt
     obj.velocity.x += obj.acceleration.x * dt
     obj.velocity.y += obj.acceleration.y * dt
     obj.pos.x += obj.velocity.x * dt
     obj.pos.y += obj.velocity.y * dt
+    if (isWheel(obj)) obj.rotation += (obj.velocity.x / Math.max(obj.radius, 1)) * dt
 
     limitSpeed(obj)
     if (isSpringMass(obj)) applySpringConstraint(obj, dt)

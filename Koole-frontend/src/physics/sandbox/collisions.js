@@ -8,7 +8,7 @@ import {
   collideBoxTriangle,
   collideTriTriangle,
 } from '../collision.js'
-import { getRawObject, isBallLike, isBox, isSameObject, isTriangleLike } from './objectTypes.js'
+import { getRawObject, isBallLike, isBox, isSameObject, isTriangleLike, isWindField } from './objectTypes.js'
 
 function getTriangleVertices(obj) {
   if (obj.getVertices) return obj.getVertices()
@@ -30,6 +30,7 @@ export function resolveSandboxCollisions(objects, draggedObject = null) {
       const a = objects[i]
       const b = objects[j]
 
+      if (isWindField(a) || isWindField(b)) continue
       if (a.isStatic && b.isStatic) continue
       if (draggedObject && (isSameObject(a, draggedObject) || isSameObject(b, draggedObject))) continue
 

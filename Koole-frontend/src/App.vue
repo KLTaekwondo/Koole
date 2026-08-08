@@ -1,7 +1,7 @@
 <template>
     <div id="app">
         <NavBar />
-        <main class="main-content">
+        <main class="main-content" :class="{ 'periodic-content': route.path.startsWith('/chem-lab/periodic-table') }">
             <router-view v-slot="{ Component }">
                 <transition name="page" mode="out-in">
                     <component :is="Component" />
@@ -15,6 +15,9 @@
 <script setup>
 import NavBar from "./components/NavBar.vue"
 import Toast from "./components/Toast.vue"
+import { useRoute } from "vue-router"
+
+const route = useRoute()
 </script>
 
 <style scoped>
@@ -22,9 +25,18 @@ import Toast from "./components/Toast.vue"
     min-height: calc(100vh - var(--nav-height));
     padding: 32px 0;
     background: linear-gradient(135deg, #ffffff 0%, #fafafa 40%, #f5f5f0 100%);
+    overflow-x:hidden;
+}
+
+.main-content.periodic-content {
+    background: transparent;
 }
 
 :root[data-theme="dark"] .main-content {
     background: linear-gradient(135deg, #1a1a1a 0%, #222222 40%, #2a2a2a 100%);
+}
+
+:root[data-theme="dark"] .main-content.periodic-content {
+    background: transparent;
 }
 </style>

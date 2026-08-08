@@ -8,12 +8,18 @@ import Triangle from '../physics/core/Triangle.js'
 import SpringMass from '../physics/core/SpringMass.js'
 import Pendulum from '../physics/core/Pendulum.js'
 import Ramp from '../physics/core/Ramp.js'
+import Platform from '../physics/core/Platform.js'
+import Wheel from '../physics/core/Wheel.js'
+import WindField from '../physics/core/WindField.js'
 import ballIcon from '../assets/icons/model-ball.svg?raw'
 import boxIcon from '../assets/icons/model-box.svg?raw'
 import triangleIcon from '../assets/icons/model-triangle.svg?raw'
 import springIcon from '../assets/icons/model-spring.svg?raw'
 import pendulumIcon from '../assets/icons/model-pendulum.svg?raw'
 import rampIcon from '../assets/icons/model-ramp.svg?raw'
+import platformIcon from '../assets/icons/model-platform.svg?raw'
+import wheelIcon from '../assets/icons/model-wheel.svg?raw'
+import windIcon from '../assets/icons/model-wind.svg?raw'
 
 const MODEL_TYPES = [
   {
@@ -371,6 +377,122 @@ const MODEL_TYPES = [
       if (obj.pos.x + hw > cw) { obj.pos.x = cw - hw; obj.velocity.x = -obj.velocity.x; hit = true }
       if (obj.pos.x - hw < 0) { obj.pos.x = hw; obj.velocity.x = -obj.velocity.x; hit = true }
       return hit
+    },
+  },
+  {
+    id: 'platform',
+    name: '固定平台',
+    icon: '▬',
+    iconSvg: platformIcon,
+    description: '可调尺寸与角度的固定平台，用于搭建墙、桥和障碍',
+    defaultColor: '#64748b',
+    create(x, y) {
+      return new Platform(x, y)
+    },
+    drawGhost(ctx, x, y, alpha = 0.5) {
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = this.defaultColor
+      ctx.strokeStyle = '#475569'
+      ctx.lineWidth = 2
+      ctx.setLineDash([5, 4])
+      ctx.fillRect(x - 75, y - 9, 150, 18)
+      ctx.strokeRect(x - 75, y - 9, 150, 18)
+      ctx.restore()
+    },
+    hitTest(obj, mx, my) {
+      const dx = mx - obj.pos.x
+      const dy = my - obj.pos.y
+      const cos = Math.cos(-(obj.angle || 0))
+      const sin = Math.sin(-(obj.angle || 0))
+      const lx = dx * cos - dy * sin
+      const ly = dx * sin + dy * cos
+      return Math.abs(lx) <= obj.width / 2 && Math.abs(ly) <= obj.height / 2
+    },
+    drawHighlight(ctx, obj) {
+      ctx.save()
+      ctx.translate(obj.pos.x, obj.pos.y)
+      ctx.rotate(obj.angle || 0)
+      ctx.strokeStyle = '#f39c12'
+      ctx.lineWidth = 2.5
+      ctx.setLineDash([5, 3])
+      ctx.strokeRect(-obj.width / 2 - 4, -obj.height / 2 - 4, obj.width + 8, obj.height + 8)
+      ctx.restore()
+    },
+  },
+  {
+    id: 'wheel',
+    name: '滚轮',
+    icon: '◉',
+    iconSvg: wheelIcon,
+    description: '具有较高弹性并根据水平速度显示旋转的滚轮',
+    defaultColor: '#0f766e',
+    create(x, y) {
+      return new Wheel(x, y)
+    },
+    drawGhost(ctx, x, y, alpha = 0.5) {
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.beginPath()
+      ctx.arc(x, y, 26, 0, Math.PI * 2)
+      ctx.fillStyle = this.defaultColor
+      ctx.fill()
+      ctx.strokeStyle = '#134e4a'
+      ctx.lineWidth = 2
+      ctx.setLineDash([4, 4])
+      ctx.stroke()
+      ctx.restore()
+    },
+    hitTest(obj, mx, my) {
+      return Math.hypot(mx - obj.pos.x, my - obj.pos.y) <= obj.radius
+    },
+    drawHighlight(ctx, obj) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(obj.pos.x, obj.pos.y, obj.radius + 4, 0, Math.PI * 2)
+      ctx.strokeStyle = '#f39c12'
+      ctx.lineWidth = 2.5
+      ctx.setLineDash([5, 3])
+      ctx.stroke()
+      ctx.restore()
+    },
+  },
+  {
+    id: 'wind-field',
+    name: '风场',
+    icon: '⇢',
+    iconSvg: windIcon,
+    description: '在矩形范围内持续施加可调方向和强度的风力',
+    defaultColor: '#38bdf8',
+    create(x, y) {
+      return new WindField(x, y)
+    },
+    drawGhost(ctx, x, y, alpha = 0.5) {
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = '#38bdf826'
+      ctx.strokeStyle = this.defaultColor
+      ctx.lineWidth = 2
+      ctx.setLineDash([6, 4])
+      ctx.fillRect(x - 95, y - 55, 190, 110)
+      ctx.strokeRect(x - 95, y - 55, 190, 110)
+      ctx.setLineDash([])
+      ctx.font = '24px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillStyle = this.defaultColor
+      ctx.fillText('→', x, y + 8)
+      ctx.restore()
+    },
+    hitTest(obj, mx, my) {
+      return Math.abs(mx - obj.pos.x) <= obj.width / 2 && Math.abs(my - obj.pos.y) <= obj.height / 2
+    },
+    drawHighlight(ctx, obj) {
+      ctx.save()
+      ctx.strokeStyle = '#f39c12'
+      ctx.lineWidth = 2.5
+      ctx.setLineDash([5, 3])
+      ctx.strokeRect(obj.pos.x - obj.width / 2 - 4, obj.pos.y - obj.height / 2 - 4, obj.width + 8, obj.height + 8)
+      ctx.restore()
     },
   },
 ]

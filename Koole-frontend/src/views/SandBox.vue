@@ -93,7 +93,7 @@
               </div>
               <div class="prop-row prop-toggle">
                 <label title="静态物体不受重力影响，位置固定不动">静态</label>
-                <input type="checkbox" :checked="selectedObject.isStatic" @change="e => updateProp('isStatic', e.target.checked)" />
+                <input type="checkbox" :checked="selectedObject.isStatic" :disabled="selectedTypeId === 'platform' || selectedTypeId === 'wind-field'" @change="e => updateProp('isStatic', e.target.checked)" />
               </div>
             </div>
             <div class="prop-section">
@@ -103,14 +103,14 @@
                 <input type="color" :value="selectedObject.color" @input="e => updateProp('color', e.target.value)" />
                 <span class="color-val">{{ selectedObject.color }}</span>
               </div>
-              <template v-if="selectedTypeId === 'ball'">
+              <template v-if="selectedTypeId === 'ball' || selectedTypeId === 'wheel'">
                 <div class="prop-row">
                   <label title="球的半径">半径 (px)</label>
                   <input type="range" :value="selectedObject.radius" @input="e => updateProp('radius', +e.target.value)" min="5" max="60" step="1" />
                   <input type="number" class="range-number" :value="round(selectedObject.radius)" @input="e => updateProp('radius', +e.target.value)" step="1" min="5" />
                 </div>
               </template>
-              <template v-if="selectedTypeId === 'box'">
+              <template v-if="selectedTypeId === 'box' || selectedTypeId === 'platform'">
                 <div class="prop-row">
                   <label title="方块的旋转角度，范围 -90° ~ 90°">角度 (°)</label>
                   <input type="range" :value="round((selectedObject.angle || 0) * 180 / Math.PI)" @input="e => updateProp('angle', +e.target.value * Math.PI / 180)" min="-90" max="90" step="1" />
@@ -125,6 +125,29 @@
                   <label title="方块的高度">高度 (px)</label>
                   <input type="range" :value="selectedObject.height" @input="e => updateProp('height', +e.target.value)" min="10" max="200" step="2" />
                   <input type="number" class="range-number" :value="round(selectedObject.height)" @input="e => updateProp('height', +e.target.value)" step="2" min="10" />
+                </div>
+              </template>
+              <!-- 风场特有 -->
+              <template v-if="selectedTypeId === 'wind-field'">
+                <div class="prop-row">
+                  <label title="风场对范围内物体施加的加速度">风力强度</label>
+                  <input type="range" :value="selectedObject.strength" @input="e => updateProp('strength', +e.target.value)" min="0" max="800" step="20" />
+                  <input type="number" class="range-number" :value="round(selectedObject.strength)" @input="e => updateProp('strength', +e.target.value)" step="20" />
+                </div>
+                <div class="prop-row">
+                  <label title="0° 向右，90° 向下，负角度向上">方向 (°)</label>
+                  <input type="range" :value="selectedObject.direction" @input="e => updateProp('direction', +e.target.value)" min="-180" max="180" step="5" />
+                  <span class="range-val">{{ round(selectedObject.direction) }}°</span>
+                </div>
+                <div class="prop-row">
+                  <label title="风场作用区域的宽度">范围宽度</label>
+                  <input type="range" :value="selectedObject.width" @input="e => updateProp('width', +e.target.value)" min="80" max="500" step="10" />
+                  <input type="number" class="range-number" :value="round(selectedObject.width)" @input="e => updateProp('width', +e.target.value)" step="10" min="80" />
+                </div>
+                <div class="prop-row">
+                  <label title="风场作用区域的高度">范围高度</label>
+                  <input type="range" :value="selectedObject.height" @input="e => updateProp('height', +e.target.value)" min="60" max="350" step="10" />
+                  <input type="number" class="range-number" :value="round(selectedObject.height)" @input="e => updateProp('height', +e.target.value)" step="10" min="60" />
                 </div>
               </template>
               <!-- 三角形特有 -->
@@ -714,6 +737,8 @@ onUnmounted(() => {
 .model-panel {
   display: flex;
   gap: 6px;
+  max-width: calc(100vw - 20px);
+  overflow-x: auto;
 }
 
 .experiment-panel {

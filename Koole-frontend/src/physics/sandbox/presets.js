@@ -66,6 +66,55 @@ export const SANDBOX_PRESETS = [
       },
     ],
   },
+  {
+    id: 'wind-wheel',
+    name: '风场滚轮',
+    description: '让滚轮穿过风场并落上固定平台，观察外力如何改变运动。',
+    environment: {
+      gravityEnabled: true,
+      gravityStrength: 420,
+      floorRestitution: 0.25,
+    },
+    camera: { centerX: 400, centerY: 330, scale: 1 },
+    objects: [
+      {
+        modelId: 'wind-field',
+        x: 330,
+        y: 330,
+        props: {
+          width: 330,
+          height: 150,
+          strength: 320,
+          direction: 0,
+          color: '#38bdf8',
+        },
+      },
+      {
+        modelId: 'wheel',
+        x: 190,
+        y: 300,
+        props: {
+          radius: 25,
+          mass: 2,
+          restitution: 0.55,
+          color: '#0f766e',
+          velocity: { x: 20, y: 0 },
+          acceleration: { x: 0, y: 0 },
+        },
+      },
+      {
+        modelId: 'platform',
+        x: 560,
+        y: 455,
+        props: {
+          width: 230,
+          height: 18,
+          angle: -0.12,
+          color: '#64748b',
+        },
+      },
+    ],
+  },
 ]
 
 export function getSandboxPreset(id) {

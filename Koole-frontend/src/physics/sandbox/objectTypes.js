@@ -7,6 +7,9 @@ const TYPE_IDS = {
   SpringMass: 'spring',
   Pendulum: 'pendulum',
   Ramp: 'ramp',
+  Platform: 'platform',
+  Wheel: 'wheel',
+  WindField: 'wind-field',
 }
 
 export function getRawObject(obj) {
@@ -24,11 +27,12 @@ export function getObjectTypeId(obj) {
 
 export function isBallLike(obj) {
   const typeId = getObjectTypeId(obj)
-  return typeId === 'ball' || typeId === 'spring' || typeId === 'pendulum'
+  return typeId === 'ball' || typeId === 'spring' || typeId === 'pendulum' || typeId === 'wheel'
 }
 
 export function isBox(obj) {
-  return getObjectTypeId(obj) === 'box'
+  const typeId = getObjectTypeId(obj)
+  return typeId === 'box' || typeId === 'platform'
 }
 
 export function isTriangleLike(obj) {
@@ -42,4 +46,12 @@ export function isSpringMass(obj) {
 
 export function isPendulum(obj) {
   return getObjectTypeId(obj) === 'pendulum'
+}
+
+export function isWheel(obj) {
+  return getObjectTypeId(obj) === 'wheel'
+}
+
+export function isWindField(obj) {
+  return getObjectTypeId(obj) === 'wind-field'
 }
