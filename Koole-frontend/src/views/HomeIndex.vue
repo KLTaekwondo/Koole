@@ -115,7 +115,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import * as THREE from "three"
-import { PHYSICS_MODELS } from "../constants/physicsModels.js"
+import { PHYSICS_MODELS } from "../Logic/physics/physicsModels.js"
 import { SUBJECTS } from "../constants/subjects.js"
 import { theme } from "../stores/theme.js"
 import { HOME_SUBJECT_ICONS } from "../constants/homeSubjects.js"

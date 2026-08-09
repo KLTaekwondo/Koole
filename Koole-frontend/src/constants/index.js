@@ -1,7 +1,7 @@
 // ── 统一导出 ──
 // 每个模型文件已自包含物理+渲染逻辑，无需再合并
 
-import { PHYSICS_MODELS, DRAW_SCALE, GROUND_Y, CATEGORIES } from "./physicsModels.js"
+import { PHYSICS_MODELS, DRAW_SCALE, GROUND_Y, CATEGORIES } from "../Logic/physics/physicsModels.js"
 
 /**
  * 根据 ID 获取模型对象

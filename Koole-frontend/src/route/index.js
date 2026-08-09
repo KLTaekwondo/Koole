@@ -1,22 +1,23 @@
 import { createRouter, createWebHashHistory } from "vue-router"
 import HomeIndex from "../views/HomeIndex.vue"
 import AboutIndex from "../views/AboutIndex.vue"
-import PhysicsLab from "../views/PhysicsLab.vue"
-import PhysicsLevels from "../views/PhysicsLevels.vue"
-import PhysicsLevelView from "../views/PhysicsLevelView.vue"
-import BiologyLab from "../views/BiologyLab.vue"
-import ChemistryLab from "../views/ChemistryLab.vue"
-import PeriodicTable from "../views/PeriodicTable.vue"
-import ElementDetail from "../views/ElementDetail.vue"
-import ChineseLab from "../views/ChineseLab.vue"
-import MathLab from "../views/MathLab.vue"
-import EnglishLab from "../views/EnglishLab.vue"
-import PoliticsLab from "../views/PoliticsLab.vue"
-import HistoryLab from "../views/HistoryLab.vue"
-import GeographyLab from "../views/GeographyLab.vue"
-import ClassicPhysicsLayout from "../views/classic/ClassicPhysicsLayout.vue"
-import ClassicModelView from "../views/classic/ClassicModelView.vue"
-import SandboxView from "../views/Sandbox.vue"
+import PhysicsLab from "../views/physics/PhysicsLab.vue"
+import PhysicsLevels from "../views/physics/levels/PhysicsLevels.vue"
+import PhysicsLevelView from "../views/physics/levels/PhysicsLevelView.vue"
+import BiologyLab from "../views/biology/BiologyLab.vue"
+import ChemistryLab from "../views/chemistry/ChemistryLab.vue"
+import PeriodicTable from "../views/chemistry/Elements/PeriodicTable.vue"
+import ElementDetail from "../views/chemistry/Elements/ElementDetail.vue"
+import ChineseLab from "../views/chinese/ChineseLab.vue"
+import MathLab from "../views/math/MathLab.vue"
+import FunctionLab from "../views/math/function/FunctionLab.vue"
+import EnglishLab from "../views/english/EnglishLab.vue"
+import PoliticsLab from "../views/politics/PoliticsLab.vue"
+import HistoryLab from "../views/history/HistoryLab.vue"
+import GeographyLab from "../views/geography/GeographyLab.vue"
+import ClassicPhysicsLayout from "../views/physics/classic/ClassicPhysicsLayout.vue"
+import ClassicModelView from "../views/physics/classic/ClassicModelView.vue"
+import SandboxView from "../views/physics/sandbox/Sandbox.vue"
 
 const routes = [
     {
@@ -89,6 +90,11 @@ const routes = [
         path: "/math-lab",
         name: "数学实验室",
         component: MathLab,
+    },
+    {
+        path: "/math-lab/function-lab",
+        name: "函数实验室",
+        component: FunctionLab,
     },
     {
         path: "/english-lab",

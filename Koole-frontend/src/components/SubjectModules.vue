@@ -8,12 +8,18 @@
             <p>{{ description }}</p>
         </header>
         <div class="module-grid">
-            <article class="module-item" v-for="(item, index) in items" :key="item.name">
+            <component
+                :is="links?.[item.name] ? 'router-link' : 'article'"
+                v-for="(item, index) in items"
+                :key="item.name"
+                class="module-item"
+                :to="links?.[item.name]"
+            >
                 <small class="module-number">{{ String(index + 1).padStart(2, "0") }}</small>
                 <h3>{{ item.name }}</h3>
                 <p>{{ item.desc }}</p>
-                <span class="module-status">IN DEVELOPMENT</span>
-            </article>
+                <span class="module-status">{{ links?.[item.name] ? '进入实验 →' : 'IN DEVELOPMENT' }}</span>
+            </component>
         </div>
     </section>
 </template>
@@ -25,6 +31,7 @@ defineProps({
     description: { type: String, default: "" },
     items: { type: Array, default: () => [] },
     accent: { type: String, default: "#477cdb" },
+    links: { type: Object, default: () => ({}) },
 })
 </script>
 
@@ -76,8 +83,11 @@ defineProps({
 .module-item {
     position: relative;
     min-height: 280px;
+    display: block;
     padding: 28px 30px 30px;
     border-right: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    color: inherit;
+    text-decoration: none;
     transition: background 0.3s;
 }
 
