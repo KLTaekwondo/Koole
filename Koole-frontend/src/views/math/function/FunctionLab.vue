@@ -10,18 +10,69 @@
             @dblclick="resetView"
         ></canvas>
 
-        <div class="top-toolbar">
+        <div class="bottom-toolbar">
             <button class="icon-button" type="button" title="返回数学实验室" @click="router.push('/math-lab')">
                 <img :src="navBackIcon" alt="" />
             </button>
             <i></i>
-            <div class="toolbar-title">
-                <small>FUNCTION CANVAS</small>
-                <strong>函数无限画布</strong>
+            <div class="preset-wrap">
+                <button class="pill-button" type="button" @click="presetMenuOpen = !presetMenuOpen">添加函数 ▾</button>
+                <transition name="panel-pop">
+                    <div v-if="presetMenuOpen" class="preset-menu">
+                        <button v-for="preset in FUNCTION_PRESETS" :key="preset.label" class="preset-item" type="button" :style="{ '--fn-color': preset.color }" @click="addPreset(preset)">
+                            <span class="preset-symbol">{{ preset.symbol }}</span>
+                            <span>{{ preset.label }}</span>
+                        </button>
+                    </div>
+                </transition>
             </div>
-            <i></i>
-            <button class="pill-button" type="button" @click="addFunction">添加函数</button>
             <button class="pill-button" type="button" @click="resetView">重置视角</button>
+            <i></i>
+            <button
+                class="pill-button"
+                :class="{ 'is-on': snapEnabled }"
+                type="button"
+                title="拖动函数时吸附到刻度，关闭可自由定位"
+                @click="snapEnabled = !snapEnabled"
+            >吸附 {{ snapEnabled ? '开' : '关' }}</button>
+            <i></i>
+            <div class="preset-wrap">
+                <button class="pill-button" type="button" @click="intersectMenuOpen = !intersectMenuOpen">交叉 ▾</button>
+                <transition name="panel-pop">
+                    <div v-if="intersectMenuOpen" class="preset-menu intersect-menu">
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: intersectMode === 'off' }"
+                            @click="intersectMode = 'off'; scheduleDraw()"
+                        >不交叉</button>
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: intersectMode === 'all' }"
+                            @click="intersectMode = 'all'; scheduleDraw()"
+                        >全交叉</button>
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: intersectMode === 'partial' }"
+                            @click="intersectMode = 'partial'; scheduleDraw()"
+                        >部分交叉</button>
+                        <div v-if="intersectMode === 'partial'" class="intersect-list">
+                            <label v-for="fn in functions" :key="fn.id" class="intersect-row">
+                                <input
+                                    type="checkbox"
+                                    :checked="intersectIds.includes(fn.id)"
+                                    @change="toggleIntersectId(fn.id)"
+                                />
+                                <span class="intersect-swatch" :style="{ background: fn.color }"></span>
+                                <span>{{ fn.label }}</span>
+                            </label>
+                            <small class="intersect-count">已选 {{ intersectIds.length }} 个</small>
+                        </div>
+                    </div>
+                </transition>
+            </div>
         </div>
 
         <div class="status-strip">
@@ -32,20 +83,61 @@
             <span>{{ dragLabel }}</span>
         </div>
 
-        <transition name="panel-pop" mode="out-in">
-            <aside v-if="!objectsCollapsed" class="function-panel" key="function-panel">
-            <header class="panel-heading">
-                <div>
-                    <small>OBJECTS</small>
-                    <h2>函数对象</h2>
-                </div>
-                <div class="heading-actions">
-                    <button class="compact-button" type="button" title="添加函数" @click="addFunction">+</button>
-                    <button class="collapse-button" type="button" aria-label="收起函数对象面板" @click="objectsCollapsed = true">收起</button>
-                </div>
-            </header>
+        <div class="help-wrap">
+            <button class="help-toggle" type="button" @click="helpOpen = !helpOpen" :aria-expanded="helpOpen">使用介绍</button>
+            <transition name="panel-pop">
+                <div v-if="helpOpen" class="help-card">
+                    <header class="help-head">
+                        <small>HOW TO WRITE</small>
+                        <strong>函数式子怎么写</strong>
+                    </header>
 
-            <div class="function-list">
+                    <section>
+                        <h4>两类写法</h4>
+                        <p><b>显式函数</b>（y 等于一个关于 x 的式子）</p>
+                        <code>y = sin(x)</code>
+                        <code>y = x^2 - 1</code>
+                        <code>y = 2*x + 3</code>
+                        <p><b>隐式方程</b>（等号两侧都有 x / y，画出一条曲线）</p>
+                        <code>x^2 + y^2 = r^2</code>
+                        <code>x^2/a^2 + y^2/b^2 = 1</code>
+                        <code>(x^2+y^2-1)^3 = x^2*y^3</code>
+                    </section>
+
+                    <section>
+                        <h4>支持的运算与函数</h4>
+                        <p>四则运算 <code>+ - * /</code>，幂用 <code>^</code></p>
+                        <p>函数 <code>sin cos tan sqrt abs log ln exp</code>（必须带括号，如 <code>sin(x)</code>）</p>
+                        <p>常数 <code>pi</code>、<code>e</code></p>
+                        <p>参数：任意字母（如 <code>a b c r</code>）会变成可拖滑块</p>
+                    </section>
+
+                    <section>
+                        <h4>小提示</h4>
+                        <p>幂有三种写法都认：<code>x^2</code>、<code>x2</code>、<code>x²</code> 都会被识别成 x 的平方</p>
+                        <p><code>2*x</code> 可写成 <code>2x</code>（自动补乘号），但函数名必须带括号：<code>sinx</code> 不行，要 <code>sin(x)</code></p>
+                        <p>拖动函数可以移动它的位置，<code>a</code>、<code>b</code>、<code>r</code> 滑块实时改变形状</p>
+                    </section>
+                </div>
+            </transition>
+        </div>
+
+        <div class="objects-wrap">
+            <button class="objects-toggle" type="button" @click="objectsCollapsed = !objectsCollapsed">函数对象 <b class="fn-count">{{ functions.length }}</b></button>
+            <transition name="panel-pop">
+                <div v-if="!objectsCollapsed" class="function-panel" key="function-panel">
+                    <header class="panel-heading">
+                        <div>
+                            <small>OBJECTS</small>
+                            <h2>函数对象</h2>
+                        </div>
+                        <div class="heading-actions">
+                            <button class="compact-button" type="button" title="添加函数" @click="addFunction">+</button>
+                            <button class="collapse-button" type="button" aria-label="收起函数对象面板" @click="objectsCollapsed = true">收起</button>
+                        </div>
+                    </header>
+
+                    <div class="function-list">
                 <article
                     v-for="fn in functions"
                     :key="fn.id"
@@ -64,8 +156,12 @@
                     </div>
 
                     <template v-if="!fn.collapsed">
+                        <div class="live-equation">
+                            <small>实时算子</small>
+                            <code>{{ displayEquation(fn) }}</code>
+                        </div>
                         <label class="expression-row">
-                            <span>方程</span>
+                            <span>原始算子</span>
                             <input v-model="fn.expression" type="text" placeholder="y^2 = x^2 或 y = sin(x)" />
                         </label>
                         <small class="expression-help">支持显式函数和隐式方程，输入等号两侧表达式即可。</small>
@@ -92,28 +188,31 @@
                     </template>
                 </article>
             </div>
-        </aside>
-        </transition>
+                </div>
+            </transition>
+        </div>
 
-        <transition name="capsule-pop">
-            <button
-                v-if="objectsCollapsed"
-                class="function-panel-capsule"
-            type="button"
-            aria-label="展开函数对象面板"
-            @click="objectsCollapsed = false"
-        >
-            <span class="capsule-signal"></span>
-            <span>函数对象</span>
-            <b>{{ functions.length }}</b>
-        </button>
-        </transition>
-
-        <div class="readout" v-if="activeFunction">
-            <small>LIVE</small>
-            <strong>{{ activeFunction.label }}</strong>
-            <span>x = {{ formatValue(probeX) }}</span>
-            <b>f(x) = {{ formatValue(evaluateWorld(activeFunction, probeX)) }}</b>
+        <div class="readout" v-if="hasSelection && activeFunction" :style="{ '--fn-color': activeFunction.color }">
+            <small>LIVE · {{ activeFunction.label }}</small>
+            <div class="probe-mode">
+                <button type="button" :class="{ on: probeModeX }" @click="probeModeX = true">x → y</button>
+                <button type="button" :class="{ on: !probeModeX }" @click="probeModeX = false">y → x</button>
+            </div>
+            <label class="probe-x" v-if="probeModeX">
+                <span>x</span>
+                <input v-model.number="probeX" type="number" step="0.1" aria-label="探针 x 坐标" />
+            </label>
+            <label class="probe-x" v-else>
+                <span>y</span>
+                <input v-model.number="probeY" type="number" step="0.1" aria-label="反查 y 坐标" />
+            </label>
+            <template v-if="probeModeX && probeYValues.length">
+                <b v-for="(y, i) in probeYValues" :key="i">y{{ probeYValues.length > 1 ? `₍${i + 1}₎` : "" }} = {{ formatLive(y) }}</b>
+            </template>
+            <template v-else-if="!probeModeX && probeXValues.length">
+                <b v-for="(x, i) in probeXValues" :key="i">x{{ probeXValues.length > 1 ? `₍${i + 1}₎` : "" }} = {{ formatLive(x) }}</b>
+            </template>
+            <b v-else class="no-hit">无交点</b>
         </div>
     </div>
 </template>
@@ -123,17 +222,30 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { useRouter } from "vue-router"
 import { theme } from "../../../stores/theme.js"
 import navBackIcon from "../../../assets/icons/nav-back.svg"
+import { createView, worldToScreen, screenToWorld } from "../../../Logic/math/camera.js"
+import { evaluateWorld, formatValue, paramRange, splitEquation, updateParamKeys, compileEquation, probeValues, probeXValues as probeXValuesFn } from "../../../Logic/math/evaluator.js"
+import { sampleExplicit, sampleImplicit } from "../../../Logic/math/sampler.js"
+import { findIntersections } from "../../../Logic/math/intersections.js"
+import { drawMathScene, getObjectPoint, snapStep } from "../../../Logic/math/renderer.js"
 
 const router = useRouter()
-
-// 表达式中的字母：这些是变量 / 常数 / 函数名，不作为可调参数
-const RESERVED_NAMES = new Set(["x", "y", "pi", "e", "sin", "cos", "tan", "sqrt", "abs", "log", "ln", "exp"])
 const canvasRef = ref(null)
+const canvasWidth = computed(() => canvasRef.value?.clientWidth || 1)
+const canvasHeight = computed(() => canvasRef.value?.clientHeight || 1)
 const activeId = ref(1)
+const hasSelection = ref(false) // 是否主动点选过函数（LIVE 面板只在选中后出现）
 const objectsCollapsed = ref(true)
 const probeX = ref(0)
-const view = reactive({ x: 0, y: 0, scale: 58 })
-const dragState = reactive({ type: "", id: 0, key: "", startX: 0, startY: 0, lastX: 0, lastY: 0 })
+const view = createView()
+const dragState = reactive({ type: "", id: 0, key: "", startX: 0, startY: 0, lastX: 0, lastY: 0, startOX: 0, startOY: 0 })
+const zoomActive = ref(false) // 缩放滚轮进行中走 draft 精度，停止后恢复 fine
+let zoomTimer = 0
+const helpOpen = ref(false) // 左下角"使用介绍"说明卡展开状态
+const intersectMode = ref("off") // off | all | partial：函数交叉模式
+const intersectIds = ref([]) // 部分交叉时勾选的函数 id 集合
+const intersectMenuOpen = ref(false) // 交叉菜单展开状态
+const hoverScreen = ref(null) // 鼠标屏幕坐标，供交点悬停
+const snapEnabled = ref(true) // 拖动函数时是否吸附到细粒度刻度
 
 const functions = reactive([
     createFunction({
@@ -161,75 +273,25 @@ const functions = reactive([
 ])
 
 const activeFunction = computed(() => functions.find(fn => fn.id === activeId.value) || functions[0])
+// 当前选中函数在 probeX 处的全部 y 值（显式单值、隐式多交点）
+const probeYValues = computed(() => (activeFunction.value ? probeValues(activeFunction.value, probeX.value) : []))
+// 查询方向：true 表示"输入 x 查 y"，false 表示"输入 y 查 x"
+const probeModeX = ref(true)
+const probeY = ref(0) // y→x 模式下的输入 y
+const probeXValues = computed(() => (activeFunction.value ? probeXValuesFn(activeFunction.value, probeY.value) : []))
+// LIVE 读数显示保留两位小数，避免读数太细、看着眼花
+function formatLive(value) {
+    return Number.isFinite(value) ? Number(value.toFixed(2)).toString() : "无交点"
+}
 const dragLabel = computed(() => {
     if (dragState.type === "pan") return "正在平移画布"
     if (dragState.type === "function") return "正在拖动函数"
-    if (dragState.type === "control") return "正在重算参数"
-    return "拖动曲线或控制点"
+    return "拖动曲线或对象点"
 })
 
-const mathFunctions = {
-    sin: Math.sin,
-    cos: Math.cos,
-    tan: Math.tan,
-    sqrt: Math.sqrt,
-    abs: Math.abs,
-    log: Math.log10,
-    ln: Math.log,
-    exp: Math.exp,
-}
-
-// 从表达式提取可调参数：按出现顺序去重，排除保留名
-function extractParameters(expression) {
-    const normalized = normalizeExpression(expression).replace(/\s+/g, "")
-    const matches = normalized.match(/[a-zA-Z]+/g) || []
-    const result = []
-    for (const match of matches) {
-        if (!RESERVED_NAMES.has(match) && !result.includes(match)) result.push(match)
-    }
-    return result
-}
-
-// 表达式变化时同步参数表：保留仍存在的旧值，新参数默认 1
-function updateParamKeys(fn) {
-    const keys = extractParameters(fn.expression)
-    const params = {}
-    for (const key of keys) params[key] = key in fn.params ? fn.params[key] : 1
-    fn.params = params
-    fn.paramKeys = keys
-}
-
-function hasParams(fn, keys) {
-    return keys.every(key => key in fn.params)
-}
-
-// 滑块范围跟随参数当前值扩展
-function paramRange(value) {
-    return [Math.min(0, value) - 5, Math.max(0, value) + 5]
-}
-
-const expressionCache = new Map()
-
-// 隐式方程等值线：marching squares 的 16 种 case 索引
-// （bit0=a 左上, bit1=b 右上, bit2=c 左下, bit3=d 右下），
-// 值是需要连接的边编号、两两一组：E0 上边、E1 右边、E2 下边、E3 左边
-const MS_CASES = [
-    [], [3, 0], [0, 1], [3, 1], [3, 2], [0, 2], [0, 2], [1, 2],
-    [1, 2], [0, 2], [0, 2], [3, 2], [1, 3], [0, 1], [0, 3], [],
-]
-
-let resizeObserver = null
-let drawFrame = 0
-let implicitWorker = null
-let implicitRequestId = 0
-
-function scheduleDraw() {
-    cancelAnimationFrame(drawFrame)
-    drawFrame = requestAnimationFrame(draw)
-}
-
+// 函数对象工厂：构建状态 + 预编译表达式
 function createFunction(config) {
-    const fn = {
+    const fn = reactive({
         id: config.id,
         label: config.label,
         expression: config.expression,
@@ -240,368 +302,35 @@ function createFunction(config) {
         kind: config.kind,
         mode: config.mode || (splitEquation(config.expression).left === "y" ? "explicit" : "implicit"),
         collapsed: false,
-    }
+    })
     updateParamKeys(fn)
+    compileEquation(fn)
     return fn
 }
 
-function normalizeExpression(expression) {
-    return String(expression || "")
-        .replace(/[²]/g, "^2")
-        .replace(/[³]/g, "^3")
-        .replace(/\b([xy])([23])\b/g, "$1^$2")
-        .replace(/π/g, "pi")
-        .replace(/\b(\d+(?:\.\d+)?)x\b/g, "$1*x")
-        .replace(/\)(?=[a-zA-Z0-9])/g, ")*")
-        .replace(/(\d|x|y|pi)\(/g, "$1*(")
-}
-
-function splitEquation(expression) {
-    const normalized = normalizeExpression(expression).replace(/\s+/g, "")
-    const separator = normalized.indexOf("=")
-    if (separator < 0) return { left: "y", right: normalized }
-    return { left: normalized.slice(0, separator), right: normalized.slice(separator + 1) }
-}
-
-function evaluateExpression(expression, scope) {
-    const normalized = normalizeExpression(expression)
-    const prepared = normalized
-        .replace(/\^/g, "**")
-        .replace(/\b(sin|cos|tan|sqrt|abs|log|ln|exp)\b/g, "mathFunctions.$1")
-        .replace(/\bpi\b/g, "Math.PI")
-        .replace(/\be\b/g, "Math.E")
-    try {
-        const names = Object.keys(scope)
-        const cacheKey = `${prepared}|${names.join(',')}`
-        let evaluator = expressionCache.get(cacheKey)
-        if (!evaluator) {
-            evaluator = Function("mathFunctions", ...names, `return ${prepared}`)
-            expressionCache.set(cacheKey, evaluator)
-        }
-        return evaluator(mathFunctions, ...names.map(name => scope[name]))
-    } catch {
-        return NaN
+// 展示层换算：把 offset 折进原始式子，生成"实时算子"文本（不改 fn.expression / offset，不重算）
+// 隐式：所有独立 x/y → (x - offsetX)/(y - offsetY)；显式：右式 x 平移 + 末尾整体 y 偏移。
+function displayEquation(fn) {
+    const { left, right } = compileEquation(fn)
+    const ox = fn.offsetX
+    const oy = fn.offsetY
+    const fmtOffset = value => {
+        const text = formatValue(value)
+        return text.startsWith("-") ? `+ ${text.slice(1)}` : `- ${text}`
     }
-}
-
-function evaluateEquation(fn, x, y) {
-    const equation = splitEquation(fn.expression)
-    const scope = { x: x - fn.offsetX, y: y - fn.offsetY, ...fn.params }
-    const left = evaluateExpression(equation.left, scope)
-    const right = evaluateExpression(equation.right, scope)
-    return Number.isFinite(left) && Number.isFinite(right) ? left - right : NaN
-}
-
-function evaluateWorld(fn, worldX) {
-    const equation = splitEquation(fn.expression)
-    if (equation.left !== "y") return solveImplicitY(fn, worldX)
-    return evaluateExpression(equation.right, { x: worldX - fn.offsetX, ...fn.params }) + fn.offsetY
-}
-
-function solveImplicitYs(fn, worldX) {
-    const values = []
-    let previousY = -12
-    let previousValue = evaluateEquation(fn, worldX, previousY)
-    for (let index = 1; index <= 144; index += 1) {
-        const currentY = -12 + index * (24 / 144)
-        const currentValue = evaluateEquation(fn, worldX, currentY)
-        if (Number.isFinite(previousValue) && Number.isFinite(currentValue) && previousValue * currentValue <= 0) {
-            const ratio = Math.abs(previousValue) / (Math.abs(previousValue) + Math.abs(currentValue) || 1)
-            const root = previousY + (currentY - previousY) * ratio
-            if (!values.some(value => Math.abs(value - root) < 0.12)) values.push(root)
-        }
-        previousY = currentY
-        previousValue = currentValue
+    const shift = (expr, name, offset) => (offset === 0 ? expr : expr.replace(new RegExp(`\\b${name}\\b`, "g"), `(${name} ${fmtOffset(offset)})`))
+    if (left !== "y") {
+        return `${shift(shift(left, "x", ox), "y", oy)} = ${shift(shift(right, "x", ox), "y", oy)}`
     }
-    return values
-}
-
-function solveImplicitY(fn, worldX) {
-    return solveImplicitYs(fn, worldX)[0] ?? NaN
-}
-
-function formatValue(value) {
-    return Number.isFinite(value) ? Number(value.toFixed(3)).toString() : "未定义"
-}
-
-function worldToScreen(x, y) {
-    const canvas = canvasRef.value
-    const width = canvas?.clientWidth || 1
-    const height = canvas?.clientHeight || 1
-    return [width / 2 + (x - view.x) * view.scale, height / 2 - (y - view.y) * view.scale]
-}
-
-function screenToWorld(x, y) {
-    const canvas = canvasRef.value
-    const width = canvas?.clientWidth || 1
-    const height = canvas?.clientHeight || 1
-    return [(x - width / 2) / view.scale + view.x, (height / 2 - y) / view.scale + view.y]
-}
-
-function draw() {
-    const canvas = canvasRef.value
-    const ctx = canvas?.getContext("2d")
-    if (!canvas || !ctx) return
-
-    const dpr = window.devicePixelRatio || 1
-    const width = canvas.clientWidth
-    const height = canvas.clientHeight
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, width, height)
-
-    drawBackground(ctx, width, height)
-    drawGrid(ctx, width, height)
-    drawAxes(ctx, width, height)
-    functions.forEach(fn => drawFunction(ctx, fn, width))
-    functions.forEach(fn => drawFunctionHandles(ctx, fn))
-    if (activeFunction.value) drawProbe(ctx, activeFunction.value)
-}
-
-function drawBackground(ctx, width, height) {
-    const isDark = theme.value === "dark"
-    const gradient = ctx.createRadialGradient(width * 0.72, height * 0.26, 0, width * 0.72, height * 0.26, Math.max(width, height) * 0.8)
-    gradient.addColorStop(0, isDark ? "#1f2f4d" : "#edf4ff")
-    gradient.addColorStop(0.45, isDark ? "#121820" : "#f8fbff")
-    gradient.addColorStop(1, isDark ? "#0f1319" : "#f5f6f8")
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, width, height)
-}
-
-function drawGrid(ctx, width, height) {
-    const [left, top] = screenToWorld(0, 0)
-    const [right, bottom] = screenToWorld(width, height)
-    const step = niceStep()
-    const axis = worldToScreen(0, 0)
-    ctx.lineWidth = 1
-    ctx.strokeStyle = theme.value === "dark" ? "rgba(150, 174, 214, 0.13)" : "rgba(92, 117, 150, 0.16)"
-    ctx.fillStyle = theme.value === "dark" ? "rgba(185, 199, 225, 0.62)" : "rgba(80, 100, 130, 0.68)"
-    ctx.font = "11px var(--mono, monospace)"
-    ctx.textAlign = "center"
-    for (let x = Math.floor(left / step) * step; x <= right; x += step) {
-        const [sx] = worldToScreen(x, 0)
-        ctx.beginPath()
-        ctx.moveTo(sx, 0)
-        ctx.lineTo(sx, height)
-        ctx.stroke()
-        if (Math.abs(x) > step / 8) ctx.fillText(formatTick(x), sx, clamp(axis[1] + 16, 16, height - 8))
-    }
-    ctx.textAlign = "right"
-    for (let y = Math.floor(bottom / step) * step; y <= top; y += step) {
-        const [, sy] = worldToScreen(0, y)
-        ctx.beginPath()
-        ctx.moveTo(0, sy)
-        ctx.lineTo(width, sy)
-        ctx.stroke()
-        if (Math.abs(y) > step / 8) ctx.fillText(formatTick(y), clamp(axis[0] - 8, 32, width - 8), sy + 4)
-    }
-}
-
-function drawAxes(ctx, width, height) {
-    const [axisX, axisY] = worldToScreen(0, 0)
-    ctx.strokeStyle = theme.value === "dark" ? "rgba(220, 228, 246, 0.5)" : "rgba(55, 72, 96, 0.56)"
-    ctx.lineWidth = 1.8
-    ctx.beginPath()
-    ctx.moveTo(0, axisY)
-    ctx.lineTo(width, axisY)
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.moveTo(axisX, 0)
-    ctx.lineTo(axisX, height)
-    ctx.stroke()
-    ctx.fillStyle = theme.value === "dark" ? "rgba(220, 228, 246, 0.78)" : "rgba(55, 72, 96, 0.78)"
-    ctx.font = "700 11px var(--mono, monospace)"
-    ctx.fillText("x", width - 18, axisY - 10)
-    ctx.fillText("y", axisX + 12, 18)
-}
-
-function drawFunction(ctx, fn, width) {
-    ctx.save()
-    ctx.strokeStyle = fn.color
-    ctx.lineWidth = activeId.value === fn.id ? 4 : 2.4
-    ctx.shadowColor = fn.color
-    ctx.shadowBlur = activeId.value === fn.id ? 16 : 6
-    ctx.lineJoin = "round"
-    if (splitEquation(fn.expression).left !== "y") {
-        drawImplicitFunction(ctx, fn, width)
-        ctx.restore()
-        return
-    }
-    ctx.beginPath()
-    let started = false
-    for (let sx = -20; sx <= width + 20; sx += 2) {
-        const [worldX] = screenToWorld(sx, 0)
-        const worldY = evaluateWorld(fn, worldX)
-        if (!Number.isFinite(worldY) || Math.abs(worldY) > 10000) {
-            started = false
-            continue
-        }
-        const [, sy] = worldToScreen(worldX, worldY)
-        if (!started) {
-            ctx.moveTo(sx, sy)
-            started = true
-        } else {
-            ctx.lineTo(sx, sy)
-        }
-    }
-    ctx.stroke()
-    ctx.restore()
-}
-
-function drawImplicitFunction(ctx, fn, width) {
-    const height = canvasRef.value.clientHeight
-    const step = Math.max(8, Math.min(16, 13 - view.scale / 50))
-    const columns = Math.ceil(width / step)
-    const rows = Math.ceil(height / step)
-    const values = new Float64Array((columns + 1) * (rows + 1))
-
-    for (let row = 0; row <= rows; row += 1) {
-        const sy = row * step
-        const [, y] = screenToWorld(0, sy)
-        for (let column = 0; column <= columns; column += 1) {
-            const sx = column * step
-            const [x] = screenToWorld(sx, 0)
-            values[row * (columns + 1) + column] = evaluateEquation(fn, x, y)
-        }
-    }
-
-    // marching squares：网格单元内用线性插值求出曲线与四边的交点，
-    // 把相邻格子的小方块替换成首尾相接的连续线段
-    ctx.beginPath()
-    ctx.lineWidth = fn.id === activeId.value ? 2.6 : 2
-    ctx.shadowBlur = 0
-    for (let row = 0; row < rows; row += 1) {
-        const sy = row * step
-        for (let column = 0; column < columns; column += 1) {
-            const sx = column * step
-            const index = row * (columns + 1) + column
-            const vA = values[index]
-            const vB = values[index + 1]
-            const vC = values[index + columns + 1]
-            const vD = values[index + columns + 2]
-            if (![vA, vB, vC, vD].every(Number.isFinite)) continue
-            const caseIndex = (vA < 0 ? 1 : 0) | (vB < 0 ? 2 : 0) | (vC < 0 ? 4 : 0) | (vD < 0 ? 8 : 0)
-            const edges = MS_CASES[caseIndex]
-            for (let i = 0; i < edges.length; i += 2) {
-                const p0 = edgeIntersection(edges[i], vA, vB, vC, vD, sx, sy, step)
-                const p1 = edgeIntersection(edges[i + 1], vA, vB, vC, vD, sx, sy, step)
-                ctx.moveTo(p0[0], p0[1])
-                ctx.lineTo(p1[0], p1[1])
-            }
-        }
-    }
-    ctx.stroke()
-}
-
-// 曲线与网格单元四边的交点线性插值：E0 上边(a-b)、E1 右边(b-d)、E2 下边(c-d)、E3 左边(a-c)
-function edgeIntersection(edge, vA, vB, vC, vD, sx, sy, step) {
-    const ratio = (v0, v1) => {
-        const denominator = v0 - v1
-        if (denominator === 0) return 0.5
-        return Math.max(0, Math.min(1, v0 / denominator))
-    }
-    if (edge === 0) return [sx + step * ratio(vA, vB), sy]
-    if (edge === 1) return [sx + step, sy + step * ratio(vB, vD)]
-    if (edge === 2) return [sx + step * ratio(vC, vD), sy + step]
-    return [sx, sy + step * ratio(vA, vC)]
-}
-
-function drawFunctionHandles(ctx, fn) {
-    const selected = activeId.value === fn.id
-    const alpha = selected ? 1 : 0.38
-    const center = getObjectPoint(fn)
-    drawHandle(ctx, fn, center.x, center.y, selected ? "拖" : "", alpha, selected ? 10 : 6)
-    if (!selected) return
-    getControlPoints(fn).forEach(point => drawHandle(ctx, fn, point.x, point.y, point.label, 1, 8))
-}
-
-function drawHandle(ctx, fn, x, y, label, alpha, radius) {
-    const [sx, sy] = worldToScreen(x, y)
-    ctx.save()
-    ctx.globalAlpha = alpha
-    ctx.fillStyle = fn.color
-    ctx.strokeStyle = theme.value === "dark" ? "#151b24" : "#ffffff"
-    ctx.lineWidth = 2.5
-    ctx.beginPath()
-    ctx.arc(sx, sy, radius, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-    if (label) {
-        ctx.fillStyle = theme.value === "dark" ? "#f6f8fc" : "#16202f"
-        ctx.font = "700 11px var(--mono, monospace)"
-        ctx.fillText(label, sx + radius + 7, sy - radius - 3)
-    }
-    ctx.restore()
-}
-
-function drawProbe(ctx, fn) {
-    const y = evaluateWorld(fn, probeX.value)
-    if (!Number.isFinite(y)) return
-    const [sx, sy] = worldToScreen(probeX.value, y)
-    const [, axisY] = worldToScreen(0, 0)
-    ctx.save()
-    ctx.strokeStyle = `${fn.color}88`
-    ctx.lineWidth = 1.2
-    ctx.setLineDash([5, 6])
-    ctx.beginPath()
-    ctx.moveTo(sx, axisY)
-    ctx.lineTo(sx, sy)
-    ctx.stroke()
-    ctx.setLineDash([])
-    ctx.fillStyle = fn.color
-    ctx.strokeStyle = theme.value === "dark" ? "#151b24" : "#ffffff"
-    ctx.lineWidth = 2.5
-    ctx.beginPath()
-    ctx.arc(sx, sy, 6.5, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-    ctx.restore()
-}
-
-function getObjectPoint(fn) {
-    if (fn.kind === "parabola" && hasParams(fn, ["a", "b", "c"])) return { x: fn.offsetX + Number(fn.params.b || 0), y: fn.offsetY + Number(fn.params.c || 0) }
-    if (fn.kind === "sine" && hasParams(fn, ["a", "b", "c"])) return { x: fn.offsetX, y: fn.offsetY + Number(fn.params.c || 0) }
-    return { x: fn.offsetX, y: fn.offsetY }
-}
-
-function getControlPoints(fn) {
-    if (fn.kind === "parabola" && hasParams(fn, ["a", "b", "c"])) {
-        const b = Number(fn.params.b || 0)
-        const c = Number(fn.params.c || 0)
-        const a = Number(fn.params.a || 0)
-        return [
-            { key: "vertex", label: "顶点", x: fn.offsetX + b, y: fn.offsetY + c },
-            { key: "shape", label: "开口", x: fn.offsetX + b + 1, y: fn.offsetY + a + c },
-        ]
-    }
-    if (fn.kind === "sine" && hasParams(fn, ["a", "b", "c"])) {
-        const a = Number(fn.params.a || 0)
-        const c = Number(fn.params.c || 0)
-        return [
-            { key: "center", label: "中线", x: fn.offsetX, y: fn.offsetY + c },
-            { key: "amplitude", label: "振幅", x: fn.offsetX, y: fn.offsetY + c + a },
-        ]
-    }
-    return []
-}
-
-function niceStep() {
-    const target = 90 / view.scale
-    const power = 10 ** Math.floor(Math.log10(target))
-    const normalized = target / power
-    return (normalized < 2 ? 1 : normalized < 5 ? 2 : 5) * power
-}
-
-function formatTick(value) {
-    return Number(value.toFixed(4)).toString()
-}
-
-function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value))
+    let text = shift(right, "x", ox)
+    if (oy !== 0) text = `${text} ${oy > 0 ? "+" : "-"} ${Math.abs(formatValue(oy))}`
+    return `y = ${text}`
 }
 
 function selectFunction(id) {
     activeId.value = id
-    draw()
+    hasSelection.value = true
+    scheduleDraw()
 }
 
 function addFunction() {
@@ -618,7 +347,38 @@ function addFunction() {
         mode: "explicit",
     }))
     activeId.value = id
-    draw()
+    scheduleDraw()
+}
+
+// 常用函数预设库：一键添加常用曲线，避免手打方程
+const FUNCTION_PRESETS = [
+    { label: "正弦波", symbol: "∿", expression: "a * sin(b * x) + c", params: { a: 1, b: 1, c: 0 }, color: "#e8bd6a", kind: "sine" },
+    { label: "抛物线", symbol: "⌒", expression: "a * (x - b)^2 + c", params: { a: 0.5, b: 0, c: 0 }, color: "#477cdb", kind: "parabola" },
+    { label: "直线", symbol: "╱", expression: "k * x + b", params: { k: 1, b: 0 }, color: "#34a853", kind: "line" },
+    { label: "指数曲线", symbol: "⤴", expression: "a * exp(b * x) + c", params: { a: 1, b: 0.5, c: 0 }, color: "#f97316", kind: "exp" },
+    { label: "圆", symbol: "◯", expression: "x^2 + y^2 = r^2", params: { r: 1.5 }, color: "#d66b9a", kind: "circle" },
+    { label: "椭圆", symbol: "⬭", expression: "x^2 / a^2 + y^2 / b^2 = 1", params: { a: 2, b: 1 }, color: "#7c65d9", kind: "ellipse" },
+    { label: "双曲线", symbol: "∽", expression: "x^2 / a^2 - y^2 / b^2 = 1", params: { a: 1.5, b: 1 }, color: "#ef4444", kind: "hyperbola" },
+    { label: "爱心", symbol: "♥", expression: "(x^2 + y^2 - 1)^3 = x^2 * y^3", params: {}, color: "#e74c3c", kind: "heart" },
+]
+
+const presetMenuOpen = ref(false)
+
+function addPreset(preset) {
+    const id = Math.max(...functions.map(fn => fn.id), 0) + 1
+    functions.push(createFunction({
+        id,
+        label: preset.label,
+        expression: preset.expression,
+        color: preset.color,
+        offsetX: view.x,
+        offsetY: view.y,
+        params: { ...preset.params },
+        kind: preset.kind,
+    }))
+    activeId.value = id
+    presetMenuOpen.value = false
+    scheduleDraw()
 }
 
 function removeFunction(id) {
@@ -626,33 +386,34 @@ function removeFunction(id) {
     const index = functions.findIndex(fn => fn.id === id)
     if (index >= 0) functions.splice(index, 1)
     if (activeId.value === id) activeId.value = functions[0].id
-    draw()
+    scheduleDraw()
+}
+
+function toggleIntersectId(id) {
+    intersectIds.value = intersectIds.value.includes(id)
+        ? intersectIds.value.filter(item => item !== id)
+        : [...intersectIds.value, id]
+    scheduleDraw()
 }
 
 function hitTest(sx, sy) {
-    const active = activeFunction.value
-    if (active && splitEquation(active.expression).left === "y") {
-        for (const point of getControlPoints(active)) {
-            const [px, py] = worldToScreen(point.x, point.y)
-            if (Math.hypot(sx - px, sy - py) <= 18) return { type: "control", id: active.id, key: point.key }
-        }
-    }
-
     for (let index = functions.length - 1; index >= 0; index -= 1) {
         const fn = functions[index]
-        const [worldX, worldY] = screenToWorld(sx, sy)
+        const [worldX, worldY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
         const curveY = evaluateWorld(fn, worldX)
         if (Number.isFinite(curveY) && Math.abs(worldY - curveY) <= 16 / view.scale) {
             return { type: "function", id: fn.id, key: "" }
         }
         const objectPoint = getObjectPoint(fn)
-        const [px, py] = worldToScreen(objectPoint.x, objectPoint.y)
+        const [px, py] = worldToScreen(objectPoint.x, objectPoint.y, view, canvasWidth.value, canvasHeight.value)
         if (Math.hypot(sx - px, sy - py) <= 20) return { type: "function", id: fn.id, key: "" }
     }
     return { type: "pan", id: 0, key: "" }
 }
 
 function onPointerDown(event) {
+    presetMenuOpen.value = false
+    intersectMenuOpen.value = false
     const canvas = canvasRef.value
     const rect = canvas.getBoundingClientRect()
     const hit = hitTest(event.clientX - rect.left, event.clientY - rect.top)
@@ -663,13 +424,38 @@ function onPointerDown(event) {
     dragState.startY = event.clientY
     dragState.lastX = event.clientX
     dragState.lastY = event.clientY
-    if (hit.id) activeId.value = hit.id
+    if (hit.id) {
+        activeId.value = hit.id
+        hasSelection.value = true
+        // 记录拖动起点时函数的 offset，吸附计算以它为基准，避免浮点累加漂移
+        const fn = functions.find(item => item.id === hit.id)
+        if (fn) {
+            dragState.startOX = fn.offsetX
+            dragState.startOY = fn.offsetY
+        }
+    }
     canvas.setPointerCapture(event.pointerId)
-    draw()
+    scheduleDraw()
 }
 
 function onPointerMove(event) {
-    if (!dragState.type) return
+    const rect = canvasRef.value.getBoundingClientRect()
+    const sx = event.clientX - rect.left
+    const sy = event.clientY - rect.top
+
+    if (!dragState.type) {
+        // 非拖动：更新悬停坐标（交点坐标气泡用），变化才重绘
+        if (hoverScreen.value === null || hoverScreen.value[0] !== sx || hoverScreen.value[1] !== sy) {
+            hoverScreen.value = [sx, sy]
+            scheduleDraw()
+        }
+        return
+    }
+
+    // 拖动中：清空悬停，避免拖动误判
+    if (hoverScreen.value !== null) {
+        hoverScreen.value = null
+    }
     const dx = event.clientX - dragState.lastX
     const dy = event.clientY - dragState.lastY
     const fn = functions.find(item => item.id === dragState.id)
@@ -678,58 +464,122 @@ function onPointerMove(event) {
         view.x -= dx / view.scale
         view.y += dy / view.scale
     } else if (fn && dragState.type === "function") {
-        fn.offsetX += dx / view.scale
-        fn.offsetY -= dy / view.scale
-    } else if (fn && dragState.type === "control") {
-        updateControlFromPointer(fn, dragState.key, event)
+        // 新位置 = 起点 offset + 位移；吸附开启时取整到细粒度刻度（随缩放变细）
+        const worldX = dragState.startOX + (event.clientX - dragState.startX) / view.scale
+        const worldY = dragState.startOY - (event.clientY - dragState.startY) / view.scale
+        if (snapEnabled.value) {
+            const step = snapStep(view.scale)
+            fn.offsetX = Math.round(worldX / step) * step
+            fn.offsetY = Math.round(worldY / step) * step
+        } else {
+            fn.offsetX = worldX
+            fn.offsetY = worldY
+        }
     }
 
-    const rect = canvasRef.value.getBoundingClientRect()
-    probeX.value = screenToWorld(event.clientX - rect.left, 0)[0]
     dragState.lastX = event.clientX
     dragState.lastY = event.clientY
-    draw()
-}
-
-function updateControlFromPointer(fn, key, event) {
-    if (splitEquation(fn.expression).left !== "y") return
-    const rect = canvasRef.value.getBoundingClientRect()
-    const [wx, wy] = screenToWorld(event.clientX - rect.left, event.clientY - rect.top)
-    if (fn.kind === "parabola") {
-        if (key === "vertex") {
-            fn.params.b = wx - fn.offsetX
-            fn.params.c = wy - fn.offsetY
-        }
-        if (key === "shape") fn.params.a = wy - fn.offsetY - Number(fn.params.c || 0)
-        return
-    }
-    if (key === "center") fn.params.c = wy - fn.offsetY
-    if (key === "amplitude") fn.params.a = wy - fn.offsetY - Number(fn.params.c || 0)
+    scheduleDraw()
 }
 
 function onPointerUp() {
     dragState.type = ""
     dragState.id = 0
     dragState.key = ""
+    scheduleDraw()
 }
 
 function onWheel(event) {
     const rect = canvasRef.value.getBoundingClientRect()
     const sx = event.clientX - rect.left
     const sy = event.clientY - rect.top
-    const [beforeX, beforeY] = screenToWorld(sx, sy)
-    view.scale = clamp(view.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), 24, 190)
-    const [afterX, afterY] = screenToWorld(sx, sy)
+    const [beforeX, beforeY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
+    view.scale = clamp(view.scale * (event.deltaY < 0 ? 1.06 : 1 / 1.06), 24, 320)
+    const [afterX, afterY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
     view.x += beforeX - afterX
     view.y += beforeY - afterY
-    draw()
+    // 缩放期间用 draft 精度（大步长），停止滚动 150ms 后恢复 fine
+    zoomActive.value = true
+    clearTimeout(zoomTimer)
+    zoomTimer = setTimeout(() => {
+        zoomActive.value = false
+        scheduleDraw()
+    }, 150)
+    scheduleDraw()
 }
 
 function resetView() {
     view.x = 0
     view.y = 0
     view.scale = 58
-    draw()
+    scheduleDraw()
+}
+
+function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value))
+}
+
+// ---- 统一 rAF 调度 ----
+
+let drawFrame = 0
+
+function scheduleDraw() {
+    cancelAnimationFrame(drawFrame)
+    drawFrame = requestAnimationFrame(draw)
+}
+
+function draw() {
+    const canvas = canvasRef.value
+    const ctx = canvas?.getContext("2d")
+    if (!canvas || !ctx) return
+
+    const dpr = window.devicePixelRatio || 1
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, width, height)
+
+    // 交互拖动 / 缩放滚轮时用草稿精度采样（大步长），静止后恢复精细
+    const quality = dragState.type || zoomActive.value ? "draft" : "fine"
+    for (const fn of functions) {
+        // 采样与渲染统一以"表达式左侧是否 y"为准现判（renderer 亦如此），
+        // 避免 fn.mode 在表达式编辑后失同步导致隐式方程走错采样路径。
+        if (compileEquation(fn).left === "y") sampleExplicit(fn, view, width, height)
+        else sampleImplicit(fn, view, width, height, quality)
+    }
+
+    const intersections = computeIntersections(view, width, height)
+
+    drawMathScene(ctx, canvas, {
+        theme: theme.value,
+        view,
+        width,
+        height,
+        dpr,
+        functions,
+        probeX: probeX.value,
+        probeModeX: probeModeX.value,
+        probeY: probeY.value,
+        activeId: activeId.value,
+        intersections,
+        hoverScreen: hoverScreen.value,
+    })
+}
+
+// 按交叉模式计算交点：off 不显示；all 两两求交；partial 只对勾选函数求交
+function computeIntersections(view, width, height) {
+    if (intersectMode.value === "off") return []
+    const ids = intersectMode.value === "partial" ? new Set(intersectIds.value) : null
+    const results = []
+    for (let i = 0; i < functions.length; i += 1) {
+        for (let j = i + 1; j < functions.length; j += 1) {
+            const a = functions[i]
+            const b = functions[j]
+            if (ids && (!ids.has(a.id) || !ids.has(b.id))) continue
+            results.push(...findIntersections(a, b, view, width, height))
+        }
+    }
+    return results
 }
 
 function resizeCanvas() {
@@ -739,20 +589,28 @@ function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1
     canvas.width = Math.floor(rect.width * dpr)
     canvas.height = Math.floor(rect.height * dpr)
-    draw()
+    scheduleDraw()
 }
 
 watch(functions, scheduleDraw, { deep: true })
 watch(theme, scheduleDraw)
+watch(probeX, scheduleDraw)
+watch(probeY, scheduleDraw)
+watch(probeModeX, scheduleDraw)
 
 // 表达式变化时重新提取参数，并保留仍存在的旧参数值
 watch(
     () => functions.map(fn => fn.expression),
     () => {
-        functions.forEach(updateParamKeys)
+        functions.forEach(fn => {
+            updateParamKeys(fn)
+            compileEquation(fn)
+        })
         scheduleDraw()
     },
 )
+
+let resizeObserver = null
 
 onMounted(async () => {
     await nextTick()
@@ -762,6 +620,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+    clearTimeout(zoomTimer)
     resizeObserver?.disconnect()
 })
 </script>
@@ -788,10 +647,11 @@ onBeforeUnmount(() => {
     cursor: grabbing;
 }
 
-.top-toolbar {
+.bottom-toolbar {
     position: absolute;
-    top: 14px;
-    left: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 40px;
     z-index: 5;
     min-height: 54px;
     display: flex;
@@ -806,7 +666,7 @@ onBeforeUnmount(() => {
     -webkit-backdrop-filter: blur(18px);
 }
 
-.top-toolbar > i,
+.bottom-toolbar > i,
 .status-strip > i {
     width: 1px;
     height: 24px;
@@ -828,25 +688,12 @@ onBeforeUnmount(() => {
     height: 15px;
 }
 
-.toolbar-title {
-    display: grid;
-    gap: 2px;
-    padding-right: 4px;
-}
-
-.toolbar-title small,
 .panel-heading small,
 .readout small {
     color: var(--primary);
     font-family: var(--mono);
     font-size: 9px;
     letter-spacing: 0.12em;
-}
-
-.toolbar-title strong {
-    color: var(--text);
-    font-size: 13px;
-    line-height: 1;
 }
 
 .pill-button,
@@ -868,6 +715,115 @@ onBeforeUnmount(() => {
     color: var(--primary);
 }
 
+.pill-button.is-on {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.preset-wrap {
+    position: relative;
+}
+
+.preset-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    min-width: 200px;
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg-card);
+    box-shadow: 0 18px 44px rgba(15, 23, 32, 0.18);
+}
+
+.preset-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.preset-item:hover {
+    background: color-mix(in srgb, var(--fn-color, var(--primary)) 12%, transparent);
+    color: var(--text);
+}
+
+.preset-item.active {
+    background: color-mix(in srgb, var(--fn-color, var(--primary)) 16%, transparent);
+    color: var(--text);
+}
+
+.intersect-menu {
+    min-width: 210px;
+}
+
+.intersect-list {
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    gap: 2px;
+}
+
+.intersect-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.intersect-row:hover {
+    background: color-mix(in srgb, var(--border) 32%, transparent);
+    color: var(--text);
+}
+
+.intersect-row input {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.intersect-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
+}
+
+.intersect-count {
+    padding: 6px 12px 2px;
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.preset-symbol {
+    width: 26px;
+    color: var(--fn-color, var(--primary));
+    font-family: var(--mono);
+    font-size: 16px;
+    text-align: center;
+}
+
 .status-strip {
     position: absolute;
     left: 22px;
@@ -887,63 +843,117 @@ onBeforeUnmount(() => {
     -webkit-backdrop-filter: blur(14px);
 }
 
+.help-wrap {
+    position: absolute;
+    left: 22px;
+    bottom: 64px;
+    z-index: 4;
+}
+
+.help-toggle {
+    min-height: 34px;
+    padding: 0 16px;
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    background: var(--primary);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 32%, transparent);
+    cursor: pointer;
+}
+
+.help-toggle:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 42%, transparent);
+}
+
+.help-card {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    width: 320px;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--bg-card);
+    box-shadow: 0 18px 44px rgba(15, 23, 32, 0.18);
+}
+
+.help-head {
+    display: grid;
+    gap: 3px;
+}
+
+.help-head small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.help-head strong {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.help-card section {
+    display: grid;
+    gap: 6px;
+}
+
+.help-card h4 {
+    margin: 0;
+    color: var(--text);
+    font-size: 12px;
+}
+
+.help-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.help-card p b {
+    color: var(--text);
+}
+
+.help-card code {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--border) 38%, transparent);
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+}
+
 .panel-pop-enter-active,
-.panel-pop-leave-active,
-.capsule-pop-enter-active,
-.capsule-pop-leave-active {
+.panel-pop-leave-active {
     transition: opacity 0.24s ease, transform 0.28s var(--ease-out, ease-out);
 }
 
 .panel-pop-enter-from,
 .panel-pop-leave-to {
     opacity: 0;
-    transform: translateX(28px) scale(0.97);
+    transform: translateY(18px) scale(0.97);
 }
 
-.capsule-pop-enter-from,
-.capsule-pop-leave-to {
-    opacity: 0;
-    transform: translateX(18px) scale(0.86);
-}
-
-.function-panel-capsule {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 5;
-    min-height: 46px;
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 0 15px;
-    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-    box-shadow: 0 14px 42px rgba(15, 23, 32, 0.18);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 800;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-}
-
-.function-panel-capsule:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    transform: translateY(-1px);
-}
-
-.capsule-signal {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--primary);
-    box-shadow: 0 0 0 5px var(--primary-light);
-}
-
-.function-panel-capsule b {
-    min-width: 20px;
-    padding: 3px 6px;
+.fn-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 2px;
     border-radius: 999px;
     background: var(--primary-light);
     color: var(--primary);
@@ -951,13 +961,43 @@ onBeforeUnmount(() => {
     font-size: 10px;
 }
 
+.objects-wrap {
+    position: absolute;
+    right: 22px;
+    bottom: 20px;
+    z-index: 5;
+}
+
+.objects-toggle {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 16px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    cursor: pointer;
+}
+
+.objects-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
 .function-panel {
     position: absolute;
-    top: 14px;
-    right: 14px;
-    bottom: 14px;
+    right: 0;
+    bottom: calc(100% + 8px);
     z-index: 5;
-    width: min(360px, calc(100vw - 28px));
+    width: min(400px, calc(100vw - 44px));
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1096,6 +1136,31 @@ onBeforeUnmount(() => {
     font-size: 12px;
 }
 
+.live-equation {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--fn-color) 34%, transparent);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--fn-color) 7%, var(--bg-card));
+}
+
+.live-equation small {
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+}
+
+.live-equation code {
+    color: var(--fn-color);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    word-break: break-all;
+}
+
 .expression-row input {
     min-width: 0;
     width: 100%;
@@ -1194,47 +1259,97 @@ onBeforeUnmount(() => {
 
 .readout {
     position: absolute;
+    top: 18px;
     left: 22px;
-    bottom: 70px;
     z-index: 4;
-    min-width: 190px;
+    min-width: 210px;
     display: grid;
-    gap: 5px;
-    padding: 13px 15px;
-    border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+    gap: 7px;
+    padding: 14px 16px 14px 20px;
+    border: 1px solid color-mix(in srgb, var(--fn-color, var(--primary)) 38%, transparent);
+    border-left: 4px solid var(--fn-color, var(--primary));
     border-radius: 14px;
-    background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--fn-color, var(--primary)) 18%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 }
 
-.readout strong {
-    color: var(--text);
+.readout small {
+    color: var(--fn-color, var(--primary));
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.probe-mode {
+    display: flex;
+    gap: 4px;
+}
+
+.probe-mode button {
+    flex: 1;
+    min-height: 26px;
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.probe-mode button.on {
+    background: var(--fn-color, var(--primary));
+    border-color: var(--fn-color, var(--primary));
+    color: #ffffff;
+}
+
+.probe-x {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.probe-x span {
+    color: var(--text-secondary);
+    font-family: var(--mono);
     font-size: 13px;
 }
 
-.readout span,
-.readout b {
+.probe-x input {
+    width: 90px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid color-mix(in srgb, var(--fn-color, var(--primary)) 42%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+    color: var(--text);
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    outline: none;
 }
 
-.readout span {
-    color: var(--text-secondary);
+.probe-x input:focus {
+    border-color: var(--fn-color, var(--primary));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--fn-color, var(--primary)) 18%, transparent);
 }
 
 .readout b {
-    color: var(--primary);
+    color: var(--fn-color, var(--primary));
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.readout b.no-hit {
+    color: var(--text-muted);
 }
 
 @media (max-width: 820px) {
-    .function-panel-capsule {
-        top: auto;
-        right: 14px;
-        bottom: 14px;
-    }
-
-    .top-toolbar {
+    .bottom-toolbar {
         right: 14px;
         max-width: calc(100vw - 28px);
         overflow-x: auto;
@@ -1243,10 +1358,10 @@ onBeforeUnmount(() => {
 
     .function-panel {
         top: auto;
-        right: 8px;
-        bottom: 8px;
-        left: 8px;
-        width: auto;
+        right: 0;
+        bottom: calc(100% + 8px);
+        left: auto;
+        width: min(320px, calc(100vw - 28px));
         max-height: 42vh;
     }
 
@@ -1260,10 +1375,6 @@ onBeforeUnmount(() => {
     .function-lab {
         height: calc(100vh - var(--nav-height));
         margin: -32px 0;
-    }
-
-    .toolbar-title {
-        display: none;
     }
 
     .pill-button {
