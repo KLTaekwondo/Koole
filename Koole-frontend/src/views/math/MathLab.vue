@@ -17,6 +17,8 @@
             :particle-color-dark="0x8fb2ea"
         />
 
+        <FunctionLabLaunch />
+
         <SubjectModules
             kicker="01 / MODULES"
             title="三种方式，让规律自己动起来。"
@@ -31,6 +33,7 @@
 <script setup>
 import * as THREE from "three"
 import DepthLabHero from "../../components/DepthLabHero.vue"
+import FunctionLabLaunch from "../../components/FunctionLabLaunch.vue"
 import SubjectModules from "../../components/SubjectModules.vue"
 
 const modules = [

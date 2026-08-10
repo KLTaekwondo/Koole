@@ -20,7 +20,14 @@ defineProps({
     display: inline-block;
     flex-shrink: 0;
     background-color: currentColor;
-    -webkit-mask: var(--icon-url) center / contain no-repeat;
-    mask: var(--icon-url) center / contain no-repeat;
+    /* mask 用长属性分开写，避免简写与 CSS 变量组合时解析失效 */
+    -webkit-mask-image: var(--icon-url);
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: var(--icon-url);
+    mask-position: center;
+    mask-size: contain;
+    mask-repeat: no-repeat;
 }
 </style>

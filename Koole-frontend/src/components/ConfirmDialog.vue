@@ -4,12 +4,12 @@
             <div v-if="visible" class="confirm-overlay" @click.self="handleCancel">
                 <div class="confirm-dialog">
                     <div class="confirm-icon">
-                        <SvgIcon name="alert-circle" :size="28" />
+                        <img :src="alertCircle" alt="" />
                     </div>
                     <h3 class="confirm-title">{{ title }}</h3>
                     <p class="confirm-message">{{ message }}</p>
                     <div class="confirm-actions">
-                        <button class="confirm-cancel-btn" @click="handleCancel">取消</button>
+                        <button v-if="showCancelBtn" class="confirm-cancel-btn" @click="handleCancel">取消</button>
                         <button class="confirm-ok-btn" @click="handleConfirm">{{ confirmText }}</button>
                     </div>
                 </div>
@@ -20,18 +20,21 @@
 
 <script setup>
 import { ref } from "vue"
-import SvgIcon from "./SvgIcon.vue"
+import alertCircle from "../assets/icons/alert-circle.svg"
 
 const visible = ref(false)
 const title = ref("确认操作")
 const message = ref("")
 const confirmText = ref("确定")
+const showCancelBtn = ref(true)
 let resolvePromise = null
 
-const show = (msg, ttl, okText = "确定") => {
+// show(message, title, okText, showCancel)：showCancel 为 false 时是纯提示弹窗（只有一个确定按钮）
+const show = (msg, ttl, okText = "确定", showCancel = true) => {
     title.value = ttl || "确认操作"
     message.value = msg
     confirmText.value = okText
+    showCancelBtn.value = showCancel
     visible.value = true
     return new Promise((resolve) => {
         resolvePromise = resolve
@@ -78,6 +81,18 @@ defineExpose({ show })
 
 .confirm-icon {
     margin-bottom: 16px;
+}
+
+.confirm-icon img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 图标源文件是黑色线条：浅色主题直接显示，深色主题反色成白色 */
+:root[data-theme="dark"] .confirm-icon img {
+    filter: invert(1);
 }
 
 .confirm-title {

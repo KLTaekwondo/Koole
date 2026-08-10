@@ -18,6 +18,7 @@ export function drawMathScene(ctx, canvas, scene) {
     for (const fn of scene.functions) drawFunctionHandles(ctx, fn, scene)
     drawValueMarker(ctx, scene)
     drawIntersections(ctx, scene)
+    drawGeometry(ctx, scene)
 }
 
 function drawBackground(ctx, { width, height, theme }) {
@@ -276,6 +277,69 @@ function drawIntersections(ctx, scene) {
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
         ctx.fillText(label, px + bw / 2, py + bh / 2)
+    }
+    ctx.restore()
+}
+
+// 几何工具渲染：用户放的点 + 连线，青色系；连线起点高亮。
+const GEO_COLOR = "#4cc9f0"
+
+function drawGeometry(ctx, scene) {
+    const { view, width, height, theme, geoPoints, geoSegments, lineStartId } = scene
+    if ((!geoPoints || !geoPoints.length) && (!geoSegments || !geoSegments.length)) return
+
+    const pointById = {}
+    for (const point of geoPoints || []) pointById[point.id] = point
+
+    ctx.save()
+    // 线段
+    if (geoSegments && geoSegments.length) {
+        ctx.strokeStyle = GEO_COLOR
+        ctx.lineWidth = 2
+        ctx.lineJoin = "round"
+        ctx.lineCap = "round"
+        ctx.beginPath()
+        for (const segment of geoSegments) {
+            const a = pointById[segment.from]
+            const b = pointById[segment.to]
+            if (!a || !b) continue
+            const [ax, ay] = worldToScreen(a.x, a.y, view, width, height)
+            const [bx, by] = worldToScreen(b.x, b.y, view, width, height)
+            ctx.moveTo(ax, ay)
+            ctx.lineTo(bx, by)
+        }
+        ctx.stroke()
+    }
+
+    // 点
+    for (const point of geoPoints || []) {
+        const isStart = point.id === lineStartId
+        const [sx, sy] = worldToScreen(point.x, point.y, view, width, height)
+        ctx.fillStyle = GEO_COLOR
+        ctx.strokeStyle = theme === "dark" ? "#151b24" : "#ffffff"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(sx, sy, isStart ? 7 : 5, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.stroke()
+        // 点标签（右上角小字）
+        if (point.label) {
+            ctx.fillStyle = theme === "dark" ? "#9be3ff" : "#0a7ea8"
+            ctx.font = "700 13px var(--mono, monospace)"
+            ctx.textAlign = "left"
+            ctx.textBaseline = "bottom"
+            ctx.fillText(point.label, sx + 8, sy - 8)
+        }
+        if (isStart) {
+            // 连线起点：外圈空心强调
+            ctx.globalAlpha = 0.5
+            ctx.strokeStyle = GEO_COLOR
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.arc(sx, sy, 11, 0, Math.PI * 2)
+            ctx.stroke()
+            ctx.globalAlpha = 1
+        }
     }
     ctx.restore()
 }

@@ -2,13 +2,25 @@
     <div class="function-lab">
         <canvas
             ref="canvasRef"
+            :class="{ 'geo-active': toolMode !== 'drag' }"
             @pointerdown="onPointerDown"
             @pointermove="onPointerMove"
             @pointerup="onPointerUp"
             @pointercancel="onPointerUp"
             @wheel.prevent="onWheel"
-            @dblclick="resetView"
+            @dblclick="onCanvasDblClick"
         ></canvas>
+
+        <!-- 几何点标签编辑输入框 -->
+        <input
+            v-if="editingPointId !== null"
+            v-model="editLabelText"
+            class="geo-label-editor"
+            :style="geoEditorStyle"
+            @keydown.enter="commitGeoLabel"
+            @keydown.esc="cancelGeoLabel"
+            @blur="commitGeoLabel"
+        />
 
         <div class="bottom-toolbar">
             <button class="icon-button" type="button" title="返回数学实验室" @click="router.push('/math-lab')">
@@ -27,6 +39,31 @@
                 </transition>
             </div>
             <button class="pill-button" type="button" @click="resetView">重置视角</button>
+            <button
+                class="pill-button pill-danger"
+                type="button"
+                title="清空画布，回到默认图形"
+                @click="resetScene"
+            >重置画布</button>
+            <div class="preset-wrap">
+                <button class="pill-button" type="button" @click="saveMenuOpen = !saveMenuOpen">保存 ▾</button>
+                <transition name="panel-pop">
+                    <div v-if="saveMenuOpen" class="preset-menu save-menu">
+                        <div class="save-hint">改动会自动存档到本机，可手动恢复或导出分享</div>
+                        <button class="preset-item" type="button" @click="restoreAutosave">恢复上次图形</button>
+                        <div class="preset-divider"></div>
+                        <button class="preset-item" type="button" @click="exportScene">导出图形（下载文件）</button>
+                        <button class="preset-item" type="button" @click="openImportPicker">导入图形（选择文件）</button>
+                    </div>
+                </transition>
+                <input
+                    ref="importInputRef"
+                    type="file"
+                    accept=".json,application/json"
+                    class="import-file-input"
+                    @change="importSceneFile"
+                />
+            </div>
             <i></i>
             <button
                 class="pill-button"
@@ -37,7 +74,15 @@
             >吸附 {{ snapEnabled ? '开' : '关' }}</button>
             <i></i>
             <div class="preset-wrap">
-                <button class="pill-button" type="button" @click="intersectMenuOpen = !intersectMenuOpen">交叉 ▾</button>
+                <button
+                    class="pill-button"
+                    :class="{ 'has-mode': intersectMode !== 'off' }"
+                    type="button"
+                    @click="intersectMenuOpen = !intersectMenuOpen"
+                >
+                    <span v-if="intersectMode !== 'off'" class="mode-dot mode-dot--intersect"></span>
+                    交叉 · {{ intersectModeLabel }} ▾
+                </button>
                 <transition name="panel-pop">
                     <div v-if="intersectMenuOpen" class="preset-menu intersect-menu">
                         <button
@@ -69,6 +114,43 @@
                                 <span>{{ fn.label }}</span>
                             </label>
                             <small class="intersect-count">已选 {{ intersectIds.length }} 个</small>
+                        </div>
+                    </div>
+                </transition>
+            </div>
+            <i></i>
+            <div class="preset-wrap">
+                <button
+                    class="pill-button"
+                    :class="{ 'has-mode': toolMode !== 'drag' }"
+                    type="button"
+                    @click="geoMenuOpen = !geoMenuOpen"
+                >
+                    <span v-if="toolMode !== 'drag'" class="mode-dot mode-dot--geo"></span>
+                    几何 · {{ toolModeLabel }} ▾
+                </button>
+                <transition name="panel-pop">
+                    <div v-if="geoMenuOpen" class="preset-menu geo-menu">
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: toolMode === 'drag' }"
+                            @click="setToolMode('drag')"
+                        >拖动</button>
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: toolMode === 'point' }"
+                            @click="setToolMode('point')"
+                        >选点</button>
+                        <button
+                            class="preset-item"
+                            type="button"
+                            :class="{ active: toolMode === 'line' }"
+                            @click="setToolMode('line')"
+                        >连线</button>
+                        <div class="intersect-list">
+                            <button class="preset-item" type="button" @click="clearGeometry">清空几何</button>
                         </div>
                     </div>
                 </transition>
@@ -117,6 +199,14 @@
                         <p>幂有三种写法都认：<code>x^2</code>、<code>x2</code>、<code>x²</code> 都会被识别成 x 的平方</p>
                         <p><code>2*x</code> 可写成 <code>2x</code>（自动补乘号），但函数名必须带括号：<code>sinx</code> 不行，要 <code>sin(x)</code></p>
                         <p>拖动函数可以移动它的位置，<code>a</code>、<code>b</code>、<code>r</code> 滑块实时改变形状</p>
+                    </section>
+
+                    <section>
+                        <h4>几何工具（点 / 线 / 动点）</h4>
+                        <p>底部"几何"菜单切换工具：<b>选点</b>在画布点一下放一个点，<b>连线</b>依次点两个点连成线，<b>拖动</b>拖动点改变图形</p>
+                        <p>拖动点靠近函数曲线会自动吸附到曲线上，之后沿曲线滑动；拖远即可脱离（隐式方程暂不支持轨道）</p>
+                        <p>点自动编号 <code>A、B、C...</code>，<b>双击标签</b>可改成任意名字</p>
+                        <p>开启"吸附"时，放点/拖点会吸附到细刻度，方便对齐</p>
                     </section>
                 </div>
             </transition>
@@ -214,6 +304,8 @@
             </template>
             <b v-else class="no-hit">无交点</b>
         </div>
+
+        <ConfirmDialog ref="confirmDialogRef" />
     </div>
 </template>
 
@@ -227,8 +319,10 @@ import { evaluateWorld, formatValue, paramRange, splitEquation, updateParamKeys,
 import { sampleExplicit, sampleImplicit } from "../../../Logic/math/sampler.js"
 import { findIntersections } from "../../../Logic/math/intersections.js"
 import { drawMathScene, getObjectPoint, snapStep } from "../../../Logic/math/renderer.js"
+import ConfirmDialog from "../../../components/ConfirmDialog.vue"
 
 const router = useRouter()
+const confirmDialogRef = ref(null) // 自定义确认弹窗
 const canvasRef = ref(null)
 const canvasWidth = computed(() => canvasRef.value?.clientWidth || 1)
 const canvasHeight = computed(() => canvasRef.value?.clientHeight || 1)
@@ -246,31 +340,27 @@ const intersectIds = ref([]) // 部分交叉时勾选的函数 id 集合
 const intersectMenuOpen = ref(false) // 交叉菜单展开状态
 const hoverScreen = ref(null) // 鼠标屏幕坐标，供交点悬停
 const snapEnabled = ref(true) // 拖动函数时是否吸附到细粒度刻度
+const toolMode = ref("drag") // drag | point | line：几何工具模式
+const geoPoints = ref([]) // [{id, x, y}] 用户放的点（世界坐标）
+const geoSegments = ref([]) // [{from, to}] 用户连线（存点 id）
+const lineStartId = ref(null) // 连线模式当前起点点 id
+const geoMenuOpen = ref(false) // 几何菜单展开状态
+const saveMenuOpen = ref(false) // 保存菜单展开状态
+const importInputRef = ref(null) // 隐藏的图形文件选择框
+const toolModeLabel = computed(() => ({ drag: "拖动", point: "选点", line: "连线" })[toolMode.value] || "几何")
+const intersectModeLabel = computed(() => ({ off: "不交叉", all: "全交叉", partial: "部分交叉" })[intersectMode.value] || "交叉")
+let geoNextId = 1
+const editingPointId = ref(null) // 正在编辑标签的几何点 id
+const editLabelText = ref("") // 编辑输入框文本
+const geoEditorStyle = ref({}) // 编辑输入框定位样式
 
-const functions = reactive([
-    createFunction({
-        id: 1,
-        label: "抛物线对象",
-        expression: "a * (x - b)^2 + c",
-        color: "#477cdb",
-        offsetX: -2,
-        offsetY: 0.4,
-        params: { a: 0.42, b: 0, c: -1.2 },
-        kind: "parabola",
-        mode: "explicit",
-    }),
-    createFunction({
-        id: 2,
-        label: "正弦波对象",
-        expression: "a * sin(b * x) + c",
-        color: "#e8bd6a",
-        offsetX: 2.4,
-        offsetY: -0.2,
-        params: { a: 1.1, b: 1, c: 0 },
-        kind: "sine",
-        mode: "explicit",
-    }),
-])
+// 默认初始画布：两个示例函数的纯配置，首次进入与"重置画布"共用
+const defaultFunctionConfigs = [
+    { id: 1, label: "抛物线对象", expression: "a * (x - b)^2 + c", color: "#477cdb", offsetX: -2, offsetY: 0.4, params: { a: 0.42, b: 0, c: -1.2 }, kind: "parabola", mode: "explicit" },
+    { id: 2, label: "正弦波对象", expression: "a * sin(b * x) + c", color: "#e8bd6a", offsetX: 2.4, offsetY: -0.2, params: { a: 1.1, b: 1, c: 0 }, kind: "sine", mode: "explicit" },
+]
+
+const functions = reactive(defaultFunctionConfigs.map(config => createFunction(config)))
 
 const activeFunction = computed(() => functions.find(fn => fn.id === activeId.value) || functions[0])
 // 当前选中函数在 probeX 处的全部 y 值（显式单值、隐式多交点）
@@ -385,6 +475,10 @@ function removeFunction(id) {
     if (functions.length <= 1) return
     const index = functions.findIndex(fn => fn.id === id)
     if (index >= 0) functions.splice(index, 1)
+    // 解绑吸附到该函数的几何点，避免悬空引用：点变回自由点，留在原位
+    for (const point of geoPoints.value) {
+        if (point.track === id) point.track = null
+    }
     if (activeId.value === id) activeId.value = functions[0].id
     scheduleDraw()
 }
@@ -397,6 +491,12 @@ function toggleIntersectId(id) {
 }
 
 function hitTest(sx, sy) {
+    // 几何点优先：用户放的点可拖/可连线（函数交叉交点是计算产物，不在 geoPoints，天然不可拖）
+    for (let index = geoPoints.value.length - 1; index >= 0; index -= 1) {
+        const point = geoPoints.value[index]
+        const [px, py] = worldToScreen(point.x, point.y, view, canvasWidth.value, canvasHeight.value)
+        if (Math.hypot(sx - px, sy - py) <= 10) return { type: "geopoint", id: point.id, key: "" }
+    }
     for (let index = functions.length - 1; index >= 0; index -= 1) {
         const fn = functions[index]
         const [worldX, worldY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
@@ -414,9 +514,56 @@ function hitTest(sx, sy) {
 function onPointerDown(event) {
     presetMenuOpen.value = false
     intersectMenuOpen.value = false
+    geoMenuOpen.value = false
+    saveMenuOpen.value = false
     const canvas = canvasRef.value
     const rect = canvas.getBoundingClientRect()
-    const hit = hitTest(event.clientX - rect.left, event.clientY - rect.top)
+    const sx = event.clientX - rect.left
+    const sy = event.clientY - rect.top
+    const hit = hitTest(sx, sy)
+
+    // 选点工具：只在空白处放新点；命中函数/几何点则落回下方拖动逻辑
+    if (toolMode.value === "point" && hit.type === "pan") {
+        placeGeoPoint(sx, sy)
+        canvas.setPointerCapture(event.pointerId)
+        scheduleDraw()
+        return
+    }
+
+    // 连线工具：点几何点，起点→目标连线段，目标变新起点（持续连线）；其余落回拖动逻辑
+    if (toolMode.value === "line") {
+        if (hit.type === "geopoint") {
+            const targetId = hit.id
+            if (lineStartId.value === null) {
+                lineStartId.value = targetId
+            } else if (lineStartId.value !== targetId) {
+                geoSegments.value.push({ from: lineStartId.value, to: targetId })
+                lineStartId.value = targetId
+            }
+            canvas.setPointerCapture(event.pointerId)
+            scheduleDraw()
+            return
+        }
+        // 非几何点：落回下方函数拖动/平移逻辑
+    }
+
+    // 拖动工具（默认）：命中几何点 → 拖动；否则落回函数/平移
+    if (hit.type === "geopoint") {
+        const point = geoPoints.value.find(item => item.id === hit.id)
+        dragState.type = "geopoint"
+        dragState.id = hit.id
+        dragState.key = ""
+        dragState.startX = event.clientX
+        dragState.startY = event.clientY
+        dragState.lastX = event.clientX
+        dragState.lastY = event.clientY
+        dragState.startOX = point.x
+        dragState.startOY = point.y
+        canvas.setPointerCapture(event.pointerId)
+        scheduleDraw()
+        return
+    }
+
     dragState.type = hit.type
     dragState.id = hit.id
     dragState.key = hit.key
@@ -435,6 +582,248 @@ function onPointerDown(event) {
         }
     }
     canvas.setPointerCapture(event.pointerId)
+    scheduleDraw()
+}
+
+// 在屏幕坐标处放一个几何点（世界坐标 + 吸附 + 自动编号标签）
+function placeGeoPoint(sx, sy) {
+    let [worldX, worldY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
+    if (snapEnabled.value) {
+        const step = snapStep(view.scale)
+        worldX = Math.round(worldX / step) * step
+        worldY = Math.round(worldY / step) * step
+    }
+    geoPoints.value.push({ id: geoNextId, x: worldX, y: worldY, track: null, label: nextGeoLabel() })
+    geoNextId += 1
+}
+
+// 自动编号标签：A、B、C... 超出 Z 后接 A1、B1...
+function nextGeoLabel() {
+    const used = new Set(geoPoints.value.map(point => point.label))
+    let index = 0
+    while (true) {
+        const letter = String.fromCharCode(65 + (index % 26))
+        const suffix = index >= 26 ? Math.floor(index / 26) : ""
+        const candidate = `${letter}${suffix}`
+        if (!used.has(candidate)) return candidate
+        index += 1
+    }
+}
+
+// 找离世界坐标最近的显式函数曲线；足够近返回 { fn, y }，否则 null
+function snapTrack(worldX, worldY) {
+    let best = null
+    let bestDist = Infinity
+    for (const fn of functions) {
+        if (compileEquation(fn).left !== "y") continue // 只支持显式函数轨道
+        const y = evaluateWorld(fn, worldX)
+        if (!Number.isFinite(y)) continue
+        const dist = Math.abs(worldY - y)
+        if (dist < bestDist) {
+            bestDist = dist
+            best = { fn, y }
+        }
+    }
+    const threshold = 16 / view.scale // 屏幕约 16px 内触发吸附
+    return bestDist < threshold ? best : null
+}
+
+// 切换几何工具：换工具时清空连线起点
+function setToolMode(mode) {
+    toolMode.value = mode
+    lineStartId.value = null
+    scheduleDraw()
+}
+
+function clearGeometry() {
+    geoPoints.value = []
+    geoSegments.value = []
+    lineStartId.value = null
+    geoMenuOpen.value = false
+    scheduleDraw()
+}
+
+// ---- 场景持久化：自动保存本机 + 导出/导入文件分享 ----
+
+const SCENE_KEY = "koole.functionlab.scene.v1" // localStorage 键；version 升版时换键避免解析旧结构
+let saveTimer = 0
+
+// 画布完整状态 → 可 JSON 化的纯对象（函数不含运行期缓存字段，mode 由 expression 推导）
+function serializeScene() {
+    return {
+        version: 1,
+        view: { x: view.x, y: view.y, scale: view.scale },
+        functions: functions.map(fn => ({
+            id: fn.id,
+            label: fn.label,
+            expression: fn.expression,
+            color: fn.color,
+            offsetX: fn.offsetX,
+            offsetY: fn.offsetY,
+            params: { ...fn.params },
+            kind: fn.kind,
+            collapsed: fn.collapsed,
+        })),
+        geoPoints: geoPoints.value.map(point => ({ ...point })),
+        geoSegments: geoSegments.value.map(segment => ({ ...segment })),
+        intersectMode: intersectMode.value,
+        intersectIds: [...intersectIds.value],
+        snapEnabled: snapEnabled.value,
+        toolMode: toolMode.value,
+    }
+}
+
+// 从序列化状态恢复画布：重建函数与几何对象，更新计数器与选中态
+function restoreScene(state) {
+    if (!state || state.version !== 1 || !Array.isArray(state.functions) || state.functions.length === 0) return
+    functions.splice(0, functions.length, ...state.functions.map(fn => createFunction(fn)))
+    Object.assign(view, state.view)
+    geoPoints.value = state.geoPoints.map(point => ({ ...point }))
+    geoSegments.value = state.geoSegments.map(segment => ({ ...segment }))
+    intersectMode.value = state.intersectMode || "off"
+    intersectIds.value = [...(state.intersectIds || [])]
+    snapEnabled.value = state.snapEnabled ?? true
+    toolMode.value = state.toolMode || "drag"
+    lineStartId.value = null
+    geoNextId = geoPoints.value.reduce((max, point) => Math.max(max, point.id), 0) + 1
+    activeId.value = functions[0].id
+    hasSelection.value = false
+    saveMenuOpen.value = false
+    scheduleDraw()
+}
+
+// 重置画布到默认初始图形，并清空本机自动存档；自定义弹窗确认后才执行，避免误触丢图
+async function resetScene() {
+    const confirmed = await confirmDialogRef.value?.show("当前图形会被默认初始图形替换。", "重置画布", "重置")
+    if (!confirmed) return
+    functions.splice(0, functions.length, ...defaultFunctionConfigs.map(config => createFunction(config)))
+    Object.assign(view, { x: 0, y: 0, scale: 58 })
+    geoPoints.value = []
+    geoSegments.value = []
+    lineStartId.value = null
+    intersectMode.value = "off"
+    intersectIds.value = []
+    snapEnabled.value = true
+    toolMode.value = "drag"
+    activeId.value = functions[0].id
+    hasSelection.value = false
+    geoNextId = 1
+    try {
+        localStorage.removeItem(SCENE_KEY)
+    } catch {
+        // 存储不可用时忽略
+    }
+    saveMenuOpen.value = false
+    scheduleDraw()
+}
+
+// 主动从本机存档恢复上次图形：覆盖当前画布前用自定义弹窗确认，避免误触丢图
+async function restoreAutosave() {
+    try {
+        const raw = localStorage.getItem(SCENE_KEY)
+        if (!raw) {
+            await confirmDialogRef.value?.show("本机还没有保存过的图形，先去画布上搭一个吧。", "暂无存档", "知道了", false)
+            return
+        }
+        const state = JSON.parse(raw)
+        if (!state || state.version !== 1) {
+            await confirmDialogRef.value?.show("本机存档无法识别，可能是旧版本留下的。", "恢复失败", "知道了", false)
+            return
+        }
+        const confirmed = await confirmDialogRef.value?.show("当前画布会被替换为上次保存的图形。", "恢复上次图形", "恢复")
+        if (!confirmed) return
+        restoreScene(state)
+    } catch {
+        console.error("恢复失败：本机存档无法解析")
+    }
+}
+
+// 防抖写入 localStorage：拖动函数/几何点时 watch 高频触发，只在停止后落盘一次
+function persistScene() {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+        try {
+            localStorage.setItem(SCENE_KEY, JSON.stringify(serializeScene()))
+        } catch {
+            // 存储不可用（隐私模式/容量满）时静默跳过，不影响使用
+        }
+    }, 600)
+}
+
+// 导出图形为可分享的 .koole.json 文件
+function exportScene() {
+    const blob = new Blob([JSON.stringify(serializeScene(), null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = `koole-函数图形-${new Date().toISOString().slice(0, 10)}.koole.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+    saveMenuOpen.value = false
+}
+
+function openImportPicker() {
+    importInputRef.value?.click()
+}
+
+// 读取导入文件并恢复画布；文件格式错误时提示且不动当前画布
+function importSceneFile(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+        try {
+            const state = JSON.parse(String(reader.result))
+            restoreScene(state)
+        } catch {
+            console.error("导入失败：图形文件格式不正确")
+        }
+    }
+    reader.readAsText(file)
+    saveMenuOpen.value = false
+}
+
+// 任何画布状态变化（函数/几何点/交叉/视角/工具）都会触发自动保存
+watch(
+    () => serializeScene(),
+    () => persistScene(),
+    { deep: true }
+)
+
+// 双击画布：命中几何点 → 编辑标签；否则重置视图
+function onCanvasDblClick(event) {
+    const rect = canvasRef.value.getBoundingClientRect()
+    const sx = event.clientX - rect.left
+    const sy = event.clientY - rect.top
+    const hit = hitTest(sx, sy)
+    if (hit.type === "geopoint") {
+        const point = geoPoints.value.find(item => item.id === hit.id)
+        if (point) {
+            const [px, py] = worldToScreen(point.x, point.y, view, canvasWidth.value, canvasHeight.value)
+            editingPointId.value = point.id
+            editLabelText.value = point.label || ""
+            geoEditorStyle.value = { left: `${px + 10}px`, top: `${py - 34}px` }
+        }
+        return
+    }
+    resetView()
+}
+
+function commitGeoLabel() {
+    if (editingPointId.value !== null) {
+        const point = geoPoints.value.find(item => item.id === editingPointId.value)
+        if (point) {
+            const label = editLabelText.value.trim()
+            point.label = label || null
+        }
+        cancelGeoLabel()
+    }
+}
+
+function cancelGeoLabel() {
+    editingPointId.value = null
+    editLabelText.value = ""
     scheduleDraw()
 }
 
@@ -463,6 +852,46 @@ function onPointerMove(event) {
     if (dragState.type === "pan") {
         view.x -= dx / view.scale
         view.y += dy / view.scale
+    } else if (dragState.type === "geopoint") {
+        const point = geoPoints.value.find(item => item.id === dragState.id)
+        if (point) {
+            const worldX = dragState.startOX + (event.clientX - dragState.startX) / view.scale
+            const worldY = dragState.startOY - (event.clientY - dragState.startY) / view.scale
+            // 已吸附轨道：沿曲线走（y 由函数算，x 自由滑动）
+            if (point.track !== null) {
+                const trackFn = functions.find(item => item.id === point.track)
+                if (trackFn) {
+                    const trackY = evaluateWorld(trackFn, worldX)
+                    // 鼠标离轨道过远 → 脱离轨道，恢复自由拖动
+                    const detachDist = 30 / view.scale
+                    if (Math.abs(worldY - trackY) > detachDist) {
+                        point.track = null
+                    } else if (Number.isFinite(trackY)) {
+                        point.x = worldX
+                        point.y = trackY
+                    } else {
+                        point.x = worldX
+                        point.y = worldY
+                    }
+                }
+            }
+            // 未吸附轨道：尝试吸附最近的显式函数轨道
+            if (point.track === null) {
+                const snap = snapTrack(worldX, worldY)
+                if (snap) {
+                    point.track = snap.fn.id
+                    point.x = worldX
+                    point.y = snap.y
+                } else if (snapEnabled.value) {
+                    const step = snapStep(view.scale)
+                    point.x = Math.round(worldX / step) * step
+                    point.y = Math.round(worldY / step) * step
+                } else {
+                    point.x = worldX
+                    point.y = worldY
+                }
+            }
+        }
     } else if (fn && dragState.type === "function") {
         // 新位置 = 起点 offset + 位移；吸附开启时取整到细粒度刻度（随缩放变细）
         const worldX = dragState.startOX + (event.clientX - dragState.startX) / view.scale
@@ -563,6 +992,9 @@ function draw() {
         activeId: activeId.value,
         intersections,
         hoverScreen: hoverScreen.value,
+        geoPoints: geoPoints.value,
+        geoSegments: geoSegments.value,
+        lineStartId: lineStartId.value,
     })
 }
 
@@ -643,6 +1075,10 @@ onBeforeUnmount(() => {
     touch-action: none;
 }
 
+.function-lab canvas.geo-active {
+    cursor: crosshair;
+}
+
 .function-lab canvas:active {
     cursor: grabbing;
 }
@@ -698,6 +1134,10 @@ onBeforeUnmount(() => {
 
 .pill-button,
 .compact-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     min-height: 36px;
     padding: 0 13px;
     border: 1px solid var(--border);
@@ -719,6 +1159,40 @@ onBeforeUnmount(() => {
     background: var(--primary);
     border-color: var(--primary);
     color: #ffffff;
+}
+
+/* 危险操作按钮：重置画布这类不可逆操作用红色文字提示 */
+.pill-button.pill-danger {
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.pill-button.pill-danger:hover {
+    color: var(--primary-hover, var(--primary));
+}
+
+/* 下拉按钮当前模式色点：交叉用交点金、几何用青色，非默认态按钮淡色底高亮 */
+.mode-dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 50%;
+}
+
+.mode-dot--intersect {
+    background: #f6c94a;
+    box-shadow: 0 0 8px rgba(246, 201, 74, 0.55);
+}
+
+.mode-dot--geo {
+    background: #4cc9f0;
+    box-shadow: 0 0 8px rgba(76, 201, 240, 0.55);
+}
+
+.pill-button.has-mode {
+    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--text);
 }
 
 .preset-wrap {
@@ -764,6 +1238,38 @@ onBeforeUnmount(() => {
 .preset-item.active {
     background: color-mix(in srgb, var(--fn-color, var(--primary)) 16%, transparent);
     color: var(--text);
+}
+
+/* 保存菜单：顶部提示行 + 隐藏的文件选择框 */
+.save-menu {
+    min-width: 210px;
+}
+
+.save-hint {
+    padding: 6px 12px 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.import-file-input {
+    display: none;
+}
+
+/* 保存菜单分隔线与危险操作项 */
+.preset-divider {
+    height: 1px;
+    margin: 4px 8px;
+    background: var(--border);
+}
+
+.preset-item.preset-danger {
+    color: var(--primary);
+}
+
+.preset-item.preset-danger:hover {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary-hover, var(--primary));
 }
 
 .intersect-menu {
@@ -814,6 +1320,26 @@ onBeforeUnmount(() => {
     padding: 6px 12px 2px;
     color: var(--text-muted);
     font-size: 10px;
+}
+
+.geo-label-editor {
+    position: absolute;
+    z-index: 6;
+    width: 60px;
+    height: 26px;
+    padding: 0 8px;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    outline: none;
+}
+
+.geo-label-editor:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 .preset-symbol {
@@ -955,10 +1481,11 @@ onBeforeUnmount(() => {
     padding: 0 5px;
     margin-left: 2px;
     border-radius: 999px;
-    background: var(--primary-light);
+    background: #fff;
     color: var(--primary);
     font-family: var(--mono);
     font-size: 10px;
+    font-weight: 700;
 }
 
 .objects-wrap {
@@ -974,20 +1501,25 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 7px;
     padding: 0 16px;
-    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border: 1px solid var(--primary);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-    color: var(--text-secondary);
+    background: var(--primary);
+    color: #fff;
     font-size: 12px;
     font-weight: 700;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 40%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .objects-toggle:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 82%, #000);
+    background: color-mix(in srgb, var(--primary) 82%, #000);
+    color: #fff;
+    box-shadow: 0 8px 26px color-mix(in srgb, var(--primary) 52%, transparent);
+    transform: translateY(-1px);
 }
 
 .function-panel {
