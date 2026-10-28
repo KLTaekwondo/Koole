@@ -1,27 +1,31 @@
 import { createRouter, createWebHashHistory } from "vue-router"
+
+// 首页保持同步加载（首屏直接出），其余页面一律路由级懒加载，
+// 让每个实验室 / 列表页单独成包：首屏只下载首页需要的代码。
 import HomeIndex from "../views/HomeIndex.vue"
-import AboutIndex from "../views/AboutIndex.vue"
-import PhysicsLab from "../views/physics/PhysicsLab.vue"
-import PhysicsLevels from "../views/physics/levels/PhysicsLevels.vue"
-import PhysicsLevelView from "../views/physics/levels/PhysicsLevelView.vue"
-import BiologyLab from "../views/biology/BiologyLab.vue"
-import ChemistryLab from "../views/chemistry/ChemistryLab.vue"
-import PeriodicTable from "../views/chemistry/Elements/PeriodicTable.vue"
-import ElementDetail from "../views/chemistry/Elements/ElementDetail.vue"
-import ChineseLab from "../views/chinese/ChineseLab.vue"
-import MathLab from "../views/math/MathLab.vue"
-import FunctionLab from "../views/math/function/FunctionLab.vue"
-import MathLevels from "../views/math/levels/MathLevels.vue"
-import MathLevelView from "../views/math/levels/MathLevelView.vue"
-import GeometryLab from "../views/math/geometry/GeometryLab.vue"
-import GaltonLab from "../views/math/probability/GaltonLab.vue"
-import EnglishLab from "../views/english/EnglishLab.vue"
-import PoliticsLab from "../views/politics/PoliticsLab.vue"
-import HistoryLab from "../views/history/HistoryLab.vue"
-import GeographyLab from "../views/geography/GeographyLab.vue"
-import ClassicPhysicsLayout from "../views/physics/classic/ClassicPhysicsLayout.vue"
-import ClassicModelView from "../views/physics/classic/ClassicModelView.vue"
-import SandboxView from "../views/physics/sandbox/Sandbox.vue"
+
+const AboutIndex = () => import("../views/AboutIndex.vue")
+const PhysicsLab = () => import("../views/physics/PhysicsLab.vue")
+const PhysicsLevels = () => import("../views/physics/levels/PhysicsLevels.vue")
+const PhysicsLevelView = () => import("../views/physics/levels/PhysicsLevelView.vue")
+const BiologyLab = () => import("../views/biology/BiologyLab.vue")
+const ChemistryLab = () => import("../views/chemistry/ChemistryLab.vue")
+const PeriodicTable = () => import("../views/chemistry/Elements/PeriodicTable.vue")
+const ElementDetail = () => import("../views/chemistry/Elements/ElementDetail.vue")
+const ChineseLab = () => import("../views/chinese/ChineseLab.vue")
+const MathLab = () => import("../views/math/MathLab.vue")
+const FunctionLab = () => import("../views/math/function/FunctionLab.vue")
+const MathLevels = () => import("../views/math/levels/MathLevels.vue")
+const MathLevelView = () => import("../views/math/levels/MathLevelView.vue")
+const GeometryLab = () => import("../views/math/geometry/GeometryLab.vue")
+const GaltonLab = () => import("../views/math/probability/GaltonLab.vue")
+const EnglishLab = () => import("../views/english/EnglishLab.vue")
+const PoliticsLab = () => import("../views/politics/PoliticsLab.vue")
+const HistoryLab = () => import("../views/history/HistoryLab.vue")
+const GeographyLab = () => import("../views/geography/GeographyLab.vue")
+const ClassicPhysicsLayout = () => import("../views/physics/classic/ClassicPhysicsLayout.vue")
+const ClassicModelView = () => import("../views/physics/classic/ClassicModelView.vue")
+const SandboxView = () => import("../views/physics/sandbox/Sandbox.vue")
 
 const routes = [
     {

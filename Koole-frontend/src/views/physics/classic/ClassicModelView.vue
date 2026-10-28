@@ -150,11 +150,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue"
+import { ref, watch, computed, defineAsyncComponent } from "vue"
 import { useRoute } from "vue-router"
 import { getModelById } from "../../../constants"
 import { usePhysicsSim } from "../../../Logic/physics/engine/usePhysicsSim.js"
-import ComparisonPanel from "./ComparisonPanel.vue"
+// ECharts 体积较大，而且只有「记录过轨迹、展开对比」时才会渲染，按需异步加载
+const ComparisonPanel = defineAsyncComponent(() => import("./ComparisonPanel.vue"))
 import SimInfoOverlay from "./SimInfoOverlay.vue"
 import ModelInfoPanel from "./ModelInfoPanel.vue"
 import playIcon from "../../../assets/icons/play.svg"
