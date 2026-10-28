@@ -5,6 +5,7 @@ import { createRouter, createWebHashHistory } from "vue-router"
 import HomeIndex from "../views/HomeIndex.vue"
 
 const AboutIndex = () => import("../views/AboutIndex.vue")
+const ProgressIndex = () => import("../views/ProgressIndex.vue")
 const PhysicsLab = () => import("../views/physics/PhysicsLab.vue")
 const PhysicsLevels = () => import("../views/physics/levels/PhysicsLevels.vue")
 const PhysicsLevelView = () => import("../views/physics/levels/PhysicsLevelView.vue")
@@ -37,6 +38,11 @@ const routes = [
         path: "/about",
         name: "关于本站",
         component: AboutIndex,
+    },
+    {
+        path: "/progress",
+        name: "学习进度",
+        component: ProgressIndex,
     },
     {
         path: "/physics-lab",

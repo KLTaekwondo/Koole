@@ -7,6 +7,7 @@ import { createRenderer } from "./renderer.js"
 import { createSimulationState } from "./SimulationState.js"
 import { createViewTransform } from "./ViewTransform.js"
 import { theme } from "../../../stores/theme.js"
+import { useLearning } from "../../../stores/learning.js"
 
 /**
  * 物理模拟器编排层
@@ -49,6 +50,13 @@ export function usePhysicsSim(modelRef) {
     }
   }
 
+  // ── 学习进度（探索记录） ──
+  // 探索完成后写入 localStorage；再次打开该模型时直接显示已完成（知识讲解也保持解锁）。
+  const { markExplored, markVisited, isExplored } = useLearning()
+  watch(explorationDone, done => {
+    if (done && modelRef.value?.id) markExplored(modelRef.value.id)
+  })
+
   // ── 创建各模块 ──
 
   // 1. Canvas（resize 时同步 ViewTransform）
@@ -87,13 +95,33 @@ export function usePhysicsSim(modelRef) {
   )
 
   // ── 参数更新 ──
+  // 参数值归一化：数字型夹到 [min, max]，options 型取最接近的合法选项
+  const normalizeParamValue = (param, value) => {
+    const num = Number(value)
+    if (!Number.isFinite(num)) return param.value
+    if (Array.isArray(param.options) && param.options.length) {
+      return param.options.reduce((best, option) => (
+        Math.abs(option.value - num) < Math.abs(best.value - num) ? option : best
+      ), param.options[0]).value
+    }
+    const min = typeof param.min === "number" ? param.min : -Infinity
+    const max = typeof param.max === "number" ? param.max : Infinity
+    return Math.min(max, Math.max(min, num))
+  }
+
+  const applyParamValue = (key, value) => {
+    const model = modelRef.value
+    const param = model?.params.find(p => p.key === key)
+    if (!param) return false
+    const next = normalizeParamValue(param, value)
+    param.value = next
+    simState.params[key] = next
+    return true
+  }
+
   const updateParam = (key, val) => {
     const model = modelRef.value
-    if (!model) return
-    const param = model.params.find(p => p.key === key)
-    if (!param) return
-    param.value = val
-    simState.params[key] = val
+    if (!model || !applyParamValue(key, val)) return
     paramTouched.value = true
     // 光学演示型（autoPlay）：改参数即重播——重置 _t 让光线从头走一遍；
     // 普通模型：暂停时改参数重建状态，运行中改参数直接沿用（物理不打断）。
@@ -105,6 +133,22 @@ export function usePhysicsSim(modelRef) {
       checkExploration()
       renderer.draw()
     }
+  }
+
+  // 分享链接还原：批量写入参数，但不把 paramTouched 置真，
+  // 避免「打开别人分享的链接」直接把探索任务刷成完成。
+  const applyParams = (values) => {
+    const model = modelRef.value
+    if (!model || !values) return
+    let changed = false
+    Object.entries(values).forEach(([key, value]) => {
+      if (applyParamValue(key, value)) changed = true
+    })
+    if (!changed) return
+    engine.initState()
+    camera.followTarget.value = true
+    camera.centerCameraOnBall()
+    renderer.draw()
   }
 
   // ── 重置 ──
@@ -149,6 +193,9 @@ export function usePhysicsSim(modelRef) {
       modelRef.value.params.forEach(p => { initialParams[p.key] = p.value })
       setParamsFromModel(modelRef.value)
       engine.initState()
+      // 之前探索过的模型：直接标记完成（知识讲解保持解锁），并记录最近浏览
+      if (isExplored(modelRef.value.id)) explorationDone.value = true
+      markVisited(modelRef.value.id)
       // 光学演示型模型（autoPlay）：进页面自动开始动画，step 驱动 _t 时钟
       if (modelRef.value.autoPlay && !simState.running) {
         player.toggleSimulation()
@@ -171,6 +218,7 @@ export function usePhysicsSim(modelRef) {
     followTarget: camera.followTarget,
     recordedTrails,
     updateParam,
+    applyParams,
     displayParamValue,
     toggleSimulation: player.toggleSimulation,
     resetSimulation,

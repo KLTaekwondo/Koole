@@ -44,6 +44,11 @@
                         <img :src="gridIcon" alt="" />
                         <span>{{ focusMode ? '退出' : '专注' }}</span>
                     </button>
+                    <i></i>
+                    <button class="control-button" type="button" title="复制带当前参数的分享链接" @click="shareModel">
+                        <img :src="shareIcon" alt="" />
+                        <span>分享</span>
+                    </button>
                 </div>
             </div>
         </section>
@@ -150,10 +155,11 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, defineAsyncComponent } from "vue"
-import { useRoute } from "vue-router"
+import { ref, watch, computed, defineAsyncComponent, nextTick, onBeforeUnmount } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { getModelById } from "../../../constants"
 import { usePhysicsSim } from "../../../Logic/physics/engine/usePhysicsSim.js"
+import { success, warning } from "../../../stores/toast.js"
 // ECharts 体积较大，而且只有「记录过轨迹、展开对比」时才会渲染，按需异步加载
 const ComparisonPanel = defineAsyncComponent(() => import("./ComparisonPanel.vue"))
 import SimInfoOverlay from "./SimInfoOverlay.vue"
@@ -167,12 +173,18 @@ import gridIcon from "../../../assets/icons/grid.svg"
 import activityIcon from "../../../assets/icons/activity.svg"
 import closeIcon from "../../../assets/icons/close.svg"
 import lockIcon from "../../../assets/icons/lock.svg"
+import shareIcon from "../../../assets/icons/share.svg"
 
 const emit = defineEmits(["requestModels", "focusChange"])
 const route = useRoute()
+const router = useRouter()
 const activeModel = ref(null)
 const knowledgeOpen = ref(false)
 const focusMode = ref(false)
+// 模型默认参数（分享链接只带上被改过的参数；重置/还原也靠它判断）
+const defaultParams = ref({})
+// 刚进入页面时先别把默认参数写回 URL，等分享参数还原完再开始同步
+const shareReady = ref(false)
 
 function loadModel(modelId) {
     const source = getModelById(modelId)
@@ -180,11 +192,80 @@ function loadModel(modelId) {
         activeModel.value = null
         return
     }
+    defaultParams.value = Object.fromEntries(source.params.map(param => [param.key, param.value]))
     activeModel.value = {
         ...source,
         params: source.params.map(param => ({ ...param })),
     }
     knowledgeOpen.value = false
+    shareReady.value = false
+    // 等 usePhysicsSim 初始化完（模型切换 watcher）再把 URL 里的参数套上去
+    nextTick(() => {
+        applySharedParams()
+        shareReady.value = true
+    })
+}
+
+/** 把 URL 查询串里的参数还原到当前模型；非法值交给 usePhysicsSim 夹到合法范围 */
+function applySharedParams() {
+    const model = activeModel.value
+    if (!model) return
+    const query = route.query || {}
+    const values = {}
+    for (const param of model.params) {
+        if (!(param.key in query)) continue
+        const raw = Array.isArray(query[param.key]) ? query[param.key][0] : query[param.key]
+        if (raw === undefined || raw === null || raw === "") continue
+        const num = Number(raw)
+        if (Number.isFinite(num)) values[param.key] = num
+    }
+    if (Object.keys(values).length) applyParams(values)
+}
+
+/** 当前模型相对默认值改过的参数，用于分享链接与地址栏同步 */
+const shareQuery = computed(() => {
+    const model = activeModel.value
+    if (!model) return {}
+    const query = {}
+    for (const param of model.params) {
+        const defaultValue = defaultParams.value[param.key]
+        const same = typeof param.value === "number" && typeof defaultValue === "number"
+            ? Math.abs(param.value - defaultValue) < 1e-9
+            : param.value === defaultValue
+        if (!same) query[param.key] = String(param.value)
+    }
+    return query
+})
+
+let shareTimer = null
+watch(shareQuery, query => {
+    if (!shareReady.value) return
+    clearTimeout(shareTimer)
+    // 拖动滑块会连续触发，防抖后再写地址栏（用 replace，不产生历史记录）
+    shareTimer = setTimeout(() => {
+        router.replace({ path: route.path, query })
+    }, 500)
+}, { deep: true })
+
+onBeforeUnmount(() => clearTimeout(shareTimer))
+
+/** 生成当前参数对应的分享链接 */
+function buildShareUrl() {
+    const params = new URLSearchParams(shareQuery.value).toString()
+    const base = `${window.location.origin}${window.location.pathname}#${route.path}`
+    return params ? `${base}?${params}` : base
+}
+
+async function shareModel() {
+    const url = buildShareUrl()
+    // 先把地址栏同步成分享链接，复制出去的链接和看到的地址一致
+    router.replace({ path: route.path, query: shareQuery.value })
+    try {
+        await navigator.clipboard.writeText(url)
+        success("分享链接已复制，打开就能还原当前参数")
+    } catch {
+        warning("浏览器不允许写剪贴板，链接已同步到地址栏，可手动复制")
+    }
 }
 
 function toggleFocusMode() {
@@ -219,6 +300,7 @@ const {
     followTarget,
     recordedTrails,
     updateParam,
+    applyParams,
     displayParamValue,
     toggleSimulation,
     resetSimulation,

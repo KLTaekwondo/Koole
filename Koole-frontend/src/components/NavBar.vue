@@ -7,6 +7,10 @@
             </router-link>
             <div class="nav-links" :class="{ open: menuOpen }">
                 <router-link to="/" class="nav-link" :class="{ active: route.path === '/' }" @click="menuOpen = false">首页</router-link>
+                <router-link to="/progress" class="nav-link progress-link" :class="{ active: route.path === '/progress' }" @click="menuOpen = false">
+                    进度
+                    <span v-if="exploredCount" class="nav-badge">{{ exploredCount }}</span>
+                </router-link>
                 <router-link
                     v-for="subject in SUBJECTS"
                     :key="subject.id"
@@ -47,11 +51,13 @@ import { ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { theme, toggleTheme } from "../stores/theme.js"
 import { SUBJECTS } from "../constants/subjects.js"
+import { useLearning } from "../stores/learning.js"
 import themeMoonIcon from "../assets/icons/theme-moon.svg"
 import themeSunIcon from "../assets/icons/theme-sun.svg"
 
 const route = useRoute()
 const menuOpen = ref(false)
+const { exploredCount } = useLearning()
 
 // 路由变化时关闭菜单
 watch(() => route.path, () => { menuOpen.value = false })
@@ -133,6 +139,25 @@ watch(() => route.path, () => { menuOpen.value = false })
     background: #f0f4ff;
     color: var(--primary) !important;
     font-weight: 600;
+}
+
+.progress-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
 }
 
 :root[data-theme="dark"] .nav-link:hover,
