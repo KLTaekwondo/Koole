@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="sandbox-page">
     <!-- 全屏无限画布 -->
     <div class="canvas-container" ref="canvasContainerRef">
