@@ -17,6 +17,11 @@ export default {
 
 > n=2 时拉力是重力的一半，同时能向下拉——结合了两种滑轮的优点。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><circle cx="16" cy="12" r="3"/><line x1="8" y1="3" x2="8" y2="1"/><line x1="5" y1="9" x2="5" y2="20"/><line x1="11" y1="9" x2="16" y2="9"/><line x1="16" y1="15" x2="16" y2="22"/></svg>`,
+    exploration: {
+      task: "让物体匀速上升，记录需要多大的拉力，把它和物体的重力比一比。",
+      hint: "试试拉力约为重力一半时，物体是不是匀速上升。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "mass", label: "物体质量 (kg)", value: 4, min: 0.5, max: 10, step: 0.5 },
       { key: "pullForce", label: "拉力 (N)", value: 20, min: 0, max: 100, step: 1 },

@@ -25,6 +25,11 @@ export default {
 
 > 30° 和 60° 射程一样——互补角就是这么神奇。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="20" x2="22" y2="20"/><path d="M4 20 Q12 2 20 16" stroke-dasharray="3 2"/><circle cx="20" cy="16" r="2"/><line x1="4" y1="20" x2="10" y2="10"/><polyline points="11 6 10 10 14 9"/></svg>`,
+    exploration: {
+      task: "固定初速度，把抛射角从 45° 往两边调，比较射程——哪个角度射得最远？",
+      hint: "试试 30° 和 60°、40° 和 50°，注意观察落点的距离。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "initialVelocity", label: "初速度 (m/s)", value: 15, min: 5, max: 40, step: 0.5 },
       { key: "angle", label: "抛射角 (°)", value: 45, min: 5, max: 85, step: 1 },

@@ -7,17 +7,20 @@ export default {
     desc: "小车发声波，遇墙反射回来，用回声测距",
     knowledge: `## 声波测距
 
-利用回声测距离：
+利用回声测距离——声音从发声器发出、撞到障碍物反射回来，根据往返总时间算出距离。
 
-- 距离公式：$d = \\frac{v \\times t}{2}$（除以 2 因为声音走了来回两趟）
+- 发声器静止：$d = \\frac{v \\times t}{2}$
+- 发声器朝障碍物运动（速度 $u$）：$d = \\frac{(v + u) \\times t}{2}$
 
-其中：$d$ 是到障碍物的距离，$v$ 是声速，$t$ 是声音往返的总时间。
+其中：$d$ 是到障碍物的距离，$v$ 是声速，$t$ 是声音往返的总时间，$u$ 是发声器朝障碍物的速度。
+
+为什么车动时要加上 $u$：去程声音走了 $d$，回程声波要"追"一辆仍在前进的车，回程路程只剩 $d - u \\cdot t$。声音总路程 $d + (d - u \\cdot t) = v \\cdot t$，解得 $d = \\frac{(v + u) \\times t}{2}$。车静止时 $u = 0$，这个公式就退化成 $d = \\frac{v \\times t}{2}$。
 
 声速：空气约 340 m/s（15°C），水约 1500 m/s。回声能被人耳区分的最短距离约 17 m（人耳区分原声和回声的间隔约 0.1s）。
 
 应用：声呐测海深、倒车雷达、蝙蝠捕食。
 
-> 看波的路径：发声→到墙→反射→回来。计时器记录的是总时间，所以要除以 2。`,
+> 看波的路径：发声→到墙→反射→回来。计时器记录的是总时间，所以测距要除以 2；车在动时还要加上车速那一份。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="8" height="6" rx="1"/><line x1="14" y1="4" x2="14" y2="20"/><path d="M18 8 Q22 12 18 16" stroke-dasharray="2 2"/><circle cx="5" cy="10" r="1" fill="currentColor"/></svg>`,
     params: [
       { key: "wallDist", label: "墙的距离 (m)", value: 170, min: 20, max: 1000, step: 10 },
@@ -49,23 +52,36 @@ if (s.dir === -1 && s.waveX <= s.carX) s.waveDone = true  // 回到车
       waveTrail: [],
       trail: [],
       _t: 0,
+      _wallTime: 0,
+      _carAtWall: 0,
     }),
     step: (s, p, dt) => {
       if (s.waveDone) return
+      const prevWaveX = s.waveX
+      const prevCarX = s.carX
+      const prevT = s._t
       s.waveX += s.dir * p.soundSpeed * dt
       s.carX += p.v0 * dt
       s._t += dt
       s.waveTrail.push({ x: s.waveX, y: 0 })
       if (s.waveTrail.length > 5000) s.waveTrail.splice(0, s.waveTrail.length - 5000)
       if (s.dir === 1 && s.waveX >= p.wallDist) {
+        // 去程插值：波在帧内某刻到墙，精确记录此时刻和车的位置
+        const dtWall = (p.wallDist - prevWaveX) / p.soundSpeed
         s.waveX = p.wallDist
         s.dir = -1
         s.reflected = true
+        s._wallTime = prevT + dtWall
+        s._carAtWall = prevCarX + p.v0 * dtWall
       }
       if (s.dir === -1 && s.waveX <= s.carX) {
+        // 回程插值：波从墙回、车继续前行，相向速度 v+u，精确求相遇时刻
+        const gap = p.wallDist - s._carAtWall
+        const approach = p.soundSpeed + p.v0
+        const dtCross = gap / approach
         s.waveX = s.carX
         s.waveDone = true
-        s.totalTime = s._t
+        s.totalTime = s._wallTime + dtCross
       }
     },
     isFinished: (s) => s.waveDone,
@@ -86,9 +102,9 @@ if (s.dir === -1 && s.waveX <= s.carX) s.waveDone = true  // 回到车
     ],
     getInfoLines: (s, p, t) => {
       const tTotal = s.totalTime > 0 ? s.totalTime : t
-      const d = tTotal * p.soundSpeed / 2
+      const d = tTotal * (p.soundSpeed + p.v0) / 2
       return [
-        `测距结果: d = v×t/2 = ${d.toFixed(1)} m`,
+        `测距结果: d = (声速+车速)×t/2 = ${d.toFixed(1)} m`,
         `墙壁距离: ${p.wallDist} m`,
         `声速: ${p.soundSpeed} m/s`,
         `车速: ${p.v0} m/s`,

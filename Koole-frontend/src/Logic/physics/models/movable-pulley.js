@@ -9,10 +9,15 @@ export default {
 
 轴随物体一起动的滑轮，本质是动力臂为阻力臂 2 倍的杠杆。
 
-省一半力 $F = \\frac{mg}{2}$（$F$ 是拉力，$m$ 是质量，$g$ 是重力加速度），但费一倍距离 $s_{拉} = 2s_{物}$（$s_{拉}$ 是拉绳距离，$s_{物}$ 是物体上升距离），不能改变方向。省力的代价是费距离——能量守恒，没有免费的午餐。
+省一半力 $F = \\frac{mg}{2}$（$F$ 是拉力，$m$ 是质量，$g$ 是重力加速度），但费一倍距离 $s_{\\text{拉}} = 2s_{\\text{物}}$（$s_{\\text{拉}}$ 是拉绳距离，$s_{\\text{物}}$ 是物体上升距离），不能改变方向。省力的代价是费距离——能量守恒，没有免费的午餐。
 
 > 改变质量，拉力始终是重力的一半——两段绳子分担了重量。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="16" y1="4" x2="16" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/></svg>`,
+    exploration: {
+      task: "让物体匀速上升，记录需要的拉力，和物体重力、定滑轮的情况对比一下。",
+      hint: "拉力约为重力一半时物体匀速上升，注意手拉绳移动的距离。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "mass", label: "物体质量 (kg)", value: 4, min: 0.5, max: 10, step: 0.5 },
       { key: "pullForce", label: "拉力 (N)", value: 25, min: 0, max: 100, step: 1 },

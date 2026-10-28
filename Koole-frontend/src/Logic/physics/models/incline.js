@@ -19,6 +19,11 @@ export default {
 
 > 调大角度看看，速度箭头明显变长——$g\\sin\\theta$ 随角度增大而增大。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="20,2 2,22 22,22" fill="rgba(0,0,0,0.05)"/><circle cx="14" cy="14" r="2"/></svg>`,
+    exploration: {
+      task: "把斜面角度从小到大调，观察小球下滑的快慢怎么变？角度接近 90° 时，它像什么运动？",
+      hint: "分别试 30°、60°、75°，对比滑到底端时速度的大小。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "angle", label: "斜面角度 (°)", value: 30, min: 5, max: 75, step: 1 },
       { key: "rampHeight", label: "斜面高度 (m)", value: 10, min: 2, max: 30, step: 0.5 },

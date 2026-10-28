@@ -35,6 +35,20 @@ export function usePhysicsSim(modelRef) {
   // ── 信息浮层数据 ──
   const infoLines = ref([])
 
+  // ── 探索任务完成状态（任务式引导） ──
+  // 模型 exploration.check(params, simTime, paramTouched) 为真即解锁；
+  // 改参数与播放中都会评估。paramTouched = 本次会话是否改过参数（多数模型
+  // 完成条件为"改过参数 + 播放过一段时间"，体现"动手调节 + 观察"两个动作）。
+  const explorationDone = ref(false)
+  const paramTouched = ref(false)
+  const checkExploration = () => {
+    const model = modelRef.value
+    if (!model?.exploration?.check) return
+    if (model.exploration.check(simState.params, simState.simTime, paramTouched.value)) {
+      explorationDone.value = true
+    }
+  }
+
   // ── 创建各模块 ──
 
   // 1. Canvas（resize 时同步 ViewTransform）
@@ -52,6 +66,7 @@ export function usePhysicsSim(modelRef) {
     simState,
     () => {
       if (camera.followTarget.value) camera.centerCameraOnBall()
+      checkExploration()
       renderer.draw()
     },
     () => {
@@ -79,18 +94,38 @@ export function usePhysicsSim(modelRef) {
     if (!param) return
     param.value = val
     simState.params[key] = val
-    if (!simState.running) {
+    paramTouched.value = true
+    // 光学演示型（autoPlay）：改参数即重播——重置 _t 让光线从头走一遍；
+    // 普通模型：暂停时改参数重建状态，运行中改参数直接沿用（物理不打断）。
+    if (!simState.running || model.autoPlay) {
       engine.initState()
+      if (model.autoPlay && !simState.running) player.toggleSimulation()
       camera.followTarget.value = true
       camera.centerCameraOnBall()
+      checkExploration()
       renderer.draw()
     }
   }
 
   // ── 重置 ──
+  // 模型初始默认参数快照（key → value），模型切换时保存（此刻 params 为默认值），
+  // 重置时把 param.value 与 simState.params 一并恢复，再重建物理初始状态。
+  let initialParams = {}
+
   const resetSimulation = () => {
     player.stop()
+    // 恢复参数为模型初始默认值，并同步到引擎
+    const model = modelRef.value
+    if (model) {
+      model.params.forEach(p => {
+        if (p.key in initialParams) p.value = initialParams[p.key]
+      })
+      setParamsFromModel(model)
+    }
+    paramTouched.value = false
     engine.initState()
+    // 光学演示型（autoPlay）：重置后重新开始动画
+    if (model?.autoPlay && !simState.running) player.toggleSimulation()
     camera.followTarget.value = true
     camera.centerCameraOnBall()
     renderer.draw()
@@ -106,9 +141,18 @@ export function usePhysicsSim(modelRef) {
     player.stop()
     resetCounter()
     clearRecords()
+    explorationDone.value = false
+    paramTouched.value = false
     if (modelRef.value) {
+      // 记录初始默认参数（此刻 params 为 loadModel 拷贝的模型默认值）
+      initialParams = {}
+      modelRef.value.params.forEach(p => { initialParams[p.key] = p.value })
       setParamsFromModel(modelRef.value)
       engine.initState()
+      // 光学演示型模型（autoPlay）：进页面自动开始动画，step 驱动 _t 时钟
+      if (modelRef.value.autoPlay && !simState.running) {
+        player.toggleSimulation()
+      }
     }
     await nextTick()
     canvasManager.resizeCanvas()
@@ -123,6 +167,7 @@ export function usePhysicsSim(modelRef) {
     simState,
     infoLines,
     running,
+    explorationDone,
     followTarget: camera.followTarget,
     recordedTrails,
     updateParam,

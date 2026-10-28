@@ -11,7 +11,7 @@ export default {
 
 恢复系数决定了碰撞有多"弹"：
 
-- 恢复系数：$e = \\frac{v_{分离}}{v_{接近}}$
+- 恢复系数：$e = \\frac{v_{\\text{分离}}}{v_{\\text{接近}}}$
 - 第 $n$ 次弹跳高度：$h_n = h_0 \\cdot e^{2n}$
 - 每次碰撞能量损失比例：$(1-e^2)$
 
@@ -23,6 +23,11 @@ $e = 1$ 完全弹性反弹等高，$e = 0$ 完全非弹性直接"粘"住，中�
 
 > 把 e 拉到 0 试试——物体直接"粘"在地上不弹了。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M8 9v11"/><path d="M5 20h6"/><path d="M16 4l3 3-3 3"/><path d="M19 7h-6" opacity="0.4"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+    exploration: {
+      task: "把恢复系数从 1 慢慢调到 0，观察小球每次反弹的高度怎么变？",
+      hint: "对比 e=1、e=0.5、e=0 时，小球每次反弹后的高度。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "height", label: "初始高度 (m)", value: 10, min: 1, max: 30, step: 0.5 },
       { key: "restitution", label: "恢复系数 e", value: 0.8, min: 0, max: 1, step: 0.05 },

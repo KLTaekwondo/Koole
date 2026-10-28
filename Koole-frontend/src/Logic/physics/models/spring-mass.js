@@ -29,6 +29,11 @@ export default {
 
 > 能量条的变化很直观——动能和势能像跷跷板，总能量那条线始终不动。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="3" y2="20"/><polyline points="3,13 6,9 9,17 12,9 15,17 18,13"/><rect x="16" y="8" width="7" height="7" fill="rgba(0,0,0,0.1)"/></svg>`,
+    exploration: {
+      task: "改变质量和劲度系数，观察振动的快慢怎么变？",
+      hint: "质量调大、调小各一次，再改劲度系数 k，对比完成一次全振动的时间。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "mass", label: "质量 (kg)", value: 1, min: 0.2, max: 5, step: 0.1 },
       { key: "k", label: "劲度系数 (N/m)", value: 10, min: 1, max: 30, step: 0.5 },

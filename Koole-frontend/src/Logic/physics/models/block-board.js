@@ -16,18 +16,23 @@ export default {
 
 - 滑块加速度：$a_m = -\\mu g$
 - 木板加速度：$a_M = \\frac{\\mu m g}{M}$
-- 共速速度：$v_{共} = \\frac{mv_0}{m+M}$
+- 共速速度：$v_{\\text{共}} = \\frac{mv_0}{m+M}$
 
-其中：$m$ 是滑块质量，$M$ 是木板质量，$\\mu$ 是摩擦系数，$a_m$/$a_M$ 是滑块/木板加速度，$v_{共}$ 是共速后的速度，$v_0$ 是滑块初速度。
+其中：$m$ 是滑块质量，$M$ 是木板质量，$\\mu$ 是摩擦系数，$a_m$/$a_M$ 是滑块/木板加速度，$v_{\\text{共}}$ 是共速后的速度，$v_0$ 是滑块初速度。
 
 共速后相对运动消失，系统一起动。
 
-有个公式很重要：$Q = f \\cdot \\Delta x_{相对}$——其中 $Q$ 是产生的热量，$f$ 是摩擦力，$\\Delta x_{相对}$ 是相对位移（不是各自位移！），不是各自位移！这个区别考试经常考。
+有个公式很重要：$Q = f \\cdot \\Delta x_{\\text{相对}}$——其中 $Q$ 是产生的热量，$f$ 是摩擦力，$\\Delta x_{\\text{相对}}$ 是相对位移（不是各自位移！），不是各自位移！这个区别考试经常考。
 
 共速后是否继续滑取决于最大静摩擦力。木板不够长的话滑块会滑落——这是常见的临界问题。
 
 > 看速度曲线——滑块减速、木板加速，两条线交叉就是共速时刻。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="6" rx="1" fill="rgba(0,0,0,0.06)"/><rect x="10" y="8" width="6" height="6" fill="rgba(0,0,0,0.12)"/><line x1="13" y1="11" x2="19" y2="11" stroke="#e67e22" stroke-width="2"/><line x1="13" y1="17" x2="8" y2="17" stroke="#3498db" stroke-width="2"/><polyline points="19,9 22,11 19,13"/><polyline points="8,15 5,17 8,19"/></svg>`,
+    exploration: {
+      task: "观察滑块和木板的运动，它们最终是不是一起运动了？改变摩擦系数再试试。",
+      hint: "注意滑块减速、木板加速的过程，看它们什么时候速度相同。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "M", label: "木板质量 (kg)", value: 3, min: 0.5, max: 20, step: 0.5 },
       { key: "m", label: "滑块质量 (kg)", value: 1, min: 0.2, max: 10, step: 0.2 },

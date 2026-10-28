@@ -25,6 +25,11 @@ export default {
 
 > Vx 和 Vy 的箭头对比很直观——蓝色不变，绿色越来越长，合速度方向一直在偏。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M6 16l4-8 4 4 4-8" stroke-dasharray="2 2"/><circle cx="18" cy="8" r="2"/></svg>`,
+    exploration: {
+      task: "改变下落高度和水平速度，分别看看落地时间由哪个量决定、落点由哪个量决定？",
+      hint: "只改高度，落地时间变长；只改水平速度，落地时间几乎不变——自己对比试试。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "height", label: "初始高度 (m)", value: 15, min: 1, max: 50, step: 0.5 },
       { key: "vx", label: "水平速度 (m/s)", value: 5, min: 1, max: 20, step: 0.5 },

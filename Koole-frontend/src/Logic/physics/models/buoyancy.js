@@ -9,11 +9,11 @@ export default {
 
 阿基米德原理：浮力 = 排开液体的重力。
 
-- 浮力：$F_{浮} = \\rho_{液} g V_{排}$
-- 物体重力：$G = \\rho_{物} g V_{物}$
-- 漂浮时浸没比：$\\frac{V_{排}}{V_{物}} = \\frac{\\rho_{物}}{\\rho_{液}}$
+- 浮力：$F_{\\text{浮}} = \\rho_{\\text{液}} g V_{\\text{排}}$
+- 物体重力：$G = \\rho_{\\text{物}} g V_{\\text{物}}$
+- 漂浮时浸没比：$\\frac{V_{\\text{排}}}{V_{\\text{物}}} = \\frac{\\rho_{\\text{物}}}{\\rho_{\\text{液}}}$
 
-其中：$F_{浮}$ 是浮力，$\\rho_{液}$ 是液体密度，$V_{排}$ 是排开液体体积，$G$ 是物体重力，$\\rho_{物}$ 是物体密度，$V_{物}$ 是物体体积。
+其中：$F_{\\text{浮}}$ 是浮力，$\\rho_{\\text{液}}$ 是液体密度，$V_{\\text{排}}$ 是排开液体体积，$G$ 是物体重力，$\\rho_{\\text{物}}$ 是物体密度，$V_{\\text{物}}$ 是物体体积。
 
 浮沉条件很好记：密度比液体小就漂浮，相等就悬浮，大就沉底。比如木头密度是水的 0.6，就浸 60%。
 
@@ -23,6 +23,11 @@ export default {
 
 > 密度比液体小时漂浮，浸没比例正好等于密度比——记住这个关系。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="1" fill="rgba(52,152,219,0.15)"/><rect x="8" y="4" width="8" height="8" rx="1"/><path d="M12 14l-2-2m2 2l2-2" stroke-width="1.5"/></svg>`,
+    exploration: {
+      task: "把物体密度从小于液体调到大于液体，观察物体漂浮、悬浮还是沉底？漂浮时浸入多少？",
+      hint: "物体密度小于液体漂浮、等于悬浮、大于沉底——自己动手试出来。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "rhoObj", label: "物体密度 (kg/m³)", value: 600, min: 100, max: 3000, step: 50 },
       { key: "rhoLiquid", label: "液体密度 (kg/m³)", value: 1000, min: 500, max: 2000, step: 50 },

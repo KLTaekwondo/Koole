@@ -25,6 +25,11 @@ export default {
 
 > "已接近收尾"百分比很直观——到 90% 之后加速极其缓慢，雨滴就是这么变匀速的。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="14"/><path d="M12 14l-3 3"/><path d="M12 14l3 3"/><circle cx="12" cy="19" r="3"/><path d="M6 6 Q8 8 12 6 Q16 8 18 6" opacity="0.3"/><path d="M4 9 Q8 11 12 9 Q16 11 20 9" opacity="0.2"/></svg>`,
+    exploration: {
+      task: "把阻力系数从 0 慢慢调大，比较下落过程有什么不同？阻力大时小球的速度最后还一直增长吗？",
+      hint: "b=0 和 b 较大时各跑一次，观察大阻力下小球速度是否趋近一个固定值。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "height", label: "初始高度 (m)", value: 50, min: 10, max: 100, step: 2 },
       { key: "mass", label: "质量 (kg)", value: 1, min: 0.1, max: 10, step: 0.1 },

@@ -1,4 +1,6 @@
 // plane-mirror 模型数据
+import { drawGrowingRay, imageReveal, clamp01 } from "./opticsAnim.js"
+
 export default {
     id: "plane-mirror",
     level: "初中",
@@ -21,6 +23,11 @@ export default {
 这里容易看错的是“左右相反”。更准确地说，是物和像关于镜面对称，不是简单地把整个世界左右翻一下。
 
 > 改变物距，观察虚像始终在镜后同样远的位置。`,
+    exploration: {
+      task: "改变物距，点开始，观察虚像位置怎么变？",
+      hint: "来回拖动物距滑块，对比像距和物距的数值。",
+      check: (p, t) => t > 0.6,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M6 8v8"/><path d="M18 8v8" stroke-dasharray="3 3"/><path d="M6 10l6-2 6 2"/></svg>`,
     params: [
       { key: "objectDist", label: "物距 (cm)", value: 30, min: 8, max: 70, step: 2 },
@@ -114,6 +121,11 @@ export default {
         ctx.restore()
       }
       drawPerson(objBottom, objTop, "#e74c3c")
+
+      // 虚像与辅助线淡入：光路到达镜面、反向延长到像点后才出现
+      const t = s._t || 0
+      const imgAlpha = p.showRays ? imageReveal(t, 0.35 + 0.9) : 1
+      ctx.globalAlpha = imgAlpha
       drawPerson(imgBottom, imgTop, "rgba(46, 204, 113, 0.62)", true)
 
       ctx.strokeStyle = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.18)"
@@ -123,29 +135,22 @@ export default {
       ctx.lineTo(imgTop.x, imgTop.y)
       ctx.stroke()
       ctx.setLineDash([])
+      ctx.globalAlpha = 1
 
       if (p.showRays) {
         const source = objTop
         const image = imgTop
         const hit1 = toScreen(0, p.rayAngle)
         const hit2 = toScreen(0, -p.rayAngle * 0.45)
-        ;[hit1, hit2].forEach(hit => {
-          ctx.strokeStyle = "#f39c12"
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.moveTo(source.x, source.y)
-          ctx.lineTo(hit.x, hit.y)
-          const outX = hit.x - (image.x - hit.x)
-          const outY = hit.y - (image.y - hit.y)
-          ctx.lineTo(outX, outY)
-          ctx.stroke()
-          ctx.strokeStyle = "rgba(46, 204, 113, 0.55)"
-          ctx.setLineDash([5, 4])
-          ctx.beginPath()
-          ctx.moveTo(hit.x, hit.y)
-          ctx.lineTo(image.x, image.y)
-          ctx.stroke()
-          ctx.setLineDash([])
+        ;[hit1, hit2].forEach((hit, idx) => {
+          // 入射实线：物顶 → 镜面；反射实线：镜面 → 屏幕外；
+          // 反向延长虚线：镜面 → 虚像（虚像在此连线末端浮现）
+          const delay = idx * 0.35
+          const outEnd = { x: hit.x - (image.x - hit.x), y: hit.y - (image.y - hit.y) }
+          drawGrowingRay(ctx,
+            [{ x: source.x, y: source.y }, { x: hit.x, y: hit.y }, { x: outEnd.x, y: outEnd.y }],
+            [{ x: hit.x, y: hit.y }, { x: image.x, y: image.y }],
+            clamp01((t - delay) / 0.9), { color: "#f39c12" })
         })
       }
 

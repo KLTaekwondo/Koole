@@ -20,6 +20,11 @@ export default {
 
 > 90° 验证勾股定理，180° 看合力最小——调参数很直观。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="12" x2="4" y2="6"/><line x1="12" y1="12" x2="20" y2="6"/><line x1="12" y1="12" x2="12" y2="20" stroke="#2ecc71"/></svg>`,
+    exploration: {
+      task: "改变两个力的大小和夹角，观察合力怎么变？夹角从 0° 到 180°，合力在什么范围？",
+      hint: "固定两力大小，只把夹角从 0° 慢慢调到 180°，看合力如何变化。",
+      check: (p, t, touched) => touched,
+    },
     params: [
       { key: "F1", label: "力 F₁ (N)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "F2", label: "力 F₂ (N)", value: 5, min: 1, max: 15, step: 0.5 },

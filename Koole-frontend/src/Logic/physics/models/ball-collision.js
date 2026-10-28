@@ -27,6 +27,11 @@ $$\\frac{1}{2}m_1 v_1^2 + \\frac{1}{2}m_2 v_2^2 = \\frac{1}{2}m_1 v_1'^2 + \\fra
 
 > 等质量碰撞试试——速度完全交换，牛顿摆就是这个原理。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/><polygon points="14,10 14,14 16,12"/></svg>`,
+    exploration: {
+      task: "让两个质量相等的小球相撞，观察碰撞后速度怎么变？再试试质量相差很大时，切换完全弹性/完全非弹性看看差别。",
+      hint: "等质量时注意碰撞后两球的速度是否交换了。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "m1", label: "球1质量 (kg)", value: 1, min: 0.1, max: 10, step: 0.1 },
       { key: "v1", label: "球1初速度 (m/s)", value: 3, min: -10, max: 10, step: 0.5 },

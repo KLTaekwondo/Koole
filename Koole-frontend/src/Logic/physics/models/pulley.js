@@ -15,6 +15,11 @@ export default {
 
 > 改变质量试试，拉力始终等于重力——定滑轮就是这么"诚实"。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="4"/><line x1="12" y1="2" x2="12" y2="1"/><line x1="8" y1="10" x2="8" y2="20"/><line x1="16" y1="10" x2="16" y2="16"/></svg>`,
+    exploration: {
+      task: "改变拉力大小，观察物体是上升、下降还是静止？注意拉力的方向。",
+      hint: "拉力等于重力时物体不动，大于重力上升，小于重力下降。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "mass", label: "物体质量 (kg)", value: 2, min: 0.5, max: 10, step: 0.5 },
       { key: "pullForce", label: "拉力 (N)", value: 20, min: 0, max: 100, step: 1 },

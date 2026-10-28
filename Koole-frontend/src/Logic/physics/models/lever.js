@@ -21,6 +21,11 @@ export default {
 
 > 调一下参数让两边力矩相等，杠杆就水平了——挺直观的。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 4 8 10 16 10" fill="rgba(0,0,0,0.08)"/><line x1="2" y1="8" x2="22" y2="8"/><circle cx="4" cy="6" r="1.5"/><circle cx="20" cy="6" r="1.5"/></svg>`,
+    exploration: {
+      task: "调节两边的力和力臂，让杠杆保持水平平衡，对比此时两边的力×力臂。",
+      hint: "默认两边力矩不等，杠杆会倾斜。调整 F 和 L 让杠杆平下来。",
+      check: (p, t, touched) => touched && Math.abs(p.F1 * p.d1 * (p.dir1 || 1) - p.F2 * p.d2 * (p.dir2 || 1)) < 0.5,
+    },
     params: [
       { key: "F1", label: "左侧力 F₁ (N)", value: 3, min: 0, max: 20, step: 0.5 },
       { key: "d1", label: "左侧力臂 L₁ (m)", value: 3, min: 0.5, max: 5, step: 0.1 },

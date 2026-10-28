@@ -1,4 +1,6 @@
 // convex-lens 模型数据
+import { drawGrowingRay, imageReveal, clamp01, RAY_DURATION } from "./opticsAnim.js"
+
 export default {
     id: "convex-lens",
     level: "初中",
@@ -26,6 +28,11 @@ $$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
 物距等于焦距时像"消失"了（在无穷远），小于焦距时变成正立放大虚像——这就是放大镜原理。
 
 > 一倍焦距分虚实，二倍焦距分大小——记住这个口诀做题快很多。`,
+    exploration: {
+      task: "把物体移到焦点以内（物距 < 焦距），点开始，看看会出现什么像？",
+      hint: "物距从 30 往小调，到 10 以下，再点开始播放。",
+      check: (p, t) => p.objectDist < p.focalLength && t > 0.6,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,
     params: [
       { key: "focalLength", label: "焦距 f (cm)", value: 10, min: 3, max: 20, step: 1 },
@@ -120,6 +127,7 @@ u ≈ f 时像距趋近无穷大，要特殊处理——不然数值爆炸。
       const isDark = getTheme() === "dark"
       const axisColor = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"
       const labelColor = isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)"
+      const t = s._t || 0
       const f = p.focalLength
       const u = p.objectDist
       const h = p.objectHeight
@@ -220,6 +228,12 @@ u ≈ f 时像距趋近无穷大，要特殊处理——不然数值爆炸。
         const imgTop = toScreen(imgX, isVirtual ? imageH : -imageH)
         const imgBottom = toScreen(imgX, 0)
 
+        // 成像淡入：光路到达像点后才出现（"光经过后成像"的过程感）
+        const raysOn = p.showRays >= 0.5
+        const revealT = 0.35 + RAY_DURATION // 最后一条光线完成时刻
+        const imgAlpha = raysOn ? imageReveal(t, revealT) : 1
+        ctx.globalAlpha = imgAlpha
+
         if (isVirtual) {
           ctx.strokeStyle = "rgba(46, 204, 113, 0.6)"
           ctx.lineWidth = 2
@@ -261,6 +275,7 @@ u ≈ f 时像距趋近无穷大，要特殊处理——不然数值爆炸。
           ctx.fillText("实像", imgTop.x, imgTop.y + 16)
           ctx.fillText(`v=${absV.toFixed(1)}cm`, imgBottom.x, imgBottom.y - 8)
         }
+        ctx.globalAlpha = 1
       }
 
       if (p.showRays >= 0.5 && Math.abs(u - f) >= 0.01) {
@@ -269,121 +284,28 @@ u ≈ f 时像距趋近无穷大，要特殊处理——不然数值爆炸。
         const imageH = h * magnification
         const imgX = isVirtual ? -absV : absV
         const imgY = isVirtual ? imageH : -imageH
-        const t = s._t || 0
-
-        const segLen = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
-        const totalLen = (pts) => {
-          let d = 0
-          for (let i = 1; i < pts.length; i++) d += segLen(pts[i - 1], pts[i])
-          return d
-        }
-        const pointAt = (pts, ratio) => {
-          const target = ratio * totalLen(pts)
-          let d = 0
-          for (let i = 1; i < pts.length; i++) {
-            const seg = segLen(pts[i - 1], pts[i])
-            if (d + seg >= target) {
-              const local = (target - d) / seg
-              return {
-                x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * local,
-                y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * local,
-              }
-            }
-            d += seg
-          }
-          return pts[pts.length - 1]
-        }
-        const drawArrow = (pts, color) => {
-          const len = totalLen(pts)
-          const count = Math.max(1, Math.floor(len / 120))
-          for (let i = 1; i <= count; i++) {
-            const ratio = i / (count + 1)
-            const p1 = pointAt(pts, Math.max(0, ratio - 0.02))
-            const p2 = pointAt(pts, ratio)
-            const dx = p2.x - p1.x, dy = p2.y - p1.y
-            const a = Math.atan2(dy, dx)
-            ctx.fillStyle = color
-            ctx.beginPath()
-            ctx.moveTo(p2.x, p2.y)
-            ctx.lineTo(p2.x - 7 * Math.cos(a - 0.4), p2.y - 7 * Math.sin(a - 0.4))
-            ctx.lineTo(p2.x - 7 * Math.cos(a + 0.4), p2.y - 7 * Math.sin(a + 0.4))
-            ctx.closePath()
-            ctx.fill()
-          }
-        }
-
-        const rayAlpha = 0.4
-        const drawRay = (points, color, animDelay, extPoints) => {
-          const progress = Math.min(1, Math.max(0, (t - animDelay) / 0.8))
-          ctx.strokeStyle = color
-          ctx.globalAlpha = rayAlpha
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          points.forEach((pt, i) => {
-            const s2 = toScreen(pt.x, pt.y)
-            if (i === 0) ctx.moveTo(s2.x, s2.y); else ctx.lineTo(s2.x, s2.y)
-          })
-          ctx.stroke()
-          if (extPoints && extPoints.length > 0) {
-            ctx.globalAlpha = rayAlpha * 0.6
-            ctx.setLineDash([4, 3])
-            ctx.beginPath()
-            extPoints.forEach((pt, i) => {
-              const s2 = toScreen(pt.x, pt.y)
-              if (i === 0) ctx.moveTo(s2.x, s2.y); else ctx.lineTo(s2.x, s2.y)
-            })
-            ctx.stroke()
-            ctx.setLineDash([])
-          }
-          if (progress > 0 && progress < 1) {
-            const pos = pointAt(points.map(p => toScreen(p.x, p.y)), progress)
-            ctx.fillStyle = color
-            ctx.globalAlpha = 0.9
-            ctx.beginPath()
-            ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.globalAlpha = 0.2
-            ctx.beginPath()
-            ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
-            ctx.fill()
-          }
-          ctx.globalAlpha = 1
-          drawArrow(points.map(p => toScreen(p.x, p.y)), color)
-        }
-
-        const objX = -u
 
         if (isVirtual) {
+          // 虚像：平行→过焦点发散（虚线反向延长到虚像），过光心直线（虚线反向延长）
           const farX = Math.max(f * 4, u * 3, 60)
-          drawRay([
-            { x: objX, y: h },
-            { x: 0, y: h },
-            { x: f, y: 0 },
-            { x: farX, y: -h * (farX - f) / f },
-          ], "#e74c3c", 0, [
-            { x: 0, y: h },
-            { x: imgX, y: imgY },
-          ])
-
-          drawRay([
-            { x: objX, y: h },
-            { x: 0, y: 0 },
-            { x: farX, y: -h * farX / u },
-          ], "#f39c12", 0.3, [
-            { x: 0, y: 0 },
-            { x: imgX, y: imgY },
-          ])
+          drawGrowingRay(ctx,
+            [toScreen(objX, h), toScreen(0, h), toScreen(f, 0), toScreen(farX, -h * (farX - f) / f)],
+            [toScreen(0, h), toScreen(imgX, imgY)],
+            clamp01((t - 0) / RAY_DURATION), { color: "#e74c3c" })
+          drawGrowingRay(ctx,
+            [toScreen(objX, h), toScreen(0, 0), toScreen(farX, -h * farX / u)],
+            [toScreen(0, 0), toScreen(imgX, imgY)],
+            clamp01((t - 0.35) / RAY_DURATION), { color: "#f39c12" })
         } else {
-          drawRay([
-            { x: objX, y: h },
-            { x: 0, y: h },
-            { x: imgX, y: imgY },
-          ], "#e74c3c", 0)
-
-          drawRay([
-            { x: objX, y: h },
-            { x: imgX, y: imgY },
-          ], "#f39c12", 0.3)
+          // 实像：平行→过焦点、过光心，两条实线光线到像点
+          drawGrowingRay(ctx,
+            [toScreen(objX, h), toScreen(0, h), toScreen(imgX, imgY)],
+            null,
+            clamp01((t - 0) / RAY_DURATION), { color: "#e74c3c" })
+          drawGrowingRay(ctx,
+            [toScreen(objX, h), toScreen(0, 0), toScreen(imgX, imgY)],
+            null,
+            clamp01((t - 0.35) / RAY_DURATION), { color: "#f39c12" })
         }
       }
 

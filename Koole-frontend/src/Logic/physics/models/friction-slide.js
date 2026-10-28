@@ -26,6 +26,11 @@ export default {
 
 > 初速度从 8 调到 16，停止距离直接变 4 倍——平方关系。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="17" x2="22" y2="17"/><line x1="4" y1="17" x2="6" y2="13"/><line x1="9" y1="17" x2="11" y2="13"/><line x1="14" y1="17" x2="16" y2="13"/><line x1="19" y1="17" x2="21" y2="13"/><rect x="6" y="7" width="7" height="8" fill="rgba(0,0,0,0.1)"/><polyline points="20,6 22,12 18,12"/></svg>`,
+    exploration: {
+      task: "改变初速度和摩擦系数，观察滑行的距离怎么变？",
+      hint: "μ 调大、调小各试一次对比滑行距离；初速度翻倍，滑行距离会变成几倍？",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "v0", label: "初速度 (m/s)", value: 8, min: 1, max: 20, step: 0.5 },
       { key: "mu", label: "摩擦系数 μ", value: 0.3, min: 0.05, max: 1, step: 0.05 },

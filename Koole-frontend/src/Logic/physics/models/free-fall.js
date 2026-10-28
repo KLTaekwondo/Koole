@@ -19,10 +19,15 @@ export default {
 
 $g \\approx 9.8 \\, m/s^2$ 方向竖直向下，跟质量无关。伽利略比萨斜塔实验说的就是这个——不同质量的球同时落地。
 
-有个结论做题经常用：连续相等时间间隔内位移比 = $1:3:5:7:\\cdots$，这个叫等时性，选择题很爱考。
+有个结论做题经常用：初速度为零的匀加速运动，连续相等时间间隔内的位移之比 =$1:3:5:7:\\cdots$，选择题很爱考。
 
 > 把 g 调成 1.6（月球）或 3.7（火星），下落明显慢了——不同星球重力差这么多。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><path d="M12 12l-3 3"/><path d="M12 12l3 3"/><circle cx="12" cy="18" r="3"/></svg>`,
+    exploration: {
+      task: "改变下落高度，比较下落时间和落地速度，想想这跟质量有关系吗？",
+      hint: "先记录默认高度的下落时间，把高度调大一倍再试一次，对比两次的时间。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "height", label: "初始高度 (m)", value: 15, min: 1, max: 50, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },

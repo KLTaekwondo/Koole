@@ -25,6 +25,11 @@ export default {
 
 > 初速度设成负值试试——物块先被减速，停了再反向加速到跟带同速。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="10" width="20" height="4" rx="1" fill="rgba(0,0,0,0.06)"/><circle cx="4" cy="12" r="2" fill="none"/><circle cx="20" cy="12" r="2" fill="none"/><rect x="9" y="6" width="5" height="5" rx="1" fill="rgba(0,0,0,0.1)"/><line x1="2" y1="17" x2="22" y2="17"/></svg>`,
+    exploration: {
+      task: "让物块初速度比传送带快、比传送带慢，分别观察物块是先减速还是先加速？",
+      hint: "初速度大于带速和小于带速各试一次，看物块最终是否和传送带共速。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "beltSpeed", label: "传送带速度 (m/s)", value: 4, min: 0.5, max: 12, step: 0.5 },
       { key: "v0", label: "物块初速度 (m/s)", value: 0, min: -5, max: 12, step: 0.5 },

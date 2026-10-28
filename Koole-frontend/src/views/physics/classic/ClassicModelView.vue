@@ -6,10 +6,6 @@
                     <small>{{ activeModel.category }}</small>
                     <h1>{{ activeModel.name }}</h1>
                 </div>
-                <button class="parameter-trigger" :class="{ active: parameterDrawerOpen }" type="button" @click="parameterDrawerOpen = !parameterDrawerOpen">
-                    <img :src="settingsIcon" alt="" />
-                    参数
-                </button>
             </header>
 
             <div class="canvas-area" ref="canvasAreaRef">
@@ -52,13 +48,62 @@
             </div>
         </section>
 
-        <section v-if="!focusMode" class="content-section">
-            <nav class="content-tabs" aria-label="模型内容">
-                <button type="button" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">数据分析</button>
-                <button type="button" :class="{ active: activeTab === 'knowledge' }" @click="activeTab = 'knowledge'">原理讲解</button>
-            </nav>
+        <section v-if="activeModel.exploration && !focusMode" class="exploration-section" :class="{ done: explorationDone }">
+            <span class="exploration-badge">{{ explorationDone ? '✓' : '任务' }}</span>
+            <div class="exploration-text">
+                <small>{{ explorationDone ? 'TASK DONE' : 'EXPLORE' }}</small>
+                <p>{{ activeModel.exploration.task }}</p>
+            </div>
+            <span class="exploration-status">{{ explorationDone ? '探索完成' : '进行中' }}</span>
+        </section>
 
-            <div v-show="activeTab === 'data'" class="tab-panel">
+        <section v-if="!focusMode" class="parameter-section">
+            <header class="section-heading">
+                <span class="parameter-live-dot"></span>
+                <div>
+                    <small>PARAMETERS</small>
+                    <h2>参数调节</h2>
+                </div>
+            </header>
+
+            <div class="parameter-list">
+                <div v-for="param in activeModel.params" :key="param.key" class="parameter-item">
+                    <label>
+                        <span>{{ param.label }}</span>
+                        <strong>{{ displayParamValue(param) }}</strong>
+                    </label>
+                    <select
+                        v-if="param.options"
+                        :value="param.value"
+                        @change="updateParam(param.key, parseFloat($event.target.value))"
+                    >
+                        <option v-for="option in param.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    </select>
+                    <input
+                        v-else
+                        type="range"
+                        :min="param.min"
+                        :max="param.max"
+                        :step="param.step || 1"
+                        :value="param.value"
+                        @input="updateParam(param.key, parseFloat($event.target.value))"
+                    />
+                    <div v-if="!param.options" class="range-limits">
+                        <span>{{ param.min }}</span>
+                        <span>{{ param.max }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section v-if="!focusMode" class="content-section">
+            <div class="section-block">
+                <header class="section-heading">
+                    <div>
+                        <small>DATA</small>
+                        <h2>实验记录</h2>
+                    </div>
+                </header>
                 <ComparisonPanel
                     v-if="recordedTrails.length > 0"
                     :trails="recordedTrails"
@@ -76,63 +121,24 @@
                 </div>
             </div>
 
-            <div v-show="activeTab === 'knowledge'" class="tab-panel">
-                <ModelInfoPanel :model-id="activeModel.id" :knowledge="activeModel.knowledge" />
+            <div class="section-block">
+                <button
+                    type="button"
+                    class="knowledge-toggle"
+                    :class="{ active: knowledgeOpen, locked: isKnowledgeLocked, shake: nudgeKnowledge }"
+                    @click="toggleKnowledge"
+                >
+                    <span class="knowledge-toggle-text">
+                        <small>PRINCIPLE</small>
+                        <span>{{ isKnowledgeLocked ? '先完成探索任务' : '原理讲解' }}</span>
+                    </span>
+                    <img :src="isKnowledgeLocked ? lockIcon : (knowledgeOpen ? closeIcon : gridIcon)" alt="" />
+                </button>
+                <div v-show="knowledgeOpen" class="tab-panel">
+                    <ModelInfoPanel :model-id="activeModel.id" :knowledge="activeModel.knowledge" />
+                </div>
             </div>
         </section>
-
-        <transition name="parameter-slide">
-            <aside v-if="parameterDrawerOpen && !focusMode" class="parameter-drawer">
-                <header class="drawer-header">
-                    <div class="drawer-title">
-                        <span class="parameter-live-dot"></span>
-                        <div>
-                            <small>PARAMETERS</small>
-                            <h2>参数调节</h2>
-                        </div>
-                    </div>
-                    <button class="drawer-close" type="button" aria-label="收起参数面板" @click="parameterDrawerOpen = false">
-                        <img :src="closeIcon" alt="" />
-                    </button>
-                </header>
-
-                <div class="parameter-list">
-                    <div v-for="param in activeModel.params" :key="param.key" class="parameter-item">
-                        <label>
-                            <span>{{ param.label }}</span>
-                            <strong>{{ displayParamValue(param) }}</strong>
-                        </label>
-                        <select
-                            v-if="param.options"
-                            :value="param.value"
-                            @change="updateParam(param.key, parseFloat($event.target.value))"
-                        >
-                            <option v-for="option in param.options" :key="option.value" :value="option.value">{{ option.label }}</option>
-                        </select>
-                        <input
-                            v-else
-                            type="range"
-                            :min="param.min"
-                            :max="param.max"
-                            :step="param.step || 1"
-                            :value="param.value"
-                            @input="updateParam(param.key, parseFloat($event.target.value))"
-                        />
-                        <div v-if="!param.options" class="range-limits">
-                            <span>{{ param.min }}</span>
-                            <span>{{ param.max }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <footer class="drawer-footer">
-                    <button type="button" @click="resetSimulation">
-                        <img :src="resetIcon" alt="" />
-                        恢复初始状态
-                    </button>
-                </footer>
-            </aside>
-        </transition>
     </div>
 
     <div v-else class="model-not-found">
@@ -144,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue"
+import { ref, watch, computed } from "vue"
 import { useRoute } from "vue-router"
 import { getModelById } from "../../../constants"
 import { usePhysicsSim } from "../../../Logic/physics/engine/usePhysicsSim.js"
@@ -156,17 +162,16 @@ import pauseIcon from "../../../assets/icons/pause.svg"
 import resetIcon from "../../../assets/icons/reset.svg"
 import targetIcon from "../../../assets/icons/target.svg"
 import viewResetIcon from "../../../assets/icons/view-reset.svg"
-import settingsIcon from "../../../assets/icons/settings.svg"
 import gridIcon from "../../../assets/icons/grid.svg"
 import activityIcon from "../../../assets/icons/activity.svg"
 import closeIcon from "../../../assets/icons/close.svg"
+import lockIcon from "../../../assets/icons/lock.svg"
 
 const emit = defineEmits(["requestModels", "focusChange"])
 const route = useRoute()
 const activeModel = ref(null)
-const parameterDrawerOpen = ref(false)
+const knowledgeOpen = ref(false)
 const focusMode = ref(false)
-const activeTab = ref("data")
 
 function loadModel(modelId) {
     const source = getModelById(modelId)
@@ -178,14 +183,28 @@ function loadModel(modelId) {
         ...source,
         params: source.params.map(param => ({ ...param })),
     }
-    parameterDrawerOpen.value = true
-    activeTab.value = "data"
+    knowledgeOpen.value = false
 }
 
 function toggleFocusMode() {
     focusMode.value = !focusMode.value
-    if (focusMode.value) parameterDrawerOpen.value = false
     emit("focusChange", focusMode.value)
+}
+
+// 探索任务未完成时，原理讲解加锁；点击只晃动提示，不展开
+const isKnowledgeLocked = computed(() => {
+    const model = activeModel.value
+    return !!model?.exploration && !explorationDone.value
+})
+const nudgeKnowledge = ref(false)
+function toggleKnowledge() {
+    if (isKnowledgeLocked.value) {
+        nudgeKnowledge.value = false
+        requestAnimationFrame(() => { nudgeKnowledge.value = true })
+        setTimeout(() => { nudgeKnowledge.value = false }, 300)
+        return
+    }
+    knowledgeOpen.value = !knowledgeOpen.value
 }
 
 watch(() => route.params.modelId, loadModel, { immediate: true })
@@ -195,6 +214,7 @@ const {
     canvasAreaRef,
     infoLines,
     running,
+    explorationDone,
     followTarget,
     recordedTrails,
     updateParam,
@@ -255,37 +275,6 @@ const {
     margin-top: 3px;
     color: var(--text);
     font-size: 20px;
-}
-
-.parameter-trigger {
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-    border: 1px solid color-mix(in srgb, var(--border) 82%, var(--text));
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-    color: var(--text);
-    box-shadow: 0 8px 24px rgba(20, 28, 34, 0.1);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    font-size: 12px;
-    font-weight: 700;
-    pointer-events: auto;
-}
-
-.parameter-trigger:hover,
-.parameter-trigger.active {
-    border-color: var(--primary);
-    background: var(--primary-light);
-    color: var(--primary);
-    transform: translateY(-1px);
-}
-
-.parameter-trigger img {
-    width: 16px;
-    height: 16px;
 }
 
 .canvas-area {
@@ -370,8 +359,78 @@ const {
     height: 16px;
 }
 
+.exploration-section {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.exploration-section.done {
+    border-color: color-mix(in srgb, #2ecc71 55%, var(--border));
+    background: color-mix(in srgb, #2ecc71 8%, var(--bg-card));
+}
+
+.exploration-badge {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.exploration-section.done .exploration-badge {
+    background: #2ecc71;
+    color: #fff;
+}
+
+.exploration-text {
+    min-width: 0;
+}
+
+.exploration-text small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.exploration-text p {
+    margin-top: 4px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.exploration-status {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--bg-card-hover);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.exploration-section.done .exploration-status {
+    background: color-mix(in srgb, #2ecc71 14%, transparent);
+    color: #2ecc71;
+}
+
 .content-section {
-    min-height: 420px;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 24px;
@@ -379,31 +438,93 @@ const {
     box-shadow: var(--shadow);
 }
 
-.content-tabs {
-    display: flex;
-    gap: 6px;
-    padding: 10px;
+.section-block {
+    padding: 20px 20px 22px;
     border-bottom: 1px solid var(--border);
 }
 
-.content-tabs button {
-    min-height: 40px;
-    padding: 0 18px;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 700;
+.section-block:last-child {
+    border-bottom: 0;
 }
 
-.content-tabs button.active {
-    background: var(--primary);
-    color: #fff;
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.section-heading small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.section-heading h2 {
+    margin-top: 2px;
+    color: var(--text);
+    font-size: 14px;
 }
 
 .tab-panel {
-    padding: 12px;
+    padding: 0;
+}
+
+.knowledge-toggle {
+    width: 100%;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+}
+
+.knowledge-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.knowledge-toggle-text small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.knowledge-toggle-text span {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.knowledge-toggle img {
+    width: 17px;
+    height: 17px;
+    color: var(--text-muted);
+}
+
+.knowledge-toggle.locked {
+    cursor: not-allowed;
+}
+
+.knowledge-toggle.locked .knowledge-toggle-text span {
+    color: var(--text-muted);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.knowledge-toggle.shake {
+    animation: shake 0.25s ease;
 }
 
 .data-empty {
@@ -435,7 +556,6 @@ const {
 }
 
 .data-empty button,
-.drawer-footer button,
 .model-not-found button {
     min-height: 42px;
     display: inline-flex;
@@ -451,36 +571,16 @@ const {
     font-weight: 700;
 }
 
-.parameter-drawer {
-    position: absolute;
-    top: 76px;
-    right: 18px;
-    z-index: 13;
-    width: min(320px, calc(100% - 36px));
-    max-height: min(520px, calc(100% - 154px));
+.parameter-section {
     display: flex;
     flex-direction: column;
+    gap: 14px;
+    padding: 20px 20px 22px;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--border) 74%, var(--text));
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--bg-card) 84%, transparent);
-    box-shadow: 0 12px 36px rgba(15, 23, 32, 0.16);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-}
-
-.drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 13px;
-    border-bottom: 1px solid var(--border);
-}
-
-.drawer-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
 }
 
 .parameter-live-dot {
@@ -492,41 +592,10 @@ const {
     box-shadow: 0 0 0 5px var(--primary-light);
 }
 
-.drawer-header small {
-    color: var(--primary);
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.12em;
-}
-
-.drawer-header h2 {
-    margin-top: 2px;
-    color: var(--text);
-    font-size: 14px;
-}
-
-.drawer-close {
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    background: transparent;
-}
-
-.drawer-close img {
-    width: 15px;
-    height: 15px;
-}
-
 .parameter-list {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow-y: auto;
-    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
 }
 
 .parameter-item {
@@ -592,22 +661,6 @@ const {
     font-size: 9px;
 }
 
-.drawer-footer {
-    padding: 9px 10px 10px;
-    border-top: 1px solid var(--border);
-}
-
-.drawer-footer button {
-    width: 100%;
-    min-height: 36px;
-    background: transparent;
-    color: var(--primary);
-}
-.drawer-footer img {
-    width: 15px;
-    height: 15px;
-}
-
 .model-not-found {
     min-height: calc(100svh - var(--nav-height) - 24px);
     display: flex;
@@ -637,24 +690,6 @@ const {
     color: var(--text-secondary);
 }
 
-.drawer-fade-enter-active,
-.drawer-fade-leave-active,
-.parameter-slide-enter-active,
-.parameter-slide-leave-active {
-    transition: opacity 0.24s ease, transform 0.3s var(--ease-out);
-}
-
-.drawer-fade-enter-from,
-.drawer-fade-leave-to {
-    opacity: 0;
-}
-
-.parameter-slide-enter-from,
-.parameter-slide-leave-to {
-    opacity: 0;
-    transform: translateX(28px);
-}
-
 .is-focused .simulation-stage,
 .is-focused .canvas-area {
     height: calc(100svh - var(--nav-height) - 24px);
@@ -679,12 +714,6 @@ const {
         display: none;
     }
 
-    .parameter-trigger {
-        width: 42px;
-        padding: 0;
-        font-size: 0;
-    }
-
     .canvas-area {
         height: calc(100svh - var(--nav-height) - 12px);
         min-height: 520px;
@@ -693,28 +722,30 @@ const {
 
     .canvas-controls {
         bottom: 12px;
+        width: 90%;
         max-width: calc(100% - 20px);
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .control-button {
-        width: 40px;
-        padding: 0;
-    }
-
-    .control-button span {
-        display: none;
+        min-height: 38px;
+        padding: 0 9px;
+        font-size: 10px;
     }
 
     .control-button.primary {
-        min-width: 46px;
+        min-width: 60px;
     }
 
-    .content-section {
+    .content-section,
+    .parameter-section {
         border-radius: 18px;
     }
 
-    .tab-panel {
-        padding: 7px;
+    .section-block,
+    .parameter-section {
+        padding: 16px 14px 18px;
     }
 
     .data-empty {
@@ -722,21 +753,6 @@ const {
         grid-template-columns: 1fr;
         justify-items: center;
         text-align: center;
-    }
-
-    .parameter-drawer {
-        top: auto;
-        right: 6px;
-        bottom: 6px;
-        left: 6px;
-        width: auto;
-        max-height: min(78svh, 720px);
-        border-radius: 24px 24px 18px 18px;
-    }
-
-    .parameter-slide-enter-from,
-    .parameter-slide-leave-to {
-        transform: translateY(28px);
     }
 }
 </style>

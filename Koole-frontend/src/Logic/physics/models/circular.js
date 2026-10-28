@@ -25,6 +25,11 @@ export default {
 
 > 红色箭头指向圆心（向心力），橙色箭头沿切线（速度），始终垂直——这个几何关系很基础。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="12" x2="8" y2="8" stroke="red"/></svg>`,
+    exploration: {
+      task: "改变半径和角速度，观察小球的运动——它的速度方向一直在变，试着说说向心加速度和角速度、半径的关系。",
+      hint: "把角速度调大一倍，注意观察速度方向转得有多快。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "radius", label: "轨道半径 (m)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "omega", label: "角速度 (rad/s)", value: 2, min: 0.5, max: 6, step: 0.1 },

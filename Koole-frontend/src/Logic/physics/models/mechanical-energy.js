@@ -21,6 +21,11 @@ export default {
 
 > 把摩擦系数调大，小球到达底端时速度会变小，机械能损失会更明显。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18"/><path d="M5 17L19 7"/><circle cx="8" cy="14" r="2"/><path d="M15 5v8"/><path d="M12 10l3 3 3-3"/></svg>`,
+    exploration: {
+      task: "把摩擦从 0 慢慢调大，比较滑到底端时的速度——少掉的能量去哪了？",
+      hint: "对比 μ=0 和 μ 较大时小球到坡底的速度和机械能。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "mass", label: "质量 m (kg)", value: 1, min: 0.2, max: 5, step: 0.1 },
       { key: "height", label: "斜面高度 h (m)", value: 5, min: 1, max: 10, step: 0.5 },

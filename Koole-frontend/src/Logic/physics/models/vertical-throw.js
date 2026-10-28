@@ -26,6 +26,11 @@ export default {
 
 > 试试不同初速度——高度增长比速度增长快得多，平方关系的威力。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="4"/><path d="M8 8l4-4 4 4"/><circle cx="12" cy="16" r="2"/></svg>`,
+    exploration: {
+      task: "改变初速度，观察上升和下落两段，试试看是不是完全对称的？",
+      hint: "注意小球到达最高点的时间，和从最高点落回原位置的时间。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "initialVelocity", label: "初速度 (m/s)", value: 15, min: 5, max: 40, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },

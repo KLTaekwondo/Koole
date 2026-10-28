@@ -20,6 +20,11 @@ export default {
 
 > 把速度调大，观察小车跑得更快，同时 $s$-$t$ 图像变得更陡。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="14" height="6" rx="1"/><circle cx="7" cy="18" r="2"/><circle cx="15" cy="18" r="2"/><path d="M17 13h4"/><path d="M3 8h10"/></svg>`,
+    exploration: {
+      task: "改变速度，比较相同时间内走过的路程，路程和速度是什么关系？",
+      hint: "速度调大一倍，同样时间内的路程是不是也变大？",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "speed", label: "速度 v (m/s)", value: 4, min: 0.5, max: 12, step: 0.5 },
       { key: "duration", label: "运动时间 (s)", value: 8, min: 2, max: 20, step: 1 },

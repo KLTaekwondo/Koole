@@ -40,11 +40,11 @@
                     </div>
                     <div class="mode-top">
                         <span class="mode-index">01 / CLASSIC</span>
-                        <span class="mode-chip">6 个模型</span>
+                        <span class="mode-chip">{{ physicsCount }} 个模型</span>
                     </div>
                     <div class="mode-icon"><SvgIcon name="classic" :size="27" /></div>
                     <h3>经典模型</h3>
-                    <p>六大经典物理模型，参数实时调节，模拟曲线同步对比，附带知识点讲解。</p>
+                    <p>经典物理模型，参数实时调节，模拟曲线同步对比，附带知识点讲解。</p>
                     <ul class="mode-features">
                         <li>参数实时调节</li>
                         <li>曲线图表对比</li>

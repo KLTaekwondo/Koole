@@ -1,4 +1,6 @@
 // concave-lens 模型数据
+import { drawGrowingRay, imageReveal, clamp01, RAY_DURATION } from "./opticsAnim.js"
+
 export default {
     id: "concave-lens",
     level: "初中",
@@ -173,94 +175,34 @@ v = (f * u) / (u - f)
 
       if (p.showRays >= 0.5) {
         const t = s._t || 0
-        const segLen = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
-        const totalLen = (pts) => { let d = 0; for (let i = 1; i < pts.length; i++) d += segLen(pts[i - 1], pts[i]); return d }
-        const pointAt = (pts, ratio) => {
-          const target = ratio * totalLen(pts)
-          let d = 0
-          for (let i = 1; i < pts.length; i++) {
-            const seg = segLen(pts[i - 1], pts[i])
-            if (d + seg >= target) {
-              const local = (target - d) / seg
-              return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * local, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * local }
-            }
-            d += seg
-          }
-          return pts[pts.length - 1]
-        }
-        const drawArrow = (pts, color) => {
-          const len = totalLen(pts)
-          const count = Math.max(1, Math.floor(len / 120))
-          for (let i = 1; i <= count; i++) {
-            const ratio = i / (count + 1)
-            const p1 = pointAt(pts, Math.max(0, ratio - 0.02))
-            const p2 = pointAt(pts, ratio)
-            const dx = p2.x - p1.x, dy = p2.y - p1.y
-            const a = Math.atan2(dy, dx)
-            ctx.fillStyle = color
-            ctx.beginPath()
-            ctx.moveTo(p2.x, p2.y)
-            ctx.lineTo(p2.x - 7 * Math.cos(a - 0.4), p2.y - 7 * Math.sin(a - 0.4))
-            ctx.lineTo(p2.x - 7 * Math.cos(a + 0.4), p2.y - 7 * Math.sin(a + 0.4))
-            ctx.closePath()
-            ctx.fill()
-          }
-        }
-        const drawRayFull = (realPts, extPts, color, animDelay) => {
-          const progress = Math.min(1, Math.max(0, (t - animDelay) / 0.8))
-          ctx.strokeStyle = color
-          ctx.globalAlpha = 0.5
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          realPts.forEach((pt, i) => { const s2 = toScreen(pt.x, pt.y); if (i === 0) ctx.moveTo(s2.x, s2.y); else ctx.lineTo(s2.x, s2.y) })
-          ctx.stroke()
-          if (extPts && extPts.length > 0) {
-            ctx.globalAlpha = 0.25
-            ctx.setLineDash([4, 3])
-            ctx.beginPath()
-            extPts.forEach((pt, i) => { const s2 = toScreen(pt.x, pt.y); if (i === 0) ctx.moveTo(s2.x, s2.y); else ctx.lineTo(s2.x, s2.y) })
-            ctx.stroke()
-            ctx.setLineDash([])
-          }
-          const allPts = [...realPts, ...(extPts || [])]
-          if (progress > 0 && progress < 1) {
-            const pos = pointAt(allPts.map(p => toScreen(p.x, p.y)), progress)
-            ctx.fillStyle = color
-            ctx.globalAlpha = 0.9
-            ctx.beginPath()
-            ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.globalAlpha = 0.2
-            ctx.beginPath()
-            ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
-            ctx.fill()
-          }
-          ctx.globalAlpha = 1
-          drawArrow(allPts.map(p => toScreen(p.x, p.y)), color)
-        }
-
+        // 平行光线：到透镜后发散（虚线反向延长到虚像）
         const divergeX = 40
         const slope1 = h / f
         const divergeY = h + slope1 * divergeX
-        drawRayFull(
-          [{ x: objX, y: h }, { x: 0, y: h }, { x: divergeX, y: divergeY }],
-          [{ x: 0, y: h }, { x: -f, y: 0 }],
-          "#e74c3c", 0
-        )
+        drawGrowingRay(ctx,
+          [toScreen(objX, h), toScreen(0, h), toScreen(divergeX, divergeY)],
+          [toScreen(0, h), toScreen(v, imageH)],
+          clamp01((t - 0) / RAY_DURATION), { color: "#e74c3c" })
 
+        // 过光心直线：不偏折（虚线反向延长到虚像）
         const slope2 = -h / u
         const lineEndX = 40
         const lineEndY = slope2 * lineEndX
-        drawRayFull(
-          [{ x: objX, y: h }, { x: 0, y: 0 }, { x: lineEndX, y: lineEndY }],
-          null,
-          "#f39c12", 0.3
-        )
+        drawGrowingRay(ctx,
+          [toScreen(objX, h), toScreen(0, 0), toScreen(lineEndX, lineEndY)],
+          [toScreen(0, 0), toScreen(v, imageH)],
+          clamp01((t - 0.3) / RAY_DURATION), { color: "#f39c12" })
       }
 
+      // 成像淡入：光路到达像点后才出现
+      const t = s._t || 0
+      const raysOn = p.showRays >= 0.5
+      const revealT = 0.3 + RAY_DURATION
+      const imgAlpha = raysOn ? imageReveal(t, revealT) : 1
       const imgX = v
       const imgTop = toScreen(imgX, imageH)
       const imgBottom = toScreen(imgX, 0)
+      ctx.globalAlpha = imgAlpha
       ctx.strokeStyle = "rgba(46, 204, 113, 0.6)"
       ctx.lineWidth = 2
       ctx.setLineDash([6, 4])
@@ -281,6 +223,7 @@ v = (f * u) / (u - f)
       ctx.textAlign = "center"
       ctx.fillText("虚像", imgTop.x, imgTop.y - 8)
       ctx.fillText(`|v|=${absV.toFixed(1)}cm`, imgBottom.x, imgBottom.y + 16)
+      ctx.globalAlpha = 1
 
       ctx.textAlign = "left"
     },

@@ -12,10 +12,10 @@ export default {
 二力平衡的条件可以压成四个词：同体、等大、反向、共线。
 
 - 平衡条件：$F_1 = F_2$
-- 合力：$F_{合} = F_{右} - F_{左}$
-- 加速度：$a = \\frac{F_{合}}{m}$
+- 合力：$F_{\\text{合}} = F_{\\text{右}} - F_{\\text{左}}$
+- 加速度：$a = \\frac{F_{\\text{合}}}{m}$
 
-其中：$F_1$、$F_2$ 是作用在同一物体上的两个力，$F_{合}$ 是合力，$m$ 是物体质量，$a$ 是加速度。
+其中：$F_1$、$F_2$ 是作用在同一物体上的两个力，$F_{\\text{合}}$ 是合力，$m$ 是物体质量，$a$ 是加速度。
 
 这里最容易混的是“平衡力”和“相互作用力”。平衡力作用在同一个物体上；相互作用力作用在两个不同物体上。只要盯住“是不是同一个物体”，就不容易错。
 
@@ -23,6 +23,11 @@ export default {
 
 > 把左右拉力调成一样，物体不加速；只要差一点，速度就会慢慢变出来。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 12H3"/><path d="M3 12l3-3"/><path d="M3 12l3 3"/><path d="M15 12h6"/><path d="M21 12l-3-3"/><path d="M21 12l-3 3"/></svg>`,
+    exploration: {
+      task: "让左右拉力相等和不相等各试一次，观察物体动不动？",
+      hint: "左右相等时物体保持静止，不相等时向合力方向加速。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "leftForce", label: "左拉力 (N)", value: 8, min: 0, max: 20, step: 0.5 },
       { key: "rightForce", label: "右拉力 (N)", value: 8, min: 0, max: 20, step: 0.5 },

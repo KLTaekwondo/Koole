@@ -24,6 +24,11 @@ export default {
 
 > 摆长变 4 倍，周期才变 2 倍——平方根关系，记住这个比例。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="18" y2="16"/><circle cx="18" cy="18" r="2"/><line x1="12" y1="2" x2="12" y2="20" stroke-dasharray="2 2" opacity="0.3"/></svg>`,
+    exploration: {
+      task: "改变摆长，观察摆动快慢怎么变？再改变起始角度，摆动的周期会变吗？",
+      hint: "摆长调大、调小各试一次，数一数相同时间内的摆动次数。",
+      check: (p, t, touched) => touched && t > 1,
+    },
     params: [
       { key: "length", label: "摆长 (m)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "initAngle", label: "初始角度 (°)", value: 30, min: 5, max: 60, step: 1 },
