@@ -69,7 +69,7 @@ function cellState(element) {
 .mini-table-wrap {
     display: grid;
     gap: 14px;
-    max-width: 1040px;
+    min-width: 0;
 }
 
 .mini-table {

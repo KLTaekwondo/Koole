@@ -89,18 +89,20 @@
                     <h2>它在周期表的哪一格？</h2>
                     <p>{{ positionLead }}</p>
                 </header>
-                <MiniPeriodicTable :active="element" />
-                <div class="position-notes">
-                    <article>
-                        <h3>{{ categoryLabel(element) }}</h3>
-                        <p>{{ categoryFact(element).summary }}。</p>
-                        <p>{{ categoryFact(element).detail }}</p>
-                    </article>
-                    <article>
-                        <h3>{{ element.block }} 区 · {{ groupDisplay }}</h3>
-                        <p>{{ blockFact(element) }}</p>
-                        <p>{{ phaseFact(element) }}。</p>
-                    </article>
+                <div class="position-layout">
+                    <MiniPeriodicTable :active="element" />
+                    <div class="position-notes">
+                        <article>
+                            <h3>{{ categoryLabel(element) }}</h3>
+                            <p>{{ categoryFact(element).summary }}。</p>
+                            <p>{{ categoryFact(element).detail }}</p>
+                        </article>
+                        <article>
+                            <h3>{{ element.block }} 区 · {{ groupDisplay }}</h3>
+                            <p>{{ blockFact(element) }}</p>
+                            <p>{{ phaseFact(element) }}。</p>
+                        </article>
+                    </div>
                 </div>
             </section>
 
@@ -931,11 +933,17 @@ onBeforeUnmount(() => {
 }
 
 /* ── 01 位置 ── */
+.position-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.8fr);
+    gap: 14px;
+    align-items: start;
+}
+
 .position-notes {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 12px;
-    margin-top: 22px;
 }
 
 .position-notes article {
@@ -1701,6 +1709,14 @@ onBeforeUnmount(() => {
     }
 
     .property-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .position-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .position-notes {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
