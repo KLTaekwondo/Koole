@@ -4,13 +4,13 @@
   <p align="center">
     学点东西，<strong>酷了</strong>！
     <br>
-    物理 · 编程 · 数学 —— 用互动的方式，理解那些曾经死记的知识。
+    物理 · 数学 —— 用互动的方式，理解那些曾经死记的知识。
   </p>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vue.js" alt="Vue 3">
-  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite" alt="Vite">
+  <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite" alt="Vite">
   <img src="https://img.shields.io/badge/Canvas-2D-FF6B35" alt="Canvas 2D">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
 </p>
@@ -19,24 +19,42 @@
 
 ## 📖 介绍
 
-**Koole**（酷了）是一个纯前端的物理交互模拟器，把物理公式变成看得见的动画。
+**Koole**（酷了）是一个纯前端的理科交互实验室，把公式变成看得见的动画。
 
 拖个滑块调参数，看小球怎么滚——比对着课本空想直观多了。
 
-目前包含 **30 个物理模型**，覆盖力学、声学、波、光学、电学：
+目前 **物理** 和 **数学** 两个学科已经开放，共 **37 个物理模型** + 3 个数学实验室 + 物理/数学关卡。
 
 <details>
-<summary>🧪 模型列表</summary>
+<summary>🧪 物理模型（37 个）</summary>
 
-| 分类 | 模型 |
+| 分类 | 数量 | 模型 |
+|------|------|------|
+| 力学 | 25 | 自由落体、匀速直线运动、二力平衡、平抛运动、斜向上抛、竖直上抛、圆周运动、斜面滑动、粗糙面滑动、空气阻力落体、单摆、弹簧振子、机械能转化、两球碰撞、碰撞变形、板块模型、连接体、传送带、杠杆、定滑轮、动滑轮、滑轮组、小船过河、力的合成、浮力 |
+| 光学 | 6 | 凸透镜成像、凹透镜成像、平面镜成像、光的折射、水中视深、水下灯光 |
+| 电学 | 3 | 串联电路、并联电路、欧姆定律与滑动变阻器 |
+| 声学 | 2 | 声波测距、声音三要素 |
+| 波 | 1 | 波的叠加 |
+
+</details>
+
+<details>
+<summary>🧮 数学实验室</summary>
+
+| 实验室 | 内容 |
 |------|------|
-| 力学 | 自由落体、平抛运动、竖直上抛、圆周运动、斜面滑动、单摆、斜向上抛、小船过河、弹簧振子、粗糙面滑动、空气阻力落体、碰撞变形、两球碰撞、连接体、传送带、板块模型、杠杆 |
-| 声学 | 回声测距 |
-| 波 | 弦波 |
-| 光学 | 凸透镜、凹透镜、光的折射、水中折射、水下灯光 |
-| 电学 | 串联电路、并联电路、力的合成 |
-| 滑轮 | 定滑轮、动滑轮、滑轮组 |
-| 浮力 | 浮力 |
+| 函数实验室 | 无限画布、多函数同时绘制、交点标注、相机与网格自适应 |
+| 立体几何实验室 | 三维几何体构建与旋转观察、求交分析 |
+| 概率钉板实验室 | 高尔顿板二项分布，实时统计分布曲线 |
+| 函数关卡 | 关卡数据 + 通关进度，边玩边练 |
+
+</details>
+
+<details>
+<summary>⚗️ 化学 / 生物</summary>
+
+化学：元素周期表（含元素详情页）已完成，化学实验室页面在建设中。
+生物：入口已就绪，内容在建设中。
 
 </details>
 
@@ -45,55 +63,93 @@
 ```bash
 cd Koole-frontend
 npm install
-npm run dev
+npm run dev      # 开发服务器，默认 http://localhost:5173
 ```
 
-前端默认在 `http://localhost:5173` 启动。无需后端，无需数据库。
+无需后端，无需数据库。
+
+常用命令：
+
+```bash
+npm run build          # 生产构建（输出到 dist/）
+npm run lint:content   # 内容规范校验：knowledge 格式、模型注册、编码
+npm run electron:dev   # 桌面端开发（Windows 上建议分开跑 vite 和 electron）
+npm run electron:build # 打包 Windows 桌面端
+```
 
 ## 🏗️ 项目结构
 
 ```
 Koole/
-└── Koole-frontend/               # Vue 3 纯前端应用
+└── Koole-frontend/
+    ├── scripts/
+    │   └── lint-content.mjs        # 内容规范校验（模型字段 / knowledge / 编码）
+    ├── electron/                   # Electron 桌面端壳
     └── src/
-        ├── assets/style/         # 主题变量（含深色模式）、基础样式
-        ├── components/           # NavBar, Toast, ConfirmDialog 等通用组件
-        ├── constants/
-        │   ├── models/           # 30 个物理模型（每个自包含数据+物理+渲染）
-        │   │   ├── free-fall.js
-        │   │   ├── projectile.js
-        │   │   ├── ...          # 每个模型 = UI 数据 + 物理引擎 + Canvas 渲染
-        │   │   └── index.js     # 汇总导出
-        │   ├── physicsModels.js  # 模型注册表
-        │   ├── physics.js        # 物理常量
-        │   └── modelTypes.js     # 沙盒物体类型
-        ├── stores/               # 主题、物理模拟状态
-        │   └── physics/          # 物理引擎（渲染器、相机、碰撞检测）
-        └── views/
-            ├── HomeIndex.vue     # 首页
-            ├── classic/          # 经典模型（布局/模拟/信息面板/轨迹对比）
-            └── SandBox.vue       # 沙盒模式
+        ├── Logic/
+        │   ├── physics/
+        │   │   ├── models/         # 37 个自包含物理模型（数据 + 物理 + 渲染）
+        │   │   ├── physicsModels.js# 模型注册表 + 分类
+        │   │   ├── core/           # Ball / Box / Ramp / Pendulum / SpringMass 等物类
+        │   │   ├── engine/         # 模拟循环、相机、渲染器、Canvas 管理
+        │   │   ├── sandbox/        # 沙盒世界、碰撞、物体类型、预设
+        │   │   └── interaction/    # 沙盒交互（Pointer 状态机：拖拽 / 平移 / 捏合）
+        │   └── math/               # 函数求值、采样、几何构建、求交、渲染
+        ├── Levels/                 # 物理关卡、数学关卡数据
+        ├── views/                  # 页面（按学科分目录）
+        │   ├── home / about
+        │   ├── physics/            # 实验室入口、经典模型、物理关卡、沙盒
+        │   ├── math/               # 函数、立体几何、概率、函数关卡
+        │   ├── chemistry/          # 化学实验室、元素周期表
+        │   └── 其他学科占位页
+        ├── components/             # NavBar、Toast、学科 Launch 卡片等
+        ├── constants/              # 学科、元素周期表、生物/化学模型数据
+        ├── stores/                 # 主题、Toast
+        ├── route/index.js          # 路由（hash 模式）
+        └── assets/                 # 主题变量、图标、图片
 ```
 
 ## 🛠️ 技术栈
 
 | 技术 | 用途 |
 | --- | --- |
-| [Vue 3](https://vuejs.org/) (Composition API) | UI 框架 |
-| [Vue Router](https://router.vuejs.org/) | 路由 |
+| [Vue 3](https://vuejs.org/)（Composition API） | UI 框架 |
+| [Vue Router](https://router.vuejs.org/) | 路由（hash 模式，方便桌面端） |
 | [Vite](https://vitejs.dev/) | 构建工具 |
+| Canvas 2D | 物理 / 数学模拟渲染（自研引擎，无 Box2D / Matter.js） |
+| [Three.js](https://threejs.org/) | 立体几何实验室 |
 | [ECharts](https://echarts.apache.org/) | 轨迹对比图表 |
-| [md-editor-v3](https://imzbf.github.io/md-editor-v3/) | Markdown 编辑/预览 |
-| Canvas 2D | 物理模拟渲染（自研引擎，无外部依赖） |
+| [md-editor-v3](https://imzbf.github.io/md-editor-v3/) | Markdown + LaTeX 知识内容渲染 |
+| [Electron](https://www.electronjs.org/) | 桌面端打包 |
 
 ## 🎯 特色
 
-- **纯 Canvas 自研物理引擎** — 没有 Box2D / Matter.js，每个模型手动推公式
-- **模型自包含** — 每个 `.js` 文件 = 数据 + 物理 + 渲染，改一个不影响其他
-- **深色/浅色主题** — 跟随系统偏好或手动切换
+- **纯 Canvas 自研物理引擎** — 每个模型手推公式，不依赖物理引擎库
+- **模型自包含** — 一个 `.js` 文件就是「参数 + 物理 + 渲染 + 知识 + 探索任务」，改一个不影响其他
+- **任务式探索** — 每个模型带一个探索任务（改什么参数、观察什么现象、怎么算完成）
+- **无限画布函数实验室** — 多函数同屏、拖动缩放、交点标注
+- **深色 / 浅色主题** — 跟随系统偏好或手动切换
 - **实时轨迹对比** — 同屏多条轨迹，直观感受参数变化
-- **交互式参数面板** — 滑块调节，实时反馈
-- **沙盒自由模式** — 自由放置物体，探索物理规律
+- **沙盒自由模式** — 鼠标 / 触摸 / 笔统一交互，自由放置物体、捏合缩放
+- **桌面端与移动端适配** — 触摸手势与 HiDPI 均已处理
+
+## 📐 模型文件格式
+
+每个物理模型导出一个对象，核心字段：
+
+```js
+export default {
+  id, name, category, level, desc,        // 元信息
+  knowledge: `## 模型名 ...`,              // 知识内容（Markdown + LaTeX）
+  exploration: { task, hint, check },     // 探索任务（check 返回是否完成）
+  params: [{ key, label, value, min, max, step }],
+  createState, step, isFinished,          // 物理逻辑
+  getInfoLines, chartDefs,                // 信息浮层与图表
+  drawExtra,                              // Canvas 渲染
+}
+```
+
+`knowledge` 的排版规则（标题、空行、中文标点、`其中：`、`> 参数观察`）由 `npm run lint:content` 自动校验。
 
 ## 📝 License
 

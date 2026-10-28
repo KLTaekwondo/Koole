@@ -12,7 +12,13 @@
 
 ## 项目概述
 
-初中/高中物理交互式模拟器，纯前端架构（Vue 3），无后端依赖。所有模型数据在 `Koole-frontend/src/constants/models/*.js`，渲染逻辑在 `modelRenderers.js`，物理参数在 `modelPhysics.js`，模型注册在 `physicsModels.js`。
+初中/高中理科交互式学习实验室，纯前端架构（Vue 3），无后端依赖。
+
+- **物理模型**：37 个，位于 `Koole-frontend/src/Logic/physics/models/*.js`，每个文件自包含「数据 + 物理逻辑 + Canvas 渲染」，汇总导出在 `Koole-frontend/src/Logic/physics/physicsModels.js`
+- **数学**：函数无限画布、立体几何、概率钉板、函数关卡，逻辑在 `Koole-frontend/src/Logic/math/`，关卡数据在 `Koole-frontend/src/Levels/`
+- **物理引擎**：通用模拟循环、相机、渲染器在 `Logic/physics/engine/`，物类在 `Logic/physics/core/`，沙盒在 `Logic/physics/sandbox/`
+- **视图**：`Koole-frontend/src/views/` 按学科分目录，路由在 `src/route/index.js`（hash 模式）
+- **写完后自检**：`cd Koole-frontend && npm run lint:content`（校验 knowledge 格式、模型注册、编码）
 
 ---
 
@@ -46,6 +52,15 @@
 - 公式用 `$...$`（行内）或 `$$...$$`（块级）或 `- $...$` 列表
 - 参数观察以 `>` 开头，格式 `> 内容`（`>` 后有一空格）
 - 变量说明中的逗号、分号用**中文标点**
+- 每个模型还应提供 `exploration` 字段（任务式引导）：
+
+```js
+exploration: {
+  task: "给学生的探索任务，一句话说清要动手做什么、观察什么",
+  hint: "操作提示：调哪个参数、怎么对比",
+  check: (p, t, touched) => touched && t > 1, // p=参数, t=模拟时间, touched=是否改过参数
+}
+```
 
 **内容检查清单**（写完后逐条检查）：
 - [ ] 概念、公式、单位和符号是否准确？
@@ -92,7 +107,7 @@
 
 ## 三、Canvas 渲染约定
 
-所有 renderer 在 `modelRenderers.js` 中，遵循以下约定：
+物理模型的渲染函数写在各自的模型文件里（`drawExtra` / 模型内部渲染），数学的渲染在 `Logic/math/renderer.js`，通用引擎渲染器在 `Logic/physics/engine/renderer.js`。统一遵循以下约定：
 
 ### 3.1 HiDPI 适配
 ```js
@@ -127,7 +142,7 @@ const bgColor = isDark ? '#1a1a2e' : '#fff'
 - 无 TypeScript
 - 注释用中文
 - 变量命名用驼峰（英文）
-- 渲染相关函数在 `modelRenderers.js`，物理逻辑在 `modelPhysics.js`
+- 模型的数据、物理、渲染都放在同一个模型文件里；只有跨模型复用的逻辑才抽到 `Logic/physics/` 下的公共模块
 
 ---
 
@@ -135,4 +150,4 @@ const bgColor = isDark ? '#1a1a2e' : '#fff'
 
 - 主分支：`main`
 - 当前工作分支：`pure-frontend`
-- 无后端依赖，所有数据在 constants 目录
+- 无后端依赖，所有数据在 `Koole-frontend/src/constants` 与 `Koole-frontend/src/Logic` 目录
