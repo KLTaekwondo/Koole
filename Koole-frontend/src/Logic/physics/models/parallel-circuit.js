@@ -21,6 +21,11 @@ export default {
 一条支路断了另一条照常工作，这就是家里电路并联的原因。一个灯坏了其他灯还亮。
 
 > 调 R1 和 R2 看电流怎么反比分配的，总电阻永远比最小的那个还小。`,
+    exploration: {
+      task: "把 R₁ 调到比 R₂ 小，看哪条支路电流大；再算算总电阻，是不是比最小的那个电阻还小？",
+      hint: "R₁ = 3 Ω、R₂ = 12 Ω 时对比 I₁、I₂，再看看总电阻的读数。",
+      check: (p, t, touched) => touched && p.R1 < p.R2,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="6" x2="2" y2="18"/><line x1="22" y1="6" x2="22" y2="18"/><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="18" x2="22" y2="18"/><rect x="7" y="4" width="4" height="4" rx="0.5"/><rect x="13" y="4" width="4" height="4" rx="0.5"/><rect x="7" y="16" width="4" height="4" rx="0.5"/><rect x="13" y="16" width="4" height="4" rx="0.5"/></svg>`,
     params: [
       { key: "voltage", label: "电源电压 U (V)", value: 6, min: 1.5, max: 12, step: 0.5 },

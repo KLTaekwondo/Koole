@@ -21,6 +21,11 @@ $$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
 三条特殊光线：平行光轴的折射反向延长线过焦点，过光心不变，射向焦点的折射平行光轴。
 
 > 凹透镜的像永远在物体同侧、焦点以内——记住这个就够了。`,
+    exploration: {
+      task: "凹透镜不管物距多少都成正立缩小的虚像——把物距从 60 拉到 3，验证一下这个结论。",
+      hint: "物距调大、调小各试一次，点开始播放后看像的大小和正倒有没有变化。",
+      check: (p, t) => p.objectDist <= 5 && t > 0.6,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M6 6l-2-2M6 18l-2 2M18 6l2-2M18 18l2 2"/></svg>`,
     params: [
       { key: "focalLength", label: "焦距 |f| (cm)", value: 10, min: 3, max: 20, step: 1 },

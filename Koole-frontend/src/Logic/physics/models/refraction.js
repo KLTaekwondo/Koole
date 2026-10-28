@@ -18,6 +18,14 @@ $$n_1 \\sin\\theta_1 = n_2 \\sin\\theta_2$$
 **全反射**：光从光密介质射向光疏介质时，入射角大到临界角 $\\theta_c = \\arcsin(n_2/n_1)$ 以后折射光消失，全部反射回来。光纤通信和全反射棱镜都是这个原理。
 
 > 调成水→空气（n₁=1.33, n₂=1.0），入射角拉到 49° 以上就能看到全反射。`,
+    exploration: {
+      task: "把介质 1 的折射率调到比介质 2 大（光密射向光疏），再把入射角一点点加大，临界角之后折射光会消失——这就是全反射。",
+      hint: "先把 n₁ 调到 1.5 以上、n₂ 保持 1.0，再加大入射角，注意折射光线什么时候不见。",
+      check: (p, t, touched) => {
+        if (!touched || p.n1 <= p.n2) return false
+        return p.incidentAngle * Math.PI / 180 >= Math.asin(p.n2 / p.n1)
+      },
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="3 2" opacity="0.4"/><line x1="4" y1="6" x2="12" y2="12"/><line x1="12" y1="12" x2="20" y2="18"/><rect x="0" y="12" width="24" height="12" fill="rgba(52,152,219,0.1)"/></svg>`,
     params: [
       { key: "incidentAngle", label: "入射角 (°)", value: 30, min: 0, max: 89, step: 1 },

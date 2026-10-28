@@ -21,6 +21,11 @@ export default {
 这里容易看错的是：滑动变阻器不是“自己产生电压”，它只是改变电路电阻，然后电流和分压一起变化。
 
 > 把滑片往右调，让接入电阻变大，观察电流表读数和灯泡亮度一起变小。`,
+    exploration: {
+      task: "闭合开关，把滑片从一头拖到另一头，盯住电流表读数和灯泡亮度——滑片位置和电流是什么关系？",
+      hint: "先看滑片在 0% 时的电流，再慢慢拉到 100%，注意电流是不是单调变小。",
+      check: (p, t, touched) => touched && p.switchOn === 1 && p.sliderPercent >= 90,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4"/><path d="M17 12h4"/><path d="M7 12l2-4 3 8 3-8 2 4"/><path d="M10 6l7 10"/><circle cx="17" cy="16" r="1"/></svg>`,
     params: [
       { key: "voltage", label: "电源电压 U (V)", value: 6, min: 1.5, max: 12, step: 0.5 },

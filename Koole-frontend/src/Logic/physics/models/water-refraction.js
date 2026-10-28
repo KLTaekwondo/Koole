@@ -20,6 +20,11 @@ $$d' = d \\cdot \\frac{n_2 \\cos \\theta_2}{n_1 \\cos \\theta_1}$$
 垂直看的时候公式简化为 $d' \\approx d / n_1$——水的折射率 1.33 的话视深只有实深的七成五。实际生活里游泳池底看着比实际浅就是这个原因，看着水只到腰跳下去可能淹过头。
 
 > 拖拽滑块调整观察角和水的深度，看看视深怎么变。`,
+    exploration: {
+      task: "先垂直看（观察角接近 0°），再慢慢加大观察角，盯住视深数值——斜着看时视深怎么变？",
+      hint: "观察角调到 65° 以上，对比垂直看时 d' ≈ d/n₁ 的结论。",
+      check: (p, t, touched) => touched && p.viewAngle >= 65,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="10" width="20" height="12" fill="rgba(52,152,219,0.2)" stroke="rgba(52,152,219,0.5)"/><line x1="8" y1="8" x2="14" y2="16" stroke="#e74c3c" stroke-width="1.5"/><line x1="14" y1="16" x2="19" y2="10" stroke="#e74c3c" stroke-width="1.5"/><line x1="14" y1="16" x2="14" y2="6" stroke-dasharray="3 2" opacity="0.4"/><circle cx="8" cy="6" r="2" fill="#e74c3c"/><polygon points="19,10 21,11 20,8" fill="#e74c3c"/></svg>`,
     params: [
       { key: "depth", label: "实深 (cm)", value: 100, min: 30, max: 250, step: 1 },

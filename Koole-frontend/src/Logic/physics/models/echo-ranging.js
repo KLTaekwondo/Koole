@@ -21,6 +21,11 @@ export default {
 应用：声呐测海深、倒车雷达、蝙蝠捕食。
 
 > 看波的路径：发声→到墙→反射→回来。计时器记录的是总时间，所以测距要除以 2；车在动时还要加上车速那一份。`,
+    exploration: {
+      task: "让小车动起来（车速调到 20 m/s 以上），看回声返回时间变长还是变短，测出的距离和墙的真实距离差多少？",
+      hint: "车速 0 和 20 m/s 各测一次，对比回声总时间和算出的距离。",
+      check: (p, t, touched) => touched && p.v0 >= 20,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="8" height="6" rx="1"/><line x1="14" y1="4" x2="14" y2="20"/><path d="M18 8 Q22 12 18 16" stroke-dasharray="2 2"/><circle cx="5" cy="10" r="1" fill="currentColor"/></svg>`,
     params: [
       { key: "wallDist", label: "墙的距离 (m)", value: 170, min: 20, max: 1000, step: 10 },

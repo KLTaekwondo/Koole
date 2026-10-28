@@ -20,6 +20,11 @@ export default {
 容易搞混的地方：过河时间只看垂直河岸的速度分量，水速完全不影响过河时间！最短时间和最短路径是两回事，策略完全不同。船速 ≤ 水速时就没法垂直过河了。
 
 > 偏角调成负值（偏向上游），船的路径变直——这就是最短路径策略。`,
+    exploration: {
+      task: "把船速调到比水速小（比如船速 2、水速 6），还能垂直到达正对岸吗？",
+      hint: "固定船速，把水速一路调大，看船的路径什么时候开始明显往下游偏。",
+      check: (p, t, touched) => touched && p.boatSpeed <= p.currentSpeed,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/><polygon points="10 18 14 18 12 12"/><path d="M6 13 Q9 11 12 13 Q15 15 18 13" opacity="0.35" stroke-width="1.5"/></svg>`,
     params: [
       { key: "riverWidth", label: "河宽 (m)", value: 30, min: 8, max: 60, step: 1 },

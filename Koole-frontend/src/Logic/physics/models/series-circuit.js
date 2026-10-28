@@ -25,6 +25,11 @@ export default {
 圣诞灯串就是串联——一个灯坏了整串全灭，因为断路了。
 
 > 调 R1 和 R2 的比值，看电压怎么按比例分配的。`,
+    exploration: {
+      task: "把 R₁ 调到比 R₂ 大，看两个电阻上的电压谁多；再反过来调，验证“电阻大的分压多”。",
+      hint: "R₁ 和 R₂ 各取一组对比（比如 10 Ω 与 3 Ω），看 U₁、U₂ 的数值。",
+      check: (p, t, touched) => touched && p.R1 > p.R2,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="6" height="4" rx="0.5"/><rect x="14" y="10" width="6" height="4" rx="0.5"/><line x1="10" y1="12" x2="14" y2="12"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="2" y1="8" x2="2" y2="16"/><line x1="22" y1="8" x2="22" y2="16"/></svg>`,
     params: [
       { key: "voltage", label: "电源电压 U (V)", value: 6, min: 1.5, max: 12, step: 0.5 },

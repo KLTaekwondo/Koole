@@ -9,7 +9,14 @@ export default {
 
 轴随物体一起动的滑轮，本质是动力臂为阻力臂 2 倍的杠杆。
 
-省一半力 $F = \\frac{mg}{2}$（$F$ 是拉力，$m$ 是质量，$g$ 是重力加速度），但费一倍距离 $s_{\\text{拉}} = 2s_{\\text{物}}$（$s_{\\text{拉}}$ 是拉绳距离，$s_{\\text{物}}$ 是物体上升距离），不能改变方向。省力的代价是费距离——能量守恒，没有免费的午餐。
+省一半力，但费一倍距离，不能改变方向。
+
+- $F = \\frac{mg}{2}$
+- $s_{\\text{拉}} = 2s_{\\text{物}}$
+
+其中：$F$ 是拉力，$m$ 是质量，$g$ 是重力加速度，$s_{\\text{拉}}$ 是拉绳距离，$s_{\\text{物}}$ 是物体上升距离。
+
+省力的代价是费距离——能量守恒，没有免费的午餐。
 
 > 改变质量，拉力始终是重力的一半——两段绳子分担了重量。`,
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="16" y1="4" x2="16" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/></svg>`,

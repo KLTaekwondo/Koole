@@ -18,6 +18,11 @@ export default {
 光纤通信就是利用全反射——光在光纤里不断全反射，几乎无损失地传播很远。
 
 > 光源越深，水面光斑越大——因为临界角光线到达水面时水平位移更大。`,
+    exploration: {
+      task: "把水的折射率从小往大调，看水面亮斑和临界角怎么变？再把水深调深，亮斑会不会变大？",
+      hint: "折射率 1.1 和 1.9 各看一次，再试试水深 30 cm 和 300 cm 的差别。",
+      check: (p, t, touched) => touched && (p.refractiveIndex >= 1.6 || p.depth >= 260),
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="0" y="8" width="24" height="16" fill="rgba(52,152,219,0.15)"/><line x1="12" y1="20" x2="6" y2="8" stroke="#f1c40f" stroke-width="1.5"/><line x1="12" y1="20" x2="12" y2="8" stroke="#f1c40f" stroke-width="1.5"/><line x1="12" y1="20" x2="18" y2="8" stroke="#f1c40f" stroke-width="1.5"/><circle cx="12" cy="20" r="2" fill="#f1c40f"/></svg>`,
     params: [
       { key: "depth", label: "水深 (cm)", value: 120, min: 30, max: 300, step: 5 },

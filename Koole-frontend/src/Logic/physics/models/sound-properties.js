@@ -20,6 +20,11 @@ export default {
 这里容易混的是“响度”和“音调”。响度说的是声音大不大，主要看振幅；音调说的是声音高不高，主要看频率。
 
 > 先只调频率，再只调振幅，对比波形变化，两个概念就分开了。`,
+    exploration: {
+      task: "先只调频率、再把振幅调小，分别看波形变化——音调对应哪个参数，响度对应哪个？",
+      hint: "频率拉到最大看波峰疏密，振幅拉到最小看波形高矮。",
+      check: (p, t, touched) => touched && p.frequency >= 9 && p.amplitude <= 0.4,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 8 0"/><path d="M4 19h16"/></svg>`,
     params: [
       { key: "frequency", label: "频率 f (Hz)", value: 4, min: 1, max: 12, step: 0.5 },

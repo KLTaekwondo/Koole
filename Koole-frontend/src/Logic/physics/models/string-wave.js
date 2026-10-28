@@ -22,6 +22,11 @@ export default {
 干涉条件：频率相同 + 相位差恒定 + 振动方向相同 → 相干波。
 
 > 调相位差看看：同相时形成驻波，反相时波节位置互换——挺神奇的。`,
+    exploration: {
+      task: "把两列波的相位差从 0° 调到 180°，观察驻波波节的位置怎么移动。",
+      hint: "相位差 0°、90°、180° 各看一次，注意波节出现在哪里。",
+      check: (p, t, touched) => touched && Math.abs(p.phaseL - p.phaseR) >= 150,
+    },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 6 8 12 Q11 18 14 12" stroke="#e74c3c"/><path d="M22 12 Q19 6 16 12 Q13 18 10 12" stroke="#3498db"/><path d="M2 12 Q5 6 8 12 Q11 18 14 12 Q17 6 20 12 Q23 18 26 12" stroke="#2ecc71" stroke-width="2.5"/></svg>`,
     params: [
       { key: "waveCount", label: "弦上波数", value: 3, min: 1, max: 6, step: 0.5 },
