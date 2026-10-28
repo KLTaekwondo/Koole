@@ -1240,9 +1240,10 @@ onBeforeUnmount(() => {
 .discovery-year {
     color: var(--element);
     font-family: var(--mono);
-    font-size: 52px;
+    font-size: clamp(24px, 3.2vw, 40px);
     font-weight: 800;
-    line-height: 1;
+    line-height: 1.05;
+    white-space: nowrap;
 }
 
 .discovery-layout h3 {
@@ -1652,7 +1653,7 @@ onBeforeUnmount(() => {
     }
 
     .discovery-year {
-        font-size: 42px;
+        font-size: 32px;
     }
 
     .application-grid,
