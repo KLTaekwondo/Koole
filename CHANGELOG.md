@@ -1,5 +1,26 @@
 # 更新日志
 
+## 1.2.0 — 2026-10-28
+
+### 性能（首屏）
+
+- **路由级懒加载**：除首页外所有页面（物理实验室 / 经典模型 / 沙盒 / 数学三件套 / 化学 / 元素周期表 / 其他学科）改为 `() => import()` 按需加载。
+  首页 JS 从 **2,537 kB（gzip 815 kB）降到 137.7 kB（gzip 51.9 kB）**，减少约 94%。
+- **首页 Three.js 场景拆包**：原子背景抽成异步组件 `HomeScene.vue`，首屏先出文字与卡片，WebGL 场景随后补上；场景加载失败不影响首页可用。
+- **首页数据瘦身**：不再 `import PHYSICS_MODELS`（会把 37 个模型的知识文本全打进首屏），改为只读 `constants/siteStats.js` 里的数量常量，并由 `lint:content` 校验它与注册表一致。
+- **第三方库分包**：`vendor-three`（582 kB）、`vendor-echarts`（1.1 MB）、`preview`/md-editor（176 kB）都只在对应页面加载；ECharts 保持 `import()` 按需拉取。
+- **经典模型页对比面板**改为异步组件，ECharts 只在「有轨迹记录 + 展开对比」后才需要。
+
+### 新增
+
+- **演示型模型自动播放**：凸透镜、凹透镜、平面镜、声波测距标记 `autoPlay`，进页面自动播放、改参数即重播光路 / 声波；平面镜的探索任务改为「真的调过参数」才算完成，避免自动播放把任务直接刷过去。
+- **路由加载进度条**：懒加载 chunk 下载期间顶部显示细进度条，120ms 延迟避免秒开页面闪一下。
+
+### 工具与文档
+
+- `npm run electron:dev` 改为 `scripts/electron-dev.mjs`：先起 vite，端口就绪后再启动 electron，退出时用 `taskkill /T` 连整棵进程树一起清理。原写法 `vite ... & electron .` 在 Windows cmd 里是顺序执行，electron 永远起不来。
+- `lint:content` 的编码检查从 `src` 扩展到整个前端仓库（含 `electron/`、`vite.config.js`、`index.html`），并新增「首页模型数与注册表一致」检查。
+
 ## 1.1.0 — 2026-10-28
 
 ### 新增

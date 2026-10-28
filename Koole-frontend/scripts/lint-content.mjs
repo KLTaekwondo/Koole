@@ -208,22 +208,27 @@ function checkModelFile(file, registeredIds) {
     return id
 }
 
-// ── 3. 编码：src 下的文本文件统一 UTF-8、不带 BOM ──
+// ── 3. 编码：前端仓库的文本文件统一 UTF-8、不带 BOM ──
 
 const TEXT_EXT = new Set([".js", ".mjs", ".vue", ".css", ".json", ".svg", ".html", ".md"])
+const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".vscode", ".idea"])
+const SKIP_FILES = new Set(["package-lock.json"])
 
 function walk(dir) {
     const out = []
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name)
-        if (entry.isDirectory()) { if (entry.name !== "node_modules") out.push(...walk(full)) }
-        else if (TEXT_EXT.has(path.extname(entry.name).toLowerCase())) out.push(full)
+        if (entry.isDirectory()) {
+            if (!SKIP_DIRS.has(entry.name)) out.push(...walk(full))
+        } else if (!SKIP_FILES.has(entry.name) && TEXT_EXT.has(path.extname(entry.name).toLowerCase())) {
+            out.push(full)
+        }
     }
     return out
 }
 
 function checkEncoding() {
-    const files = walk(SRC)
+    const files = walk(ROOT)
     for (const f of files) {
         const buf = fs.readFileSync(f)
         if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
@@ -256,6 +261,16 @@ function main() {
         if (!importedFiles.has(f)) error(path.join(MODEL_DIR, f), "模型文件没有被 physicsModels.js 注册")
     }
 
+    // 首页统计里的模型数量必须与注册表一致（首页为了首屏包体只引一个数字常量）
+    const statsFile = path.join(SRC, "constants", "siteStats.js")
+    const statsText = readText(statsFile) || ""
+    const declared = Number((statsText.match(/PHYSICS_MODEL_COUNT\s*=\s*(\d+)/) || [])[1])
+    if (!Number.isFinite(declared)) {
+        error(statsFile, "缺少 PHYSICS_MODEL_COUNT 常量")
+    } else if (declared !== files.length) {
+        error(statsFile, `PHYSICS_MODEL_COUNT = ${declared}，但注册表里有 ${files.length} 个模型`)
+    }
+
     // ── 输出 ──
     const srcCount = checkEncoding()
     const okCount = files.length
@@ -266,10 +281,10 @@ function main() {
     if (errors.length) {
         console.log(`\n✗  ${errors.length} 个错误：`)
         for (const e of errors) console.log("   " + e)
-        console.log(`\n共检查 ${okCount} 个模型、${srcCount} 个源文件，未通过。`)
+        console.log(`\n共检查 ${okCount} 个模型、${srcCount} 个文本文件，未通过。`)
         process.exit(1)
     }
-    console.log(`\n✓ 内容校验通过：${okCount} 个物理模型、${srcCount} 个源文件，knowledge 格式 / 注册表 / 编码均正常。`)
+    console.log(`\n✓ 内容校验通过：${okCount} 个物理模型、${srcCount} 个文本文件，knowledge 格式 / 注册表 / 首页统计 / 编码均正常。`)
     if (warnings.length) console.log(`  （警告 ${warnings.length} 条，不影响结果）`)
 }
 

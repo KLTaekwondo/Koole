@@ -71,9 +71,11 @@ npm run dev      # 开发服务器，默认 http://localhost:5173
 常用命令：
 
 ```bash
+npm run dev            # 开发服务器，默认 http://localhost:5173
 npm run build          # 生产构建（输出到 dist/）
-npm run lint:content   # 内容规范校验：knowledge 格式、模型注册、编码
-npm run electron:dev   # 桌面端开发（Windows 上建议分开跑 vite 和 electron）
+npm run preview        # 预览构建产物
+npm run lint:content   # 内容规范校验：knowledge 格式、模型注册、首页统计、编码
+npm run electron:dev   # 桌面端开发：脚本先起 vite，就绪后自动拉起 electron
 npm run electron:build # 打包 Windows 桌面端
 ```
 
@@ -83,7 +85,8 @@ npm run electron:build # 打包 Windows 桌面端
 Koole/
 └── Koole-frontend/
     ├── scripts/
-    │   └── lint-content.mjs        # 内容规范校验（模型字段 / knowledge / 编码）
+    │   ├── lint-content.mjs        # 内容规范校验（模型字段 / knowledge / 编码 / 首页统计）
+    │   └── electron-dev.mjs        # 桌面端开发编排（vite 就绪后拉起 electron）
     ├── electron/                   # Electron 桌面端壳
     └── src/
         ├── Logic/
@@ -127,6 +130,7 @@ Koole/
 - **纯 Canvas 自研物理引擎** — 每个模型手推公式，不依赖物理引擎库
 - **模型自包含** — 一个 `.js` 文件就是「参数 + 物理 + 渲染 + 知识 + 探索任务」，改一个不影响其他
 - **任务式探索** — 每个模型带一个探索任务（改什么参数、观察什么现象、怎么算完成）
+- **首屏瘦身** — 路由级懒加载 + 第三方库分包，首页 JS 约 138 kB；Three.js / ECharts / Markdown 只在对应页面加载
 - **无限画布函数实验室** — 多函数同屏、拖动缩放、交点标注
 - **深色 / 浅色主题** — 跟随系统偏好或手动切换
 - **实时轨迹对比** — 同屏多条轨迹，直观感受参数变化
