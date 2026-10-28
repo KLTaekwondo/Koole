@@ -1,185 +1,419 @@
 <template>
-    <div class="element-page">
-        <template v-if="element">
-            <header class="element-header">
-                <router-link to="/chem-lab/periodic-table" class="back-link">← 返回元素周期表</router-link>
-                <nav aria-label="相邻元素">
-                    <router-link v-if="previous" :to="`/chem-lab/periodic-table/${previous.symbol}`">← {{ previous.symbol }}</router-link>
-                    <router-link v-if="next" :to="`/chem-lab/periodic-table/${next.symbol}`">{{ next.symbol }} →</router-link>
-                </nav>
-            </header>
+    <div v-if="element" class="element-page" :style="{ '--element': color }">
+        <!-- ── 顶部：返回 + 相邻元素 ── -->
+        <header class="page-bar">
+            <router-link to="/chem-lab/periodic-table" class="back-link">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                元素周期表
+            </router-link>
+            <nav class="neighbor-nav" aria-label="相邻元素">
+                <router-link v-if="previous" :to="`/chem-lab/periodic-table/${previous.symbol}`" class="neighbor" :title="`上一个元素：${previous.name}`">
+                    <small>← 上一号</small>
+                    <strong>{{ previous.symbol }}</strong>
+                    <span>{{ previous.name }}</span>
+                </router-link>
+                <router-link v-if="next" :to="`/chem-lab/periodic-table/${next.symbol}`" class="neighbor" :title="`下一个元素：${next.name}`">
+                    <small>下一号 →</small>
+                    <strong>{{ next.symbol }}</strong>
+                    <span>{{ next.name }}</span>
+                </router-link>
+            </nav>
+        </header>
 
-            <section class="element-hero" :style="{ '--element': category.color }">
-                <div class="hero-copy">
-                    <div class="hero-kicker">
-                        <span class="category-chip">{{ category.label }}</span>
-                        <span>{{ phaseLabel }} · 第 {{ element.period }} 周期</span>
-                    </div>
-                    <h1>{{ element.name }} <em>{{ element.englishName }}</em></h1>
-                    <p class="hero-lede">{{ story?.intro || fallbackIntro }}</p>
-                    <div class="hero-actions">
-                        <button v-if="story" type="button" class="hero-action primary" @click="scrollToStory">从它的故事开始 ↓</button>
-                        <router-link v-else to="/chem-lab/periodic-table" class="hero-action primary">查看周期表位置 →</router-link>
-                        <span class="hero-location">{{ groupText }} · {{ element.block }} 区</span>
-                    </div>
+        <!-- ── HERO ── -->
+        <section class="hero">
+            <div class="hero-copy">
+                <div class="hero-kicker">
+                    <span class="category-chip">{{ categoryLabel(element) }}</span>
+                    <span>第 {{ element.period }} 周期</span>
+                    <i></i>
+                    <span>{{ groupDisplay }}</span>
+                    <i></i>
+                    <span>{{ element.block }} 区</span>
+                    <i></i>
+                    <span>{{ phaseLabel(element) }}</span>
                 </div>
+                <h1>
+                    {{ element.name }}
+                    <em>{{ element.englishName }}</em>
+                </h1>
+                <p class="hero-lede">{{ summary }}</p>
+                <div class="hero-actions">
+                    <button v-if="story" type="button" class="hero-action primary" @click="scrollTo('story')">从它的故事开始 ↓</button>
+                    <button v-else type="button" class="hero-action primary" @click="scrollTo('position')">看它在周期表的位置 ↓</button>
+                    <router-link to="/chem-lab/periodic-table" class="hero-action ghost">回到周期表</router-link>
+                </div>
+            </div>
 
-                <div class="atom-visual" :aria-label="`${element.name}的电子层示意图`">
-                    <div class="atom-orbits" aria-hidden="true">
-                        <span v-for="(count, index) in element.shells" :key="index" class="atom-orbit" :style="shellStyle(index)"><i v-for="electron in count" :key="electron" :style="electronStyle(index, electron, count)"></i></span>
-                    </div>
-                    <div class="atom-core"><strong>{{ element.symbol }}</strong><small>{{ element.atomicNumber }}</small></div>
-                    <span class="atom-caption">{{ electronTotal }} ELECTRONS · {{ element.shells.length }} SHELLS</span>
+            <div class="hero-atom" :aria-label="`${element.name}的电子层示意图`">
+                <span class="hero-symbol" aria-hidden="true">{{ element.symbol }}</span>
+                <div class="atom-orbits" aria-hidden="true">
+                    <span v-for="(count, index) in element.shells" :key="index" class="atom-orbit" :style="shellStyle(index)">
+                        <i v-for="electron in count" :key="electron" :style="electronStyle(index, electron, count)"></i>
+                    </span>
+                </div>
+                <div class="atom-core"><strong>{{ element.symbol }}</strong><small>{{ element.atomicNumber }}</small></div>
+                <span class="atom-caption">{{ totalElectrons }} ELECTRONS · {{ element.shells.length }} SHELLS</span>
+            </div>
+        </section>
+
+        <!-- ── 关键数字 ── -->
+        <div class="fact-strip">
+            <div>
+                <span>原子序数</span>
+                <strong>{{ element.atomicNumber }}</strong>
+            </div>
+            <div>
+                <span>相对原子质量</span>
+                <strong>{{ element.atomicMass }}</strong>
+                <small v-if="isRadioactiveMass(element)">方括号为最稳定同位素的质量数</small>
+            </div>
+            <div>
+                <span>最外层电子</span>
+                <strong>{{ element.valenceElectrons }}</strong>
+            </div>
+            <div>
+                <span>电子层数</span>
+                <strong>{{ element.shells.length }}</strong>
+            </div>
+        </div>
+
+        <main class="element-content">
+            <!-- ── 01 位置 ── -->
+            <section id="position" class="band">
+                <header class="band-heading">
+                    <span>01 / POSITION</span>
+                    <h2>它在周期表的哪一格？</h2>
+                    <p>{{ positionLead }}</p>
+                </header>
+                <MiniPeriodicTable :active="element" />
+                <div class="position-notes">
+                    <article>
+                        <h3>{{ categoryLabel(element) }}</h3>
+                        <p>{{ categoryFact(element).summary }}。</p>
+                        <p>{{ categoryFact(element).detail }}</p>
+                    </article>
+                    <article>
+                        <h3>{{ element.block }} 区 · {{ groupDisplay }}</h3>
+                        <p>{{ blockFact(element) }}</p>
+                        <p>{{ phaseFact(element) }}。</p>
+                    </article>
                 </div>
             </section>
 
-            <div class="element-stats" :style="{ '--element': category.color }">
-                <div><span>原子序数</span><strong>{{ element.atomicNumber }}</strong></div>
-                <div><span>相对原子质量</span><strong>{{ element.atomicMass }}</strong></div>
-                <div><span>价电子</span><strong>{{ element.valenceElectrons }}</strong></div>
-                <div><span>电子排布</span><strong>{{ element.electronConfiguration }}</strong></div>
-            </div>
+            <!-- ── 02 结构 ── -->
+            <section id="structure" class="band">
+                <header class="band-heading">
+                    <span>02 / STRUCTURE</span>
+                    <h2>电子是怎么排布的？</h2>
+                    <p>元素在周期表里的位置，本质上由它的电子层结构决定：第几周期 = 有几层电子，第几族 = 最外层或次外层有几个价电子。</p>
+                </header>
 
-            <main class="element-content">
-                <template v-if="story">
-                    <section id="story" class="story-section section-band" :style="{ '--element': category.color }">
-                        <div class="section-heading">
-                            <span>01 / DISCOVERY</span>
-                            <h2>人类是怎么认识它的？</h2>
+                <div class="structure-grid">
+                    <article class="panel shell-panel">
+                        <header class="panel-heading">
+                            <span>电子层分布</span>
+                            <strong>{{ totalElectrons }} 个电子</strong>
+                        </header>
+                        <div class="shell-rows">
+                            <div v-for="layer in shellLayersData" :key="layer.name" class="shell-row">
+                                <span class="shell-name">{{ layer.name }}</span>
+                                <div class="shell-bar"><i :style="{ width: `${layer.ratio * 100}%` }"></i></div>
+                                <b>{{ layer.count }}<small>/{{ layer.capacity }}</small></b>
+                            </div>
                         </div>
-                        <div class="discovery-layout">
-                            <div class="discovery-year">{{ story.discovery.year }}</div>
-                            <article>
-                                <h3>{{ story.discovery.title }}</h3>
-                                <p>{{ story.discovery.text }}</p>
-                                <p v-if="learning" class="story-narrative">{{ learning.narrative }}</p>
-                            </article>
-                            <aside><span>自然界中的它</span><p>{{ story.occurrence }}</p></aside>
-                        </div>
-                    </section>
+                        <p class="panel-note">第 n 层最多容纳 2n² 个电子（K 层 2、L 层 8、M 层 18…）。最外层电子通常直接决定它怎么参与化学反应。</p>
+                    </article>
 
-                    <section class="application-section section-band" :style="{ '--element': category.color }">
-                        <div class="section-heading">
-                            <span>02 / IN THE REAL WORLD</span>
-                            <h2>它如何进入我们的生活？</h2>
-                        </div>
-                        <div class="application-grid">
-                            <article v-for="(application, index) in story.applications" :key="application.title">
-                                <span>0{{ index + 1 }}</span>
-                                <h3>{{ application.title }}</h3>
-                                <p>{{ application.text }}</p>
-                            </article>
-                        </div>
-                    </section>
+                    <article class="panel">
+                        <header class="panel-heading">
+                            <span>电子层排布</span>
+                            <strong>{{ element.block }} 区</strong>
+                        </header>
+                        <p class="config-line">{{ element.shells.join(" · ") }}</p>
+                        <dl class="config-list">
+                            <div><dt>周期</dt><dd>第 {{ element.period }} 周期</dd></div>
+                            <div><dt>族</dt><dd>{{ groupDisplay }}</dd></div>
+                            <div><dt>分区</dt><dd>{{ element.block }} 区</dd></div>
+                            <div><dt>相态</dt><dd>{{ phaseLabel(element) }}</dd></div>
+                        </dl>
+                        <p class="panel-note">{{ blockFact(element) }}</p>
+                    </article>
 
-                    <section v-if="learning?.reactions?.length" class="reaction-section section-band" :style="{ '--element': category.color }">
-                        <div class="section-heading">
-                            <span>03 / WATCH THE REACTION</span>
-                            <h2>把现象写成化学语言</h2>
+                    <article class="panel accent-panel">
+                        <header class="panel-heading">
+                            <span>这一族的关键点</span>
+                            <strong>{{ categoryLabel(element) }}</strong>
+                        </header>
+                        <p class="accent-summary">{{ categoryFact(element).summary }}。</p>
+                        <p class="panel-note">{{ categoryFact(element).detail }}</p>
+                        <div class="accent-chips">
+                            <span v-for="peer in nearestPeers" :key="peer.symbol" class="peer-chip">
+                                <router-link :to="`/chem-lab/periodic-table/${peer.symbol}`">{{ peer.symbol }}</router-link>
+                                <small>{{ peer.name }}</small>
+                            </span>
                         </div>
-                        <div class="reaction-grid">
-                            <article v-for="(reaction, index) in learning.reactions" :key="reaction.equation" class="reaction-card">
-                                <header><span>REACTION / 0{{ index + 1 }}</span><small>{{ reaction.condition }}</small></header>
-                                <div class="equation">{{ reaction.equation }}</div>
-                                <dl>
-                                    <div><dt>观察现象</dt><dd>{{ reaction.phenomenon }}</dd></div>
-                                    <div><dt>它解释了什么</dt><dd>{{ reaction.meaning }}</dd></div>
-                                </dl>
-                                <p class="safety-note"><strong>安全提示</strong>{{ reaction.safety }}</p>
-                            </article>
-                        </div>
-                    </section>
-                </template>
+                    </article>
+                </div>
+            </section>
 
-                <section class="science-section section-band" :style="{ '--element': category.color }">
-                    <div class="section-heading">
-                        <span>{{ story ? "04" : "01" }} / WHY IT BEHAVES THIS WAY</span>
-                        <h2>再回到元素内部寻找答案</h2>
+            <!-- ── 03 性质 ── -->
+            <section id="properties" class="band">
+                <header class="band-heading">
+                    <span>03 / PROPERTIES</span>
+                    <h2>它的物理性质怎么样？</h2>
+                    <p>有可靠数据的性质会和同周期、同族里已录入的元素一起画成对比条，方便看出高低。</p>
+                </header>
+
+                <div v-if="hasPhysicalData" class="property-grid">
+                    <article v-for="prop in propertyCards" :key="prop.key" class="property-card">
+                        <header>
+                            <span>{{ prop.label }}</span>
+                            <strong>{{ prop.display || "暂无可靠数据" }}</strong>
+                        </header>
+                        <div v-if="prop.peers.length > 1" class="compare-chart">
+                            <div
+                                v-for="peer in prop.peers"
+                                :key="peer.symbol"
+                                class="compare-item"
+                                :class="{ active: peer.active }"
+                                :title="`${peer.name}：${peer.value}${prop.unit ? ` ${prop.unit}` : ''}`"
+                            >
+                                <div class="compare-track"><i :style="{ height: `${peer.height}%` }"></i></div>
+                                <small>{{ peer.symbol }}</small>
+                            </div>
+                        </div>
+                        <p v-else class="compare-note">同周期 / 同族暂无其他可比数据。</p>
+                    </article>
+                </div>
+
+                <div v-else class="empty-data">
+                    <h3>{{ element.name }}的熔沸点、密度、电负性还没有录入可靠数据</h3>
+                    <p>这些数值在不同教材和数据库里口径不一，宁可先空着也不写错。可以先看同周期、同族里已经有数据的元素：</p>
+                    <div v-if="peersWithData.length" class="peer-chips">
+                        <router-link v-for="peer in peersWithData" :key="peer.symbol" :to="`/chem-lab/periodic-table/${peer.symbol}`" class="peer-chip">
+                            {{ peer.symbol }}<small>{{ peer.name }}</small>
+                        </router-link>
                     </div>
-                    <div class="science-grid">
-                        <article class="science-panel shell-panel">
-                            <div class="panel-heading"><span>电子层结构</span><strong>{{ element.valenceElectrons }} 个价电子</strong></div>
-                            <div class="electron-stage" :aria-label="`${element.name}的电子层与电子数量`">
-                                <div class="atom-orbits" aria-hidden="true">
-                                    <span v-for="(count, index) in element.shells" :key="index" class="atom-orbit" :style="shellStyle(index)"><i v-for="electron in count" :key="electron" :style="electronStyle(index, electron, count)"></i></span>
-                                </div>
-                                <div class="atom-core"><strong>{{ element.symbol }}</strong><small>{{ element.atomicNumber }}</small></div>
-                            </div>
-                            <div class="shell-list">
-                                <div v-for="(count, index) in element.shells" :key="index" class="shell-row">
-                                    <span>{{ shellNames[index] || `第 ${index + 1} 层` }}</span>
-                                    <div class="shell-bar"><i :style="{ width: `${Math.min(count / shellCapacity(index) * 100, 100)}%` }"></i></div>
-                                    <b>{{ count }}</b>
-                                </div>
-                            </div>
-                            <p>最外层电子通常直接影响元素参与化学反应的方式。</p>
+                    <p v-else class="empty-data-note">这个元素附近暂时都没有录入物理数据。</p>
+                </div>
+            </section>
+
+            <!-- ── 04 邻居 ── -->
+            <section id="neighbors" class="band">
+                <header class="band-heading">
+                    <span>04 / NEIGHBORS</span>
+                    <h2>和它同一族、同一周期的元素</h2>
+                    <p>同一族的元素最外层电子数相同，化学性质相似；同一周期的元素电子层数相同，从左到右性质逐渐变化。</p>
+                </header>
+                <div class="neighbor-groups">
+                    <article>
+                        <h3>{{ groupPeersLabel(element) }}<small>{{ groupPeersData.length }} 个</small></h3>
+                        <div class="peer-chips">
+                            <router-link v-for="peer in groupPeersData" :key="peer.symbol" :to="`/chem-lab/periodic-table/${peer.symbol}`" class="peer-chip" :style="{ '--peer-color': peer.color }">
+                                {{ peer.symbol }}<small>{{ peer.name }}</small>
+                            </router-link>
+                        </div>
+                    </article>
+                    <article>
+                        <h3>第 {{ element.period }} 周期<small>{{ periodPeersData.length }} 个</small></h3>
+                        <div class="peer-chips">
+                            <router-link v-for="peer in periodPeersData" :key="peer.symbol" :to="`/chem-lab/periodic-table/${peer.symbol}`" class="peer-chip" :style="{ '--peer-color': peer.color }">
+                                {{ peer.symbol }}<small>{{ peer.name }}</small>
+                            </router-link>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- ── 手写故事（有内容时才出现） ── -->
+            <template v-if="story">
+                <section id="story" class="band">
+                    <header class="band-heading">
+                        <span>05 / DISCOVERY</span>
+                        <h2>人类是怎么认识它的？</h2>
+                    </header>
+                    <div class="discovery-layout">
+                        <div class="discovery-year">{{ story.discovery?.year }}</div>
+                        <article>
+                            <h3>{{ story.discovery?.title }}</h3>
+                            <p>{{ story.discovery?.text }}</p>
+                            <p v-if="story.narrative" class="story-narrative">{{ story.narrative }}</p>
                         </article>
-                        <article class="science-panel property-panel">
-                            <div class="panel-heading"><span>物理性质</span><strong>{{ phaseLabel }}</strong></div>
-                            <div class="property-grid">
-                                <div><span>熔点</span><strong>{{ measurement(element.meltingPoint, "°C") }}</strong></div>
-                                <div><span>沸点</span><strong>{{ measurement(element.boilingPoint, "°C") }}</strong></div>
-                                <div><span>密度</span><strong>{{ measurement(element.density, "g/cm³") }}</strong></div>
-                                <div><span>电负性</span><strong>{{ value(element.electronegativity) }}</strong></div>
-                            </div>
-                        </article>
-                        <article class="science-panel position-panel">
-                            <div class="panel-heading"><span>周期表坐标</span><strong>{{ category.label }}</strong></div>
-                            <div class="position-map"><span>{{ element.period }}<small>周期</small></span><b>×</b><span>{{ element.group ?? "—" }}<small>族</small></span></div>
-                            <dl><div><dt>区块</dt><dd>{{ element.block }} 区</dd></div><div><dt>电子排布</dt><dd>{{ element.electronConfiguration }}</dd></div></dl>
-                        </article>
+                        <aside>
+                            <span>自然界中的它</span>
+                            <p>{{ story.occurrence }}</p>
+                        </aside>
                     </div>
-                    <p class="data-note">缺少统一可靠测量的数据会明确显示“暂无可靠数据”。</p>
                 </section>
 
-                <section v-if="story" class="question-section" :style="{ '--element': category.color }">
+                <section v-if="story.applications?.length" class="band">
+                    <header class="band-heading">
+                        <span>06 / IN THE REAL WORLD</span>
+                        <h2>它如何进入我们的生活？</h2>
+                    </header>
+                    <div class="application-grid">
+                        <article v-for="(application, index) in story.applications" :key="application.title">
+                            <span>0{{ index + 1 }}</span>
+                            <h3>{{ application.title }}</h3>
+                            <p>{{ application.text }}</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section v-if="story.reactions?.length" class="band">
+                    <header class="band-heading">
+                        <span>07 / WATCH THE REACTION</span>
+                        <h2>把现象写成化学语言</h2>
+                    </header>
+                    <div class="reaction-grid">
+                        <article v-for="(reaction, index) in story.reactions" :key="reaction.equation" class="reaction-card">
+                            <header><span>REACTION / 0{{ index + 1 }}</span><small>{{ reaction.condition }}</small></header>
+                            <div class="equation">{{ reaction.equation }}</div>
+                            <dl>
+                                <div><dt>观察现象</dt><dd>{{ reaction.phenomenon }}</dd></div>
+                                <div><dt>它解释了什么</dt><dd>{{ reaction.meaning }}</dd></div>
+                            </dl>
+                            <p class="safety-note"><strong>安全提示</strong>{{ reaction.safety }}</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section v-if="story.question" class="question-band">
                     <span>带着一个问题离开</span>
                     <h2>{{ story.question }}</h2>
-                    <div><a :href="story.source.url" target="_blank" rel="noreferrer">资料参考：{{ story.source.label }} ↗</a><router-link to="/chem-lab/periodic-table">继续探索其他元素 →</router-link></div>
+                    <div>
+                        <a v-if="story.source?.url" :href="story.source.url" target="_blank" rel="noreferrer">资料参考：{{ story.source.label }} ↗</a>
+                        <router-link to="/chem-lab/periodic-table">继续探索其他元素 →</router-link>
+                    </div>
                 </section>
-                <section v-else class="coming-section">
-                    <span>ENCYCLOPEDIA IN PROGRESS</span>
-                    <h2>{{ element.name }}的故事正在整理中</h2>
-                    <p>当前仍可查看完整的结构与物理数据。百科内容将按每批 10 个元素持续补充。</p>
-                </section>
-            </main>
-        </template>
+            </template>
 
-        <div v-else class="missing"><h1>没有找到这个元素</h1><p>请检查元素符号，或返回周期表重新选择。</p><router-link to="/chem-lab/periodic-table">返回元素周期表</router-link></div>
+            <!-- ── 底部 ── -->
+            <footer class="page-footer">
+                <router-link to="/chem-lab/periodic-table" class="cta-button">回到周期表选下一个 →</router-link>
+                <div class="footer-neighbors">
+                    <router-link v-if="previous" :to="`/chem-lab/periodic-table/${previous.symbol}`">← {{ previous.name }}</router-link>
+                    <router-link v-if="next" :to="`/chem-lab/periodic-table/${next.symbol}`">{{ next.name }} →</router-link>
+                </div>
+                <p class="data-note">数据来自公开元素数据整理；缺少统一可靠测量的性质会明确显示「暂无可靠数据」。手写百科内容按批次补充。</p>
+            </footer>
+        </main>
+    </div>
+
+    <div v-else class="missing">
+        <h1>没有找到这个元素</h1>
+        <p>请检查元素符号，或返回周期表重新选择。</p>
+        <router-link to="/chem-lab/periodic-table">返回元素周期表</router-link>
     </div>
 </template>
 
 <script setup>
-import { computed } from "vue"
-import { useRoute } from "vue-router"
-import { PERIODIC_ELEMENTS, ELEMENT_CATEGORIES, ELEMENT_PHASES, getElementBySymbol } from "../../../constants/periodicElements.js"
+import { computed, onBeforeUnmount, onMounted, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import MiniPeriodicTable from "../../../components/MiniPeriodicTable.vue"
+import {
+    PERIODIC_ELEMENTS,
+    ELEMENT_CATEGORIES,
+    getElementBySymbol,
+} from "../../../constants/periodicElements.js"
 import { ELEMENT_CONTENT } from "../../../constants/elementContent.js"
+import {
+    PHYSICAL_PROPERTIES,
+    blockFact,
+    buildElementSummary,
+    categoryFact,
+    categoryLabel,
+    groupPeers,
+    groupPeersLabel,
+    isRadioactiveMass,
+    peersWithPhysicalData,
+    periodPeers,
+    phaseFact,
+    phaseLabel,
+    propertyPeers,
+    shellLayers,
+} from "../../../Logic/chemistry/elementFacts.js"
 
 const route = useRoute()
-const shellNames = ["K 层", "L 层", "M 层", "N 层", "O 层", "P 层", "Q 层"]
-const capacities = [2, 8, 18, 32, 32, 18, 8]
+const router = useRouter()
 
 const element = computed(() => getElementBySymbol(route.params.symbol))
-const category = computed(() => ELEMENT_CATEGORIES[element.value?.category] || ELEMENT_CATEGORIES.unknown)
-const phaseLabel = computed(() => ELEMENT_PHASES[element.value?.phase] || "未知")
-const previous = computed(() => element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber - 2] || null : null)
-const next = computed(() => element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber] || null : null)
-const story = computed(() => ELEMENT_CONTENT[element.value?.symbol] || null)
-const learning = story
-const electronTotal = computed(() => element.value?.shells.reduce((sum, count) => sum + count, 0) || 0)
-const groupText = computed(() => element.value?.group ? `第 ${element.value.group} 族` : "镧系或锕系")
-const fallbackIntro = computed(() => element.value ? `${element.value.name}位于第 ${element.value.period} 周期，属于${category.value.label}。从电子层结构开始，可以理解它在周期表中的位置与性质。` : "")
+const color = computed(() => (ELEMENT_CATEGORIES[element.value?.category] || ELEMENT_CATEGORIES.unknown).color)
+const story = computed(() => (element.value ? ELEMENT_CONTENT[element.value.symbol] || null : null))
+const previous = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber - 2] || null : null))
+const next = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber] || null : null))
 
-function value(input) {
-    return input === null || input === undefined || input === "" ? "暂无可靠数据" : input
+const summary = computed(() => buildElementSummary(element.value))
+const totalElectrons = computed(() => element.value?.shells.reduce((sum, count) => sum + count, 0) || 0)
+const groupDisplay = computed(() => {
+    const current = element.value
+    if (!current) return ""
+    if (current.group) return `第 ${current.group} 族`
+    return current.category === "actinide" ? "锕系" : "镧系"
+})
+const shellLayersData = computed(() => shellLayers(element.value))
+
+const positionLead = computed(() => {
+    const current = element.value
+    if (!current) return ""
+    if (!current.group) {
+        return `${current.name}属于${categoryLabel(current)}，在周期表里单独列在下方，通常用 57–71 或 89–103 的编号区间来定位。`
+    }
+    return `第 ${current.period} 周期第 ${current.group} 族，属于 ${current.block} 区。周期数告诉你有几层电子，族号告诉你有几个价电子（主族元素）。`
+})
+
+const propertyCards = computed(() => PHYSICAL_PROPERTIES.map(property => {
+    const current = element.value
+    const peers = propertyPeers(current, property.key)
+    const max = Math.max(...peers.map(peer => Math.abs(peer.value)), 0)
+    return {
+        ...property,
+        display: displayValue(current?.[property.key], property.unit),
+        peers: peers.map(peer => ({
+            ...peer,
+            height: max > 0 ? Math.max((Math.abs(peer.value) / max) * 100, 6) : 0,
+        })),
+    }
+}))
+
+const hasPhysicalData = computed(() => PHYSICAL_PROPERTIES.some(property => typeof element.value?.[property.key] === "number"))
+const peersWithData = computed(() => peersWithPhysicalData(element.value))
+
+const groupPeersData = computed(() => withColor(groupPeers(element.value).sort((a, b) => a.atomicNumber - b.atomicNumber)))
+const periodPeersData = computed(() => withColor(periodPeers(element.value).sort((a, b) => a.atomicNumber - b.atomicNumber)))
+
+// 「这一族的关键点」卡片里放最近的几个邻居，避免这一块太空
+const nearestPeers = computed(() => {
+    const current = element.value
+    if (!current) return []
+    const pool = groupPeers(current)
+    const source = pool.length ? pool : periodPeers(current)
+    return withColor(source
+        .sort((a, b) => Math.abs(a.atomicNumber - current.atomicNumber) - Math.abs(b.atomicNumber - current.atomicNumber))
+        .slice(0, 4))
+})
+
+function withColor(list) {
+    return list.map(item => ({ ...item, color: (ELEMENT_CATEGORIES[item.category] || ELEMENT_CATEGORIES.unknown).color }))
 }
 
-function measurement(input, unit) {
-    return input === null || input === undefined ? "暂无可靠数据" : `${input} ${unit}`
+function displayValue(input, unit) {
+    if (typeof input !== "number") return null
+    const rounded = Math.abs(input) >= 100 ? Math.round(input) : Number(input.toPrecision(4))
+    return unit ? `${rounded} ${unit}` : String(rounded)
 }
 
-function shellCapacity(index) {
-    return capacities[index] || 32
+function scrollTo(id) {
+    const target = document.getElementById(id)
+    if (!target) return
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    target.scrollIntoView({ behavior, block: "start" })
+}
+
+// ── 电子层动画（沿用原来的环 + 电子点思路，尺寸收敛一些） ──
+function orbitSize(index) {
+    return 52 + index * 40
 }
 
 function shellStyle(index) {
@@ -199,22 +433,32 @@ function electronStyle(index, electron, count) {
     return {
         left: `${50 + Math.sin(angle) * 50}%`,
         top: `${50 - Math.cos(angle) * 50}%`,
-        "--electron-size": `${count > 18 ? 5 : 7}px`,
-        "--electron-angle": `${angle}rad`,
+        "--electron-size": count > 18 ? 4 : 6,
         "--orbit-radius": `${size / 2}px`,
     }
 }
 
-function orbitSize(index) {
-    return 56 + index * 44
+// ── 键盘左右切换元素 ──
+function onKeydown(event) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+    const tag = event.target?.tagName
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
+    if (event.key === "ArrowLeft" && previous.value) router.push(`/chem-lab/periodic-table/${previous.value.symbol}`)
+    if (event.key === "ArrowRight" && next.value) router.push(`/chem-lab/periodic-table/${next.value.symbol}`)
 }
 
-function scrollToStory() {
-    const target = document.getElementById("story")
-    if (!target) return
-    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-    target.scrollIntoView({ behavior, block: "start" })
-}
+onMounted(() => window.addEventListener("keydown", onKeydown))
+
+// 浏览器标签页标题跟着元素走；离开页面时还原，避免标题停在某个元素上
+const baseTitle = document.title
+watch(element, current => {
+    document.title = current ? `${current.name}（${current.symbol}）· 元素周期表 · Koole` : baseTitle
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+    window.removeEventListener("keydown", onKeydown)
+    document.title = baseTitle
+})
 </script>
 
 <style scoped>
@@ -224,52 +468,100 @@ function scrollToStory() {
     color: var(--text);
 }
 
-.element-header {
+/* ── 顶部条 ── */
+.page-bar {
     min-height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
 }
 
-.back-link,
-.element-header nav a {
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 700;
     text-decoration: none;
 }
 
-.element-header nav {
+.back-link svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.back-link:hover {
+    color: var(--element);
+}
+
+.neighbor-nav {
     display: flex;
-    gap: 18px;
+    gap: 10px;
 }
 
-.back-link:hover,
-.element-header nav a:hover {
-    color: #2aa27f;
-}
-
-.element-hero {
-    position: relative;
-    min-height: 500px;
+.neighbor {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) 400px;
-    align-items: center;
-    gap: 48px;
-    overflow: hidden;
-    padding: 54px 58px;
-    border: 1px solid color-mix(in srgb, var(--element) 42%, var(--border));
-    border-radius: 24px;
-    background: linear-gradient(120deg, color-mix(in srgb, var(--element) 10%, var(--bg-card)) 0%, var(--bg-card) 62%);
+    grid-template-columns: auto;
+    justify-items: end;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    transition: var(--transition);
 }
 
-.element-hero::before {
+.neighbor small {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+.neighbor strong {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 14px;
+}
+
+.neighbor span {
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.neighbor:hover {
+    border-color: var(--element);
+    transform: translateY(-1px);
+}
+
+/* ── HERO ── */
+.hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) 380px;
+    align-items: center;
+    gap: 40px;
+    overflow: hidden;
+    padding: 52px 54px;
+    border: 1px solid color-mix(in srgb, var(--element) 40%, var(--border));
+    border-radius: 24px;
+    background: linear-gradient(120deg, color-mix(in srgb, var(--element) 11%, var(--bg-card)) 0%, var(--bg-card) 64%);
+}
+
+.hero::before {
     content: "";
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(color-mix(in srgb, var(--element) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--element) 7%, transparent) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image: linear-gradient(90deg, transparent, #000 58%, #000);
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--element) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--element) 8%, transparent) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(90deg, transparent, #000 56%, #000);
     pointer-events: none;
 }
 
@@ -281,56 +573,67 @@ function scrollToStory() {
 .hero-kicker {
     display: flex;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 10px;
     color: var(--text-muted);
     font-family: var(--mono);
     font-size: 10px;
+}
+
+.hero-kicker i {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
 }
 
 .category-chip {
     display: inline-flex;
     padding: 5px 10px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--element) 16%, transparent);
+    background: color-mix(in srgb, var(--element) 18%, transparent);
     color: var(--element);
     font-weight: 800;
 }
 
-.element-hero h1 {
-    margin: 22px 0 18px;
-    font-size: 64px;
-    line-height: 1.05;
+.hero h1 {
+    margin: 20px 0 16px;
+    font-size: clamp(46px, 6vw, 68px);
+    line-height: 1.04;
+    font-weight: 850;
 }
 
-.element-hero h1 em {
+.hero h1 em {
     display: block;
     margin-top: 10px;
     color: var(--text-muted);
     font-family: var(--mono);
-    font-size: 16px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 500;
+    letter-spacing: 0.02em;
 }
 
 .hero-lede {
     max-width: 620px;
+    margin: 0;
     color: var(--text-secondary);
-    font-size: 17px;
-    line-height: 1.9;
+    font-size: 16px;
+    line-height: 1.85;
 }
 
 .hero-actions {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 14px 20px;
-    margin-top: 28px;
+    gap: 12px;
+    margin-top: 26px;
 }
 
 .hero-action {
     display: inline-flex;
     align-items: center;
-    padding: 10px 15px;
+    padding: 10px 16px;
     border: 0;
     border-radius: 8px;
     background: transparent;
@@ -339,6 +642,7 @@ function scrollToStory() {
     font-size: 12px;
     font-weight: 800;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .hero-action.primary {
@@ -346,31 +650,50 @@ function scrollToStory() {
     color: #fff;
 }
 
-.hero-location {
-    color: var(--text-muted);
-    font-family: var(--mono);
-    font-size: 10px;
+.hero-action.ghost {
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
 }
 
-.atom-visual {
+.hero-action.ghost:hover {
+    border-color: var(--element);
+    color: var(--element);
+}
+
+/* ── HERO 原子图 ── */
+.hero-atom {
     position: relative;
     z-index: 1;
-    width: 360px;
-    height: 400px;
     display: grid;
     place-items: center;
+    width: 360px;
+    height: 380px;
+    justify-self: center;
+}
+
+.hero-symbol {
+    position: absolute;
+    right: -6px;
+    bottom: 6px;
+    color: color-mix(in srgb, var(--element) 14%, transparent);
+    font-family: var(--mono);
+    font-size: 172px;
+    font-weight: 800;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
 }
 
 .atom-orbits {
     position: absolute;
-    inset: 0 0 40px;
+    inset: 0 0 34px;
 }
 
 .atom-orbit {
     position: absolute;
     top: 50%;
     left: 50%;
-    border: 1px solid color-mix(in srgb, var(--element) 52%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--element) 48%, var(--border));
     border-radius: 50%;
     animation: orbit-spin var(--orbit-duration) linear var(--orbit-delay) infinite;
 }
@@ -379,42 +702,42 @@ function scrollToStory() {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: var(--electron-size, 9px);
-    height: var(--electron-size, 9px);
+    width: var(--electron-size, 8px);
+    height: var(--electron-size, 8px);
     border: 2px solid var(--bg-card);
     border-radius: 50%;
     background: var(--element);
-    box-shadow: 0 0 14px color-mix(in srgb, var(--element) 64%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--element) 60%, transparent);
     transform: translate(-50%, -50%);
 }
 
 .atom-core {
     position: absolute;
-    top: calc(50% - 20px);
+    top: calc(50% - 17px);
     left: 50%;
-    width: 78px;
-    height: 78px;
+    width: 76px;
+    height: 76px;
     display: grid;
     place-items: center;
-    border: 1px solid color-mix(in srgb, var(--element) 72%, #fff);
+    border: 1px solid color-mix(in srgb, var(--element) 70%, #fff);
     border-radius: 50%;
     background: var(--element);
     color: #fff;
-    box-shadow: 0 14px 42px color-mix(in srgb, var(--element) 34%, transparent);
+    box-shadow: 0 14px 42px color-mix(in srgb, var(--element) 32%, transparent);
     transform: translate(-50%, -50%);
 }
 
 .atom-core strong {
-    font-size: 28px;
+    font-size: 27px;
     line-height: 1;
 }
 
 .atom-core small {
     position: absolute;
-    bottom: 9px;
+    bottom: 8px;
     font-family: var(--mono);
     font-size: 8px;
-    opacity: 0.75;
+    opacity: 0.78;
 }
 
 .atom-caption {
@@ -430,156 +753,892 @@ function scrollToStory() {
     to { transform: rotate(360deg); }
 }
 
-.element-stats {
+/* ── 关键数字 ── */
+.fact-strip {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-top: 12px;
     border-block: 1px solid var(--border);
 }
 
-.element-stats > div {
+.fact-strip > div {
     min-width: 0;
-    padding: 20px 22px;
+    padding: 18px 22px;
     border-right: 1px solid var(--border);
 }
 
-.element-stats > div:last-child { border-right: 0; }
-.element-stats span { display: block; color: var(--text-muted); font-size: 10px; }
-.element-stats strong { display: block; overflow: hidden; margin-top: 5px; color: var(--element); font-family: var(--mono); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.fact-strip > div:last-child {
+    border-right: 0;
+}
 
-.element-content { margin-top: 68px; }
-.section-band { scroll-margin-top: 90px; margin-bottom: 82px; }
-.section-heading { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: end; gap: 24px; margin-bottom: 30px; }
-.section-heading > span { color: var(--element); font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: 0.1em; }
-.section-heading h2 { font-size: 34px; line-height: 1.2; }
+.fact-strip span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 10px;
+}
 
+.fact-strip strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 17px;
+    overflow-wrap: anywhere;
+}
+
+.fact-strip small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+/* ── 内容区 ── */
+.element-content {
+    margin-top: 64px;
+}
+
+.band {
+    scroll-margin-top: 90px;
+    margin-bottom: 78px;
+}
+
+.band-heading {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    align-items: end;
+    gap: 8px 24px;
+    margin-bottom: 26px;
+}
+
+.band-heading > span {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.band-heading h2 {
+    grid-column: 2;
+    margin: 0;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.2;
+}
+
+.band-heading p {
+    grid-column: 2;
+    max-width: 720px;
+    margin: 6px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+/* ── 01 位置 ── */
+.position-notes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.position-notes article {
+    padding: 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.position-notes h3 {
+    margin: 0 0 10px;
+    color: var(--element);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.position-notes p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.position-notes p + p {
+    margin-top: 10px;
+}
+
+/* ── 02 结构 ── */
+.structure-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    gap: 12px;
+}
+
+.panel {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+}
+
+.panel-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel-heading span {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.panel-heading strong {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.shell-rows {
+    display: grid;
+    gap: 14px;
+    margin: 22px 0 18px;
+}
+
+.shell-row {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 10px;
+}
+
+.shell-name {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.shell-bar {
+    height: 5px;
+    overflow: hidden;
+    background: var(--border-light);
+    border-radius: 999px;
+}
+
+.shell-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--element);
+}
+
+.shell-row b {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-align: right;
+}
+
+.shell-row b small {
+    color: var(--text-muted);
+    font-size: 8px;
+}
+
+.config-line {
+    margin: 22px 0 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+}
+
+.config-list {
+    margin: 12px 0 0;
+}
+
+.config-list div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.config-list dt {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.config-list dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-align: right;
+}
+
+.accent-panel {
+    background: color-mix(in srgb, var(--element) 6%, var(--bg-card));
+    border-color: color-mix(in srgb, var(--element) 30%, var(--border));
+}
+
+.accent-summary {
+    margin: 20px 0 10px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.7;
+}
+
+.panel-note {
+    margin: 12px 0 0;
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1.75;
+}
+
+.accent-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 16px;
+}
+
+/* ── 03 性质 ── */
+.property-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.property-card {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.property-card header {
+    display: grid;
+    gap: 6px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.property-card header span {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.property-card header strong {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.compare-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 96px;
+    margin-top: 16px;
+}
+
+.compare-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+    min-width: 0;
+}
+
+.compare-track {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    border-radius: 3px 3px 0 0;
+    background: var(--border-light);
+    overflow: hidden;
+}
+
+.compare-track i {
+    display: block;
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    background: color-mix(in srgb, var(--element) 42%, var(--border));
+}
+
+.compare-item small {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 8px;
+}
+
+.compare-item.active .compare-track i {
+    background: var(--element);
+}
+
+.compare-item.active small {
+    color: var(--element);
+    font-weight: 800;
+}
+
+.compare-note {
+    margin: 12px 0 0;
+    color: var(--text-muted);
+    font-size: 9px;
+    line-height: 1.6;
+}
+
+.empty-data {
+    padding: 28px 30px;
+    border: 1px dashed color-mix(in srgb, var(--element) 36%, var(--border));
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--element) 4%, var(--bg-card));
+}
+
+.empty-data h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.empty-data p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.empty-data-note {
+    margin-top: 12px !important;
+    color: var(--text-muted) !important;
+    font-size: 12px !important;
+}
+
+.empty-data .peer-chips {
+    margin-top: 16px;
+}
+
+/* ── 04 邻居 / 元素胶囊 ── */
+.neighbor-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.neighbor-groups article {
+    padding: 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.neighbor-groups h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 14px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.neighbor-groups h3 small {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.peer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.peer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border: 1px solid color-mix(in srgb, var(--peer-color, var(--element)) 34%, var(--border));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--peer-color, var(--element)) 10%, var(--bg-card));
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.peer-chip small {
+    color: var(--text-secondary);
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.peer-chip:hover {
+    border-color: var(--peer-color, var(--element));
+    transform: translateY(-1px);
+}
+
+.accent-chips .peer-chip {
+    border-color: color-mix(in srgb, var(--element) 30%, var(--border));
+    background: transparent;
+}
+
+/* ── 手写故事区 ── */
 .discovery-layout {
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr) minmax(260px, 0.7fr);
-    gap: 30px;
-    padding-top: 26px;
+    grid-template-columns: 200px minmax(0, 1fr) minmax(240px, 0.7fr);
+    gap: 28px;
+    padding-top: 24px;
     border-top: 1px solid var(--border);
 }
 
-.discovery-year { color: var(--element); font-family: var(--mono); font-size: 58px; font-weight: 800; line-height: 1; }
-.discovery-layout h3 { margin-bottom: 12px; font-size: 22px; }
-.discovery-layout p { color: var(--text-secondary); line-height: 1.9; }
-.discovery-layout aside { padding-left: 24px; border-left: 1px solid var(--border); }
-.discovery-layout aside span { color: var(--element); font-size: 11px; font-weight: 800; }
-.discovery-layout aside p { margin-top: 10px; font-size: 13px; }
-.story-narrative { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.discovery-year {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+}
 
-.application-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-block: 1px solid var(--border); }
-.application-grid article { min-height: 240px; padding: 30px; border-right: 1px solid var(--border); }
-.application-grid article:last-child { border-right: 0; }
-.application-grid article > span { color: var(--element); font-family: var(--mono); font-size: 10px; }
-.application-grid h3 { margin: 54px 0 12px; font-size: 20px; }
-.application-grid p { color: var(--text-secondary); font-size: 13px; line-height: 1.85; }
+.discovery-layout h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+}
 
-.reaction-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.reaction-card { min-width: 0; overflow: hidden; border: 1px solid color-mix(in srgb, var(--element) 28%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--element) 5%, var(--bg-card)); }
-.reaction-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--border); }
-.reaction-card header span { color: var(--element); font-family: var(--mono); font-size: 9px; font-weight: 800; }
-.reaction-card header small { color: var(--text-muted); font-size: 9px; text-align: right; }
-.equation { overflow-x: auto; padding: 30px 18px; color: var(--text); font-family: var(--mono); font-size: 22px; font-weight: 800; text-align: center; white-space: nowrap; }
-.reaction-card dl { padding: 0 18px 8px; }
-.reaction-card dl div { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
-.reaction-card dt { color: var(--text-muted); font-size: 10px; }
-.reaction-card dd { color: var(--text-secondary); font-size: 11px; line-height: 1.7; }
-.safety-note { display: flex; gap: 9px; margin: 10px; padding: 11px 12px; border-radius: 6px; background: color-mix(in srgb, #d97706 10%, transparent); color: color-mix(in srgb, #b45309 82%, var(--text)); font-size: 10px; line-height: 1.65; }
-.safety-note strong { flex: 0 0 auto; }
+.discovery-layout p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.9;
+}
 
-.science-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; }
-.science-panel { min-width: 0; padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--bg-card) 86%, transparent); }
-.panel-heading { display: flex; justify-content: space-between; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-.panel-heading span { color: var(--text-secondary); font-size: 11px; }
-.panel-heading strong { color: var(--element); font-family: var(--mono); font-size: 10px; }
+.discovery-layout aside {
+    padding-left: 22px;
+    border-left: 1px solid var(--border);
+}
 
-.shell-list { display: grid; gap: 13px; margin: 24px 0; }
-.electron-stage { position: relative; width: 100%; height: 342px; margin-top: 20px; display: grid; place-items: center; overflow: hidden; border-block: 1px solid var(--border); }
-.electron-stage .atom-orbits { inset: 0; }
-.electron-stage .atom-core { top: 50%; width: 62px; height: 62px; }
-.electron-stage .atom-core strong { font-size: 22px; }
-.electron-stage .atom-core small { bottom: 7px; }
-.electron-stage .atom-orbit { border-color: color-mix(in srgb, var(--element) 68%, var(--border)); }
-.electron-stage .atom-orbit i { border-width: 1px; }
-.shell-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 24px; align-items: center; gap: 10px; }
-.shell-row > span { color: var(--text-muted); font-size: 10px; }
-.shell-row > b { color: var(--element); font-family: var(--mono); font-size: 10px; text-align: right; }
-.shell-bar { height: 4px; overflow: hidden; background: var(--border); }
-.shell-bar i { display: block; height: 100%; background: var(--element); }
-.shell-panel > p { color: var(--text-muted); font-size: 10px; line-height: 1.7; }
+.discovery-layout aside span {
+    color: var(--element);
+    font-size: 11px;
+    font-weight: 800;
+}
 
-.property-grid { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; }
-.property-grid div { min-width: 0; padding: 16px 8px; border-bottom: 1px solid var(--border); }
-.property-grid span { display: block; color: var(--text-muted); font-size: 10px; }
-.property-grid strong { display: block; overflow-wrap: anywhere; margin-top: 6px; font-family: var(--mono); font-size: 11px; }
+.discovery-layout aside p {
+    margin-top: 10px;
+}
 
-.position-map { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 24px 0; }
-.position-map > span { color: var(--element); font-family: var(--mono); font-size: 38px; font-weight: 800; text-align: center; }
-.position-map small { display: block; color: var(--text-muted); font-family: var(--sans); font-size: 9px; font-weight: 500; }
-.position-map > b { color: var(--border); }
-.position-panel dl div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
-.position-panel dt { color: var(--text-muted); font-size: 10px; }
-.position-panel dd { overflow-wrap: anywhere; font-family: var(--mono); font-size: 10px; text-align: right; }
-.data-note { margin-top: 12px; color: var(--text-muted); font-size: 9px; }
+.story-narrative {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
 
-.question-section { padding: 50px 0 24px; border-top: 2px solid var(--element); }
-.question-section > span { color: var(--element); font-size: 11px; font-weight: 800; }
-.question-section h2 { max-width: 820px; margin: 18px 0 34px; font-size: 36px; line-height: 1.4; }
-.question-section > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
-.question-section a { color: var(--text-secondary); font-size: 11px; text-decoration: none; }
-.question-section a:hover { color: var(--element); }
+.application-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-block: 1px solid var(--border);
+}
 
-.coming-section { padding: 46px 0; border-top: 1px solid var(--border); text-align: center; }
-.coming-section span { color: #2aa27f; font-family: var(--mono); font-size: 9px; }
-.coming-section h2 { margin: 12px 0 8px; font-size: 28px; }
-.coming-section p { color: var(--text-secondary); }
-.missing { padding: 130px 20px; text-align: center; }
-.missing p { margin: 10px 0 25px; color: var(--text-secondary); }
-.missing a { color: #2aa27f; }
+.application-grid article {
+    min-height: 220px;
+    padding: 28px;
+    border-right: 1px solid var(--border);
+}
+
+.application-grid article:last-child {
+    border-right: 0;
+}
+
+.application-grid article > span {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.application-grid h3 {
+    margin: 44px 0 12px;
+    font-size: 18px;
+}
+
+.application-grid p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+.reaction-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.reaction-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--element) 26%, var(--border));
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--element) 5%, var(--bg-card));
+}
+
+.reaction-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.reaction-card header span {
+    color: var(--element);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.reaction-card header small {
+    color: var(--text-muted);
+    font-size: 9px;
+    text-align: right;
+}
+
+.equation {
+    overflow-x: auto;
+    padding: 26px 18px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 21px;
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.reaction-card dl {
+    padding: 0 18px 8px;
+}
+
+.reaction-card dl div {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+}
+
+.reaction-card dt {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.reaction-card dd {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+.safety-note {
+    display: flex;
+    gap: 9px;
+    margin: 10px;
+    padding: 11px 12px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d97706 10%, transparent);
+    color: color-mix(in srgb, #b45309 82%, var(--text));
+    font-size: 10px;
+    line-height: 1.65;
+}
+
+.safety-note strong {
+    flex: 0 0 auto;
+}
+
+.question-band {
+    padding: 46px 0 20px;
+    border-top: 2px solid var(--element);
+}
+
+.question-band > span {
+    color: var(--element);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.question-band h2 {
+    max-width: 820px;
+    margin: 16px 0 30px;
+    font-size: 34px;
+    line-height: 1.4;
+}
+
+.question-band > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.question-band a {
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-decoration: none;
+}
+
+.question-band a:hover {
+    color: var(--element);
+}
+
+/* ── 底部 ── */
+.page-footer {
+    display: grid;
+    gap: 16px;
+    padding-top: 36px;
+    border-top: 1px solid var(--border);
+}
+
+.cta-button {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-radius: 999px;
+    background: var(--element);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.cta-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--element) 30%, transparent);
+}
+
+.footer-neighbors {
+    display: flex;
+    gap: 18px;
+}
+
+.footer-neighbors a {
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.footer-neighbors a:hover {
+    color: var(--element);
+}
+
+.data-note {
+    margin: 0;
+    max-width: 720px;
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1.7;
+}
+
+/* ── 404 ── */
+.missing {
+    padding: 130px 20px;
+    text-align: center;
+}
+
+.missing p {
+    margin: 10px 0 25px;
+    color: var(--text-secondary);
+}
+
+.missing a {
+    color: #2aa27f;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 1080px) {
+    .structure-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .accent-panel {
+        grid-column: 1 / -1;
+    }
+
+    .property-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
 
 @media (max-width: 900px) {
-    .element-hero { grid-template-columns: 1fr; padding: 42px; }
-    .atom-visual { width: 100%; max-width: 360px; margin: 0 auto; }
-    .element-stats { grid-template-columns: repeat(2, 1fr); }
-    .element-stats > div:nth-child(2) { border-right: 0; }
-    .element-stats > div:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
-    .discovery-layout { grid-template-columns: 150px minmax(0, 1fr); }
-    .discovery-layout aside { grid-column: 2; padding: 20px 0 0; border-top: 1px solid var(--border); border-left: 0; }
-    .science-grid { grid-template-columns: 1fr 1fr; }
-    .shell-panel { grid-column: 1 / -1; }
+    .hero {
+        grid-template-columns: 1fr;
+        padding: 40px;
+    }
+
+    .hero-atom {
+        width: 100%;
+        max-width: 340px;
+        margin: 0 auto;
+    }
+
+    .hero-symbol {
+        font-size: 130px;
+        right: 0;
+    }
+
+    .fact-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .fact-strip > div:nth-child(2) {
+        border-right: 0;
+    }
+
+    .fact-strip > div:nth-child(-n + 2) {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .band-heading {
+        grid-template-columns: 1fr;
+    }
+
+    .band-heading h2,
+    .band-heading p {
+        grid-column: 1;
+    }
+
+    .discovery-layout {
+        grid-template-columns: 150px minmax(0, 1fr);
+    }
+
+    .discovery-layout aside {
+        grid-column: 2;
+        padding: 18px 0 0;
+        border-top: 1px solid var(--border);
+        border-left: 0;
+    }
+
+    .neighbor-groups {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
-    .element-page { width: calc(100% - 20px); margin-top: -24px; }
-    .element-header { min-height: 64px; }
-    .element-header nav { gap: 10px; }
-    .element-hero { min-height: 0; gap: 20px; padding: 28px 22px; border-radius: 14px; }
-    .element-hero h1 { font-size: 44px; }
-    .hero-lede { font-size: 14px; }
-    .atom-visual { height: 300px; transform: scale(0.9); }
-    .element-stats > div { padding: 15px 12px; }
-    .element-stats strong { font-size: 12px; }
-    .element-content { margin-top: 48px; }
-    .section-band { margin-bottom: 58px; }
-    .section-heading { grid-template-columns: 1fr; gap: 8px; }
-    .section-heading h2 { font-size: 27px; }
-    .discovery-layout { grid-template-columns: 1fr; }
-    .discovery-layout aside { grid-column: auto; }
-    .discovery-year { font-size: 48px; }
-    .application-grid { grid-template-columns: 1fr; }
-    .application-grid article { min-height: 0; border-right: 0; border-bottom: 1px solid var(--border); }
-    .application-grid article:last-child { border-bottom: 0; }
-    .application-grid h3 { margin-top: 24px; }
-    .reaction-grid { grid-template-columns: 1fr; }
-    .equation { font-size: 18px; }
-    .science-grid { grid-template-columns: 1fr; }
-    .shell-panel { grid-column: auto; }
-    .question-section h2 { font-size: 28px; }
+    .element-page {
+        width: calc(100% - 20px);
+        margin-top: -24px;
+    }
+
+    .page-bar {
+        min-height: 64px;
+    }
+
+    .neighbor span {
+        display: none;
+    }
+
+    .hero {
+        gap: 18px;
+        padding: 26px 20px;
+        border-radius: 14px;
+    }
+
+    .hero h1 {
+        font-size: 40px;
+    }
+
+    .hero-lede {
+        font-size: 14px;
+    }
+
+    .hero-atom {
+        height: 300px;
+        transform: scale(0.9);
+    }
+
+    .fact-strip span {
+        font-size: 9px;
+    }
+
+    .fact-strip strong {
+        font-size: 14px;
+    }
+
+    .position-notes,
+    .structure-grid,
+    .property-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .accent-panel {
+        grid-column: auto;
+    }
+
+    .discovery-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .discovery-layout aside {
+        grid-column: auto;
+    }
+
+    .discovery-year {
+        font-size: 42px;
+    }
+
+    .application-grid,
+    .reaction-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .application-grid article {
+        min-height: 0;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .application-grid article:last-child {
+        border-bottom: 0;
+    }
+
+    .application-grid h3 {
+        margin-top: 20px;
+    }
+
+    .equation {
+        font-size: 17px;
+    }
+
+    .question-band h2 {
+        font-size: 26px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .atom-orbit { animation: none; }
+    .atom-orbit {
+        animation: none;
+    }
 }
 </style>

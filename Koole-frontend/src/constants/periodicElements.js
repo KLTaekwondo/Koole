@@ -143,6 +143,7 @@ function categoryFor(number, group) {
 
 function blockFor(number, group) {
     if ((number >= 57 && number <= 71) || (number >= 89 && number <= 103)) return "f"
+    if (number === 2) return "s" // 氦是 1s²，属于 s 区（按族号会误判成 p 区）
     if (group <= 2) return "s"
     if (group >= 13) return "p"
     return "d"
