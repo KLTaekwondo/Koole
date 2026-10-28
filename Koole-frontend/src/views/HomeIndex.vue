@@ -18,7 +18,7 @@
                 <div class="hero-meta">
                     <span><b>{{ physicsCount }}</b> 个物理模型</span>
                     <i></i>
-                    <span><b>3</b> 个开放实验室</span>
+                    <span><b>{{ openLabCount }}</b> 个开放实验室</span>
                 </div>
             </div>
             <div class="scene-label">INTERACTIVE FIELD / 001</div>
@@ -126,6 +126,7 @@ const subjectsSection = ref(null)
 const activeSubject = ref(3)
 const carouselPaused = ref(false)
 const physicsCount = PHYSICS_MODELS.length
+const openLabCount = SUBJECTS.filter(subject => subject.status === 'ready').length
 const revealObservers = []
 const subjectRoutes = Object.fromEntries(SUBJECTS.map(subject => [subject.id, subject]))
 const subjects = [
