@@ -26,134 +26,138 @@
             <button class="icon-button" type="button" title="返回数学实验室" @click="router.push('/math-lab')">
                 <img :src="navBackIcon" alt="" />
             </button>
-            <i></i>
-            <div class="preset-wrap">
-                <button class="pill-button" type="button" @click="presetMenuOpen = !presetMenuOpen">添加函数 ▾</button>
-                <transition name="panel-pop">
-                    <div v-if="presetMenuOpen" class="preset-menu">
-                        <button v-for="preset in FUNCTION_PRESETS" :key="preset.label" class="preset-item" type="button" :style="{ '--fn-color': preset.color }" @click="addPreset(preset)">
-                            <span class="preset-symbol">{{ preset.symbol }}</span>
-                            <span>{{ preset.label }}</span>
-                        </button>
-                    </div>
-                </transition>
+            <div class="toolbar-row toolbar-row--actions">
+                <i></i>
+                <div class="preset-wrap">
+                    <button class="pill-button" type="button" @click="presetMenuOpen = !presetMenuOpen">添加函数 ▾</button>
+                    <transition name="panel-pop">
+                        <div v-if="presetMenuOpen" class="preset-menu">
+                            <button v-for="preset in FUNCTION_PRESETS" :key="preset.label" class="preset-item" type="button" :style="{ '--fn-color': preset.color }" @click="addPreset(preset)">
+                                <span class="preset-symbol">{{ preset.symbol }}</span>
+                                <span>{{ preset.label }}</span>
+                            </button>
+                        </div>
+                    </transition>
+                </div>
+                <button class="pill-button" type="button" @click="resetView">重置视角</button>
+                <button
+                    class="pill-button pill-danger"
+                    type="button"
+                    title="清空画布，回到默认图形"
+                    @click="resetScene"
+                >重置画布</button>
+                <div class="preset-wrap">
+                    <button class="pill-button" type="button" @click="saveMenuOpen = !saveMenuOpen">保存 ▾</button>
+                    <transition name="panel-pop">
+                        <div v-if="saveMenuOpen" class="preset-menu save-menu">
+                            <div class="save-hint">改动会自动存档到本机，可手动恢复或导出分享</div>
+                            <button class="preset-item" type="button" @click="restoreAutosave">恢复上次图形</button>
+                            <div class="preset-divider"></div>
+                            <button class="preset-item" type="button" @click="exportScene">导出图形（下载文件）</button>
+                            <button class="preset-item" type="button" @click="openImportPicker">导入图形（选择文件）</button>
+                        </div>
+                    </transition>
+                    <input
+                        ref="importInputRef"
+                        type="file"
+                        accept=".json,application/json"
+                        class="import-file-input"
+                        @change="importSceneFile"
+                    />
+                </div>
             </div>
-            <button class="pill-button" type="button" @click="resetView">重置视角</button>
-            <button
-                class="pill-button pill-danger"
-                type="button"
-                title="清空画布，回到默认图形"
-                @click="resetScene"
-            >重置画布</button>
-            <div class="preset-wrap">
-                <button class="pill-button" type="button" @click="saveMenuOpen = !saveMenuOpen">保存 ▾</button>
-                <transition name="panel-pop">
-                    <div v-if="saveMenuOpen" class="preset-menu save-menu">
-                        <div class="save-hint">改动会自动存档到本机，可手动恢复或导出分享</div>
-                        <button class="preset-item" type="button" @click="restoreAutosave">恢复上次图形</button>
-                        <div class="preset-divider"></div>
-                        <button class="preset-item" type="button" @click="exportScene">导出图形（下载文件）</button>
-                        <button class="preset-item" type="button" @click="openImportPicker">导入图形（选择文件）</button>
-                    </div>
-                </transition>
-                <input
-                    ref="importInputRef"
-                    type="file"
-                    accept=".json,application/json"
-                    class="import-file-input"
-                    @change="importSceneFile"
-                />
-            </div>
-            <i></i>
-            <button
-                class="pill-button"
-                :class="{ 'is-on': snapEnabled }"
-                type="button"
-                title="拖动函数时吸附到刻度，关闭可自由定位"
-                @click="snapEnabled = !snapEnabled"
-            >吸附 {{ snapEnabled ? '开' : '关' }}</button>
-            <i></i>
-            <div class="preset-wrap">
+            <div class="toolbar-row toolbar-row--modes">
+                <i></i>
                 <button
                     class="pill-button"
-                    :class="{ 'has-mode': intersectMode !== 'off' }"
+                    :class="{ 'is-on': snapEnabled }"
                     type="button"
-                    @click="intersectMenuOpen = !intersectMenuOpen"
-                >
-                    <span v-if="intersectMode !== 'off'" class="mode-dot mode-dot--intersect"></span>
-                    交叉 · {{ intersectModeLabel }} ▾
-                </button>
-                <transition name="panel-pop">
-                    <div v-if="intersectMenuOpen" class="preset-menu intersect-menu">
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: intersectMode === 'off' }"
-                            @click="intersectMode = 'off'; scheduleDraw()"
-                        >不交叉</button>
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: intersectMode === 'all' }"
-                            @click="intersectMode = 'all'; scheduleDraw()"
-                        >全交叉</button>
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: intersectMode === 'partial' }"
-                            @click="intersectMode = 'partial'; scheduleDraw()"
-                        >部分交叉</button>
-                        <div v-if="intersectMode === 'partial'" class="intersect-list">
-                            <label v-for="fn in functions" :key="fn.id" class="intersect-row">
-                                <input
-                                    type="checkbox"
-                                    :checked="intersectIds.includes(fn.id)"
-                                    @change="toggleIntersectId(fn.id)"
-                                />
-                                <span class="intersect-swatch" :style="{ background: fn.color }"></span>
-                                <span>{{ fn.label }}</span>
-                            </label>
-                            <small class="intersect-count">已选 {{ intersectIds.length }} 个</small>
+                    title="拖动函数时吸附到刻度，关闭可自由定位"
+                    @click="snapEnabled = !snapEnabled"
+                >吸附 {{ snapEnabled ? '开' : '关' }}</button>
+                <i></i>
+                <div class="preset-wrap">
+                    <button
+                        class="pill-button"
+                        :class="{ 'has-mode': intersectMode !== 'off' }"
+                        type="button"
+                        @click="intersectMenuOpen = !intersectMenuOpen"
+                    >
+                        <span v-if="intersectMode !== 'off'" class="mode-dot mode-dot--intersect"></span>
+                        交叉 · {{ intersectModeLabel }} ▾
+                    </button>
+                    <transition name="panel-pop">
+                        <div v-if="intersectMenuOpen" class="preset-menu intersect-menu">
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: intersectMode === 'off' }"
+                                @click="intersectMode = 'off'; intersectMenuOpen = false; scheduleDraw()"
+                            >不交叉</button>
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: intersectMode === 'all' }"
+                                @click="intersectMode = 'all'; intersectMenuOpen = false; scheduleDraw()"
+                            >全交叉</button>
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: intersectMode === 'partial' }"
+                                @click="intersectMode = 'partial'; intersectMenuOpen = false; scheduleDraw()"
+                            >部分交叉</button>
+                            <div v-if="intersectMode === 'partial'" class="intersect-list">
+                                <label v-for="fn in functions" :key="fn.id" class="intersect-row">
+                                    <input
+                                        type="checkbox"
+                                        :checked="intersectIds.includes(fn.id)"
+                                        @change="toggleIntersectId(fn.id)"
+                                    />
+                                    <span class="intersect-swatch" :style="{ background: fn.color }"></span>
+                                    <span>{{ fn.label }}</span>
+                                </label>
+                                <small class="intersect-count">已选 {{ intersectIds.length }} 个</small>
+                            </div>
                         </div>
-                    </div>
-                </transition>
-            </div>
-            <i></i>
-            <div class="preset-wrap">
-                <button
-                    class="pill-button"
-                    :class="{ 'has-mode': toolMode !== 'drag' }"
-                    type="button"
-                    @click="geoMenuOpen = !geoMenuOpen"
-                >
-                    <span v-if="toolMode !== 'drag'" class="mode-dot mode-dot--geo"></span>
-                    几何 · {{ toolModeLabel }} ▾
-                </button>
-                <transition name="panel-pop">
-                    <div v-if="geoMenuOpen" class="preset-menu geo-menu">
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: toolMode === 'drag' }"
-                            @click="setToolMode('drag')"
-                        >拖动</button>
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: toolMode === 'point' }"
-                            @click="setToolMode('point')"
-                        >选点</button>
-                        <button
-                            class="preset-item"
-                            type="button"
-                            :class="{ active: toolMode === 'line' }"
-                            @click="setToolMode('line')"
-                        >连线</button>
-                        <div class="intersect-list">
-                            <button class="preset-item" type="button" @click="clearGeometry">清空几何</button>
+                    </transition>
+                </div>
+                <i></i>
+                <div class="preset-wrap">
+                    <button
+                        class="pill-button"
+                        :class="{ 'has-mode': toolMode !== 'drag' }"
+                        type="button"
+                        @click="geoMenuOpen = !geoMenuOpen"
+                    >
+                        <span v-if="toolMode !== 'drag'" class="mode-dot mode-dot--geo"></span>
+                        几何 · {{ toolModeLabel }} ▾
+                    </button>
+                    <transition name="panel-pop">
+                        <div v-if="geoMenuOpen" class="preset-menu geo-menu">
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: toolMode === 'drag' }"
+                                @click="setToolMode('drag')"
+                            >拖动</button>
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: toolMode === 'point' }"
+                                @click="setToolMode('point')"
+                            >选点</button>
+                            <button
+                                class="preset-item"
+                                type="button"
+                                :class="{ active: toolMode === 'line' }"
+                                @click="setToolMode('line')"
+                            >连线</button>
+                            <div class="intersect-list">
+                                <button class="preset-item" type="button" @click="clearGeometry">清空几何</button>
+                            </div>
                         </div>
-                    </div>
-                </transition>
+                    </transition>
+                </div>
             </div>
         </div>
 
@@ -165,10 +169,12 @@
             <span>{{ dragLabel }}</span>
         </div>
 
+        <div class="top-actions">
         <div class="help-wrap">
             <button class="help-toggle" type="button" @click="helpOpen = !helpOpen" :aria-expanded="helpOpen">使用介绍</button>
             <transition name="panel-pop">
                 <div v-if="helpOpen" class="help-card">
+                    <button class="help-close" type="button" aria-label="关闭使用介绍" @click="helpOpen = false">×</button>
                     <header class="help-head">
                         <small>HOW TO WRITE</small>
                         <strong>函数式子怎么写</strong>
@@ -281,6 +287,7 @@
                 </div>
             </transition>
         </div>
+        </div>
 
         <div class="readout" v-if="hasSelection && activeFunction" :style="{ '--fn-color': activeFunction.color }">
             <small>LIVE · {{ activeFunction.label }}</small>
@@ -334,6 +341,11 @@ const view = createView()
 const dragState = reactive({ type: "", id: 0, key: "", startX: 0, startY: 0, lastX: 0, lastY: 0, startOX: 0, startOY: 0 })
 const zoomActive = ref(false) // 缩放滚轮进行中走 draft 精度，停止后恢复 fine
 let zoomTimer = 0
+const isNarrow = ref(false) // 窄屏断点：手机端双击改缩放、桌面双击还原视图
+
+// 多点触控捏合：跟踪活动指针，两指时以中点为锚缩放 + 跟随中点平移
+const activePointers = new Map() // pointerId -> { x, y }（屏幕坐标）
+let pinchStart = null // 双指起始基准 { dist, midX, midY, scale }
 const helpOpen = ref(false) // 左下角"使用介绍"说明卡展开状态
 const intersectMode = ref("off") // off | all | partial：函数交叉模式
 const intersectIds = ref([]) // 部分交叉时勾选的函数 id 集合
@@ -516,6 +528,35 @@ function onPointerDown(event) {
     intersectMenuOpen.value = false
     geoMenuOpen.value = false
     saveMenuOpen.value = false
+
+    // 捏合只对触摸生效：鼠标/触控笔按下时先清掉可能残留的指针，
+    // 避免残留指针把鼠标误判成"第二根手指"，导致整个画布点选/拖动失效
+    if (event.pointerType !== "touch") {
+        activePointers.clear()
+        pinchStart = null
+    } else {
+        // 记录活动指针；第二根手指落下 → 进入捏合缩放，取消当前单指拖动
+        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+        if (activePointers.size === 2) {
+            dragState.type = ""
+            dragState.id = 0
+            dragState.key = ""
+            const [p1, p2] = [...activePointers.values()]
+            pinchStart = {
+                dist: Math.hypot(p1.x - p2.x, p1.y - p2.y),
+                midX: (p1.x + p2.x) / 2,
+                midY: (p1.y + p2.y) / 2,
+                scale: view.scale,
+            }
+            canvasRef.value?.setPointerCapture(event.pointerId)
+            return
+        }
+        if (activePointers.size > 2) {
+            pinchStart = null
+            return
+        }
+    }
+
     const canvas = canvasRef.value
     const rect = canvas.getBoundingClientRect()
     const sx = event.clientX - rect.left
@@ -628,10 +669,11 @@ function snapTrack(worldX, worldY) {
     return bestDist < threshold ? best : null
 }
 
-// 切换几何工具：换工具时清空连线起点
+// 切换几何工具：换工具时清空连线起点，并收起下拉抽屉
 function setToolMode(mode) {
     toolMode.value = mode
     lineStartId.value = null
+    geoMenuOpen.value = false
     scheduleDraw()
 }
 
@@ -807,6 +849,13 @@ function onCanvasDblClick(event) {
         }
         return
     }
+    // 窄屏（手机/平板）双击：已放大则还原视图，否则以点击处为中心放大两倍，代替滚轮缩放；
+    // 桌面双击保持原语义：还原视图
+    if (isNarrow.value) {
+        if (view.scale >= 116) resetView()
+        else zoomAt(sx, sy, 2)
+        return
+    }
     resetView()
 }
 
@@ -831,6 +880,44 @@ function onPointerMove(event) {
     const rect = canvasRef.value.getBoundingClientRect()
     const sx = event.clientX - rect.left
     const sy = event.clientY - rect.top
+
+    const pointer = activePointers.get(event.pointerId)
+    if (pointer) {
+        pointer.x = event.clientX
+        pointer.y = event.clientY
+    }
+
+    // 双指捏合：以两指中点为锚缩放，并跟随中点移动平移画布（增量法）；只对触摸生效，鼠标移动不会被吞
+    if (event.pointerType === "touch" && pinchStart && activePointers.size === 2) {
+        const [p1, p2] = [...activePointers.values()]
+        const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y)
+        const midX = (p1.x + p2.x) / 2
+        const midY = (p1.y + p2.y) / 2
+        const midSX = midX - rect.left
+        const midSY = midY - rect.top
+        // 锚定缩放：保持中点的世界坐标不动
+        const [beforeX, beforeY] = screenToWorld(midSX, midSY, view, canvasWidth.value, canvasHeight.value)
+        view.scale = clamp(pinchStart.scale * (dist / pinchStart.dist), 24, 320)
+        const [afterX, afterY] = screenToWorld(midSX, midSY, view, canvasWidth.value, canvasHeight.value)
+        view.x += beforeX - afterX
+        view.y += beforeY - afterY
+        // 跟随中点位移平移
+        const dx = midX - pinchStart.midX
+        const dy = midY - pinchStart.midY
+        view.x -= dx / view.scale
+        view.y += dy / view.scale
+        pinchStart.midX = midX
+        pinchStart.midY = midY
+        // 缩放期间走草稿精度，停止后恢复
+        zoomActive.value = true
+        clearTimeout(zoomTimer)
+        zoomTimer = setTimeout(() => {
+            zoomActive.value = false
+            scheduleDraw()
+        }, 150)
+        scheduleDraw()
+        return
+    }
 
     if (!dragState.type) {
         // 非拖动：更新悬停坐标（交点坐标气泡用），变化才重绘
@@ -911,10 +998,27 @@ function onPointerMove(event) {
     scheduleDraw()
 }
 
-function onPointerUp() {
-    dragState.type = ""
-    dragState.id = 0
-    dragState.key = ""
+function onPointerUp(event) {
+    activePointers.delete(event.pointerId)
+    // 仍有两根手指：以剩余两指重新初始化捏合基准；不足两根则退出捏合
+    if (activePointers.size >= 2) {
+        const [p1, p2] = [...activePointers.values()]
+        pinchStart = {
+            dist: Math.hypot(p1.x - p2.x, p1.y - p2.y),
+            midX: (p1.x + p2.x) / 2,
+            midY: (p1.y + p2.y) / 2,
+            scale: view.scale,
+        }
+    } else {
+        pinchStart = null
+        // 所有指针都已抬起：彻底清空残留，避免幽灵指针把后续鼠标点按误判成双指
+        activePointers.clear()
+    }
+    if (activePointers.size <= 1) {
+        dragState.type = ""
+        dragState.id = 0
+        dragState.key = ""
+    }
     scheduleDraw()
 }
 
@@ -922,12 +1026,16 @@ function onWheel(event) {
     const rect = canvasRef.value.getBoundingClientRect()
     const sx = event.clientX - rect.left
     const sy = event.clientY - rect.top
+    zoomAt(sx, sy, event.deltaY < 0 ? 1.06 : 1 / 1.06)
+}
+
+// 以屏幕点 (sx, sy) 为锚缩放视图；缩放期间用草稿精度采样，停止 150ms 后恢复
+function zoomAt(sx, sy, factor) {
     const [beforeX, beforeY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
-    view.scale = clamp(view.scale * (event.deltaY < 0 ? 1.06 : 1 / 1.06), 24, 320)
+    view.scale = clamp(view.scale * factor, 24, 320)
     const [afterX, afterY] = screenToWorld(sx, sy, view, canvasWidth.value, canvasHeight.value)
     view.x += beforeX - afterX
     view.y += beforeY - afterY
-    // 缩放期间用 draft 精度（大步长），停止滚动 150ms 后恢复 fine
     zoomActive.value = true
     clearTimeout(zoomTimer)
     zoomTimer = setTimeout(() => {
@@ -1049,22 +1157,42 @@ onMounted(async () => {
     resizeCanvas()
     resizeObserver = new ResizeObserver(resizeCanvas)
     resizeObserver.observe(canvasRef.value)
+    const narrowQuery = window.matchMedia("(max-width: 900px)")
+    isNarrow.value = narrowQuery.matches
+    narrowQuery.addEventListener?.("change", onNarrowChange)
 })
 
 onBeforeUnmount(() => {
     clearTimeout(zoomTimer)
     resizeObserver?.disconnect()
+    window.matchMedia("(max-width: 900px)").removeEventListener?.("change", onNarrowChange)
 })
+
+function onNarrowChange(event) {
+    isNarrow.value = event.matches
+}
 </script>
 
 <style scoped>
 .function-lab {
+    /* 覆盖全局物理红为主题学科蓝：函数画布隶属数学实验室，统一使用数学蓝 */
+    --primary: #477cdb;
+    --primary-dark: #3a63a8;
+    --primary-hover: #5f8fd6;
+
     position: relative;
     width: 100%;
     height: calc(100vh - var(--nav-height));
     margin: -32px 0;
     overflow: hidden;
     background: var(--bg);
+}
+
+/* 深色下用更亮的蓝，与浅色主题层次一致 */
+:root[data-theme="dark"] .function-lab {
+    --primary: #6f9be8;
+    --primary-dark: #477cdb;
+    --primary-hover: #8fc8ff;
 }
 
 .function-lab canvas {
@@ -1102,11 +1230,18 @@ onBeforeUnmount(() => {
     -webkit-backdrop-filter: blur(18px);
 }
 
-.bottom-toolbar > i,
+.bottom-toolbar .toolbar-row > i,
 .status-strip > i {
     width: 1px;
     height: 24px;
     background: var(--border);
+}
+
+/* 工具条内部行：桌面与单行排列一致，窄屏拆两行 */
+.toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .icon-button {
@@ -1202,7 +1337,8 @@ onBeforeUnmount(() => {
 .preset-menu {
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 20;
     min-width: 200px;
     display: grid;
@@ -1408,6 +1544,30 @@ onBeforeUnmount(() => {
     border-radius: 16px;
     background: var(--bg-card);
     box-shadow: 0 18px 44px rgba(15, 23, 32, 0.18);
+}
+
+/* 使用介绍卡右上角关闭按钮：卡片占满时也能一键收起 */
+.help-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.help-close:hover {
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .help-head {
@@ -1881,25 +2041,138 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 820px) {
+    /* 底部工具条拆两行：第一行 返回+添加/重置/保存，第二行 吸附/交叉/几何，整体居中 */
     .bottom-toolbar {
-        right: 14px;
-        max-width: calc(100vw - 28px);
-        overflow-x: auto;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: calc(100vw - 16px);
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        row-gap: 8px;
+        overflow-x: visible;
         border-radius: 18px;
+        padding: 8px 6px;
     }
 
+    .toolbar-row {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .toolbar-row--modes {
+        flex-basis: 100%;
+        border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+        padding-top: 7px;
+    }
+
+    /* 下拉菜单在胶囊按钮正上方居中弹出：不盖住底部工具栏，中心对齐按钮 */
+    .preset-menu {
+        z-index: 30;
+        min-width: min(220px, calc(100vw - 16px));
+        max-width: calc(100vw - 16px);
+        max-height: 55vh;
+        overflow-y: auto;
+        border-radius: 16px;
+    }
+
+    /* 保存/交叉菜单继承 preset-menu 的最小宽度，窄屏下保持一致，不再单独收窄 */
+
+    .pill-button {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 11px;
+    }
+
+    /* 函数对象面板：从右上角按钮向下展开，避免盖住顶部读数区 */
     .function-panel {
-        top: auto;
+        top: calc(100% + 8px);
         right: 0;
-        bottom: calc(100% + 8px);
+        bottom: auto;
         left: auto;
         width: min(320px, calc(100vw - 28px));
         max-height: 42vh;
     }
 
-    .status-strip,
+    /* 读数面板改为顶部居中横条（不再隐藏），位于右上角动作组下方，LIVE 读数在手机上可用 */
     .readout {
+        top: 54px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        min-width: 0;
+        width: max-content;
+        max-width: calc(100vw - 16px);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 12px;
+    }
+
+    .readout small {
+        max-width: 130px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .probe-mode button {
+        flex: none;
+        min-height: 24px;
+        padding: 0 9px;
+    }
+
+    .probe-x {
+        flex: none;
+    }
+
+    .probe-x input {
+        width: 66px;
+        height: 28px;
+    }
+
+    .readout b {
+        white-space: nowrap;
+        font-size: 13px;
+    }
+
+    .status-strip {
         display: none;
+    }
+
+    /* 使用介绍 + 函数对象收拢到右上角横排；其内弹出卡相对本容器定位 */
+    .top-actions {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .help-wrap,
+    .objects-wrap {
+        position: static;
+        z-index: auto;
+    }
+
+    /* 使用介绍卡：从"使用介绍"按钮正下方向下展开，右缘贴屏幕右边缘，避免横向溢出 */
+    .help-card {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: auto;
+        right: 0;
+        bottom: auto;
+        margin: 0;
+        z-index: 20;
+        width: min(340px, calc(100vw - 24px));
+        max-height: 60vh;
     }
 }
 

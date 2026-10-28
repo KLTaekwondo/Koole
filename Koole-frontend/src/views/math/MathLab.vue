@@ -7,10 +7,15 @@
             accent="#477cdb"
             accent2="#7fa8ee"
             scene-label="MODULE MAP / 002"
-            :actions="[{ label: '查看规划', scroll: '#modules', variant: 'outline' }]"
+            :actions="[
+                { label: '进入函数画布', to: '/math-lab/function-lab', variant: 'primary' },
+                { label: '进入关卡挑战', to: '/math-lab/levels', variant: 'outline' },
+                { label: '进入立体几何', to: '/math-lab/geometry-lab', variant: 'outline' },
+                { label: '进入概率实验', to: '/math-lab/probability-lab', variant: 'outline' },
+            ]"
             :meta-items="[
-                { value: '03', label: '个规划模块' },
-                { value: 'ING', label: '建设中' },
+                { value: '04', label: '个开放模块' },
+                { value: 'LIVE', label: '已上线' },
             ]"
             :devices="[buildFunctionDevice]"
             :particle-color="0x5f8fd6"
@@ -19,10 +24,16 @@
 
         <FunctionLabLaunch />
 
+        <MathLevelsLaunch />
+
+        <GeometryLabLaunch />
+
+        <ProbabilityLabLaunch />
+
         <SubjectModules
             kicker="01 / MODULES"
-            title="三种方式，让规律自己动起来。"
-            description="从函数图像到几何变形，再到重复试验中的概率分布，每一种观察都是一类学习入口。"
+            title="四种方式，让规律自己动起来。"
+            description="从函数画布到目标关卡，再到立体几何与概率实验，每一种观察都是一类学习入口。"
             accent="#477cdb"
             :items="modules"
             :links="moduleLinks"
@@ -34,16 +45,23 @@
 import * as THREE from "three"
 import DepthLabHero from "../../components/DepthLabHero.vue"
 import FunctionLabLaunch from "../../components/FunctionLabLaunch.vue"
+import MathLevelsLaunch from "../../components/MathLevelsLaunch.vue"
+import GeometryLabLaunch from "../../components/GeometryLabLaunch.vue"
+import ProbabilityLabLaunch from "../../components/ProbabilityLabLaunch.vue"
 import SubjectModules from "../../components/SubjectModules.vue"
 
 const modules = [
-    { name: "函数变化", desc: "调节参数并观察曲线变化，建立表达式与图像之间的对应关系。" },
-    { name: "动态几何", desc: "拖动点和边，观察长度、角度与面积在约束条件下如何联动。" },
+    { name: "函数画布", desc: "调节参数并观察曲线变化，建立表达式与图像之间的对应关系。" },
+    { name: "函数关卡", desc: "带着目标调节参数，让函数图像满足条件，逐关解锁进阶。" },
+    { name: "立体几何", desc: "旋转查看棱柱、棱锥与旋转体，在三维空间中理解点、线、面和体积表面积。" },
     { name: "概率实验", desc: "重复随机试验并汇总结果，从频率变化中理解概率规律。" },
 ]
 
 const moduleLinks = {
-    "函数变化": "/math-lab/function-lab",
+    "函数画布": "/math-lab/function-lab",
+    "函数关卡": "/math-lab/levels",
+    "立体几何": "/math-lab/geometry-lab",
+    "概率实验": "/math-lab/probability-lab",
 }
 
 /** 正弦波装置：曲线随相位流动，小球沿波形滑行 */

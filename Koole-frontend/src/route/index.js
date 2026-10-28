@@ -11,6 +11,10 @@ import ElementDetail from "../views/chemistry/Elements/ElementDetail.vue"
 import ChineseLab from "../views/chinese/ChineseLab.vue"
 import MathLab from "../views/math/MathLab.vue"
 import FunctionLab from "../views/math/function/FunctionLab.vue"
+import MathLevels from "../views/math/levels/MathLevels.vue"
+import MathLevelView from "../views/math/levels/MathLevelView.vue"
+import GeometryLab from "../views/math/geometry/GeometryLab.vue"
+import GaltonLab from "../views/math/probability/GaltonLab.vue"
 import EnglishLab from "../views/english/EnglishLab.vue"
 import PoliticsLab from "../views/politics/PoliticsLab.vue"
 import HistoryLab from "../views/history/HistoryLab.vue"
@@ -95,6 +99,26 @@ const routes = [
         path: "/math-lab/function-lab",
         name: "函数实验室",
         component: FunctionLab,
+    },
+    {
+        path: "/math-lab/levels",
+        name: "函数关卡",
+        component: MathLevels,
+    },
+    {
+        path: "/math-lab/levels/:levelId",
+        name: "函数关卡实验",
+        component: MathLevelView,
+    },
+    {
+        path: "/math-lab/geometry-lab",
+        name: "立体几何实验室",
+        component: GeometryLab,
+    },
+    {
+        path: "/math-lab/probability-lab",
+        name: "概率钉板实验室",
+        component: GaltonLab,
     },
     {
         path: "/english-lab",
