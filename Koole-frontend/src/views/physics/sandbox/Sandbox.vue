@@ -2,7 +2,7 @@
   <div class="sandbox-page">
     <!-- 全屏无限画布 -->
     <div class="canvas-container" ref="canvasContainerRef">
-        <canvas ref="canvasRef" @mousedown="onCanvasMouseDown" @click="onCanvasClick" @contextmenu.prevent="onCanvasContextMenu"></canvas>
+        <canvas ref="canvasRef" @contextmenu.prevent="onCanvasContextMenu"></canvas>
 
         <!-- 即时操作（左上角悬浮小胶囊） -->
         <div class="quick-toolbar">
@@ -22,6 +22,17 @@
           <button class="tool-btn" @click="resetView" title="复位视图">⌂</button>
           <button v-if="selectedObject" class="tool-btn" @click="focusSelected" title="居中选中物体">◎</button>
         </div>
+
+        <!-- 属性说明入口（右下角问号，切换属性说明卡） -->
+        <button
+          class="legend-toggle"
+          :class="{ active: showLegend }"
+          @click="showLegend = !showLegend"
+          title="属性说明"
+          aria-label="属性说明"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
 
         <!-- 状态栏（左上角工具栏下方） -->
         <div class="sandbox-status">
@@ -250,7 +261,7 @@
             :key="mt.id"
             class="model-item"
             :class="{ active: paletteActiveModel === mt.id }"
-            @mousedown.prevent="onPaletteMouseDown($event, mt.id)"
+            @pointerdown.prevent="onPalettePointerDown($event, mt.id)"
             :title="mt.description"
           >
             <span class="model-icon" v-html="mt.iconSvg || mt.icon"></span>
@@ -284,7 +295,6 @@
             </label>
           </div>
           <div class="settings-row">
-            <button class="tool-chip" :class="{ active: showLegend }" @click="showLegend = !showLegend">属性说明</button>
             <label class="tool-select-wrap">
               <span>播放速度</span>
               <select v-model.number="timeScale">
@@ -414,7 +424,7 @@ const { updateProp, getRampAngle, setRampAngle, updateRampDim, round } = useSand
   onUpdated: () => { panelRefreshTick.value++ },
 })
 
-const { onPaletteMouseDown, cleanupPaletteDrag } = useSandboxPaletteDrag({
+const { onPalettePointerDown, cleanupPaletteDrag } = useSandboxPaletteDrag({
   paletteActiveModel,
   paletteDrag,
   camera,
@@ -424,10 +434,8 @@ const { onPaletteMouseDown, cleanupPaletteDrag } = useSandboxPaletteDrag({
 })
 
 const {
-  onCanvasMouseDown,
-  onCanvasClick,
   onCanvasContextMenu,
-  onCanvasMouseMove,
+  onCanvasPointerMove,
   onCanvasWheel,
   canvasDrag,
   getPreviewMouse,
@@ -604,10 +612,10 @@ onMounted(() => {
   // 启动动画循环（内部完成尺寸初始化与 resize 监听）
   startLoop()
 
-  // 添加预览用的 mousemove
+  // 添加预览用的 pointermove
   const container = canvasContainerRef.value
   if (container) {
-    container.addEventListener('mousemove', onCanvasMouseMove)
+    container.addEventListener('pointermove', onCanvasPointerMove)
   }
 
   // 滚轮缩放绑定在 canvas 元素上（不劫持属性面板等 float 面板的滚动），passive:false 以便 preventDefault
@@ -625,7 +633,7 @@ onUnmounted(() => {
 
   const container = canvasContainerRef.value
   if (container) {
-    container.removeEventListener('mousemove', onCanvasMouseMove)
+    container.removeEventListener('pointermove', onCanvasPointerMove)
   }
 
   const canvas = canvasRef.value
@@ -657,6 +665,8 @@ onUnmounted(() => {
   gap: 2px;
   padding: 6px 8px;
   border-radius: 10px;
+  /* 触摸拖拽模型时禁止浏览器把滑动判成滚动（否则 pointercancel 中断拖放） */
+  touch-action: none;
   cursor: grab;
   transition: all 0.15s;
   user-select: none;
@@ -1006,6 +1016,7 @@ onUnmounted(() => {
   height: 100%;
   background: #fafbfc;
   cursor: crosshair;
+  touch-action: none; /* ⚠ 触摸画布时禁用浏览器默认滚动/缩放手势，交互由 Pointer Events 接管 */
 }
 
 .placement-overlay {
@@ -1301,11 +1312,48 @@ onUnmounted(() => {
   font-size: 32px;
 }
 
-/* ========== 属性说明卡（右下角浮层，胶囊 "?" 切换） ========== */
+/* ========== 属性说明入口（右下角问号按钮） ========== */
+.legend-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 100px;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(192, 57, 43, 0.4);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #c0392b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.15s;
+}
+
+.legend-toggle:hover {
+  background: #fdf0f0;
+  transform: scale(1.05);
+}
+
+.legend-toggle.active {
+  background: #c0392b;
+  color: #fff;
+  border-color: #c0392b;
+}
+
+.legend-toggle:active {
+  transform: scale(0.95);
+}
+
+/* ========== 属性说明卡（右下角浮层，问号按钮切换） ========== */
 .prop-legend {
   position: fixed;
   right: 16px;
-  bottom: 112px;
+  bottom: 148px;
   z-index: 15;
   width: 380px;
   max-height: calc(100vh - 140px);
@@ -1511,6 +1559,22 @@ onUnmounted(() => {
 }
 
 /* 属性说明卡 */
+:root[data-theme="dark"] .legend-toggle {
+  background: rgba(28, 32, 40, 0.9);
+  border-color: rgba(231, 76, 60, 0.4);
+  color: #e74c3c;
+}
+
+:root[data-theme="dark"] .legend-toggle:hover {
+  background: #2a2f37;
+}
+
+:root[data-theme="dark"] .legend-toggle.active {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #e74c3c;
+}
+
 :root[data-theme="dark"] .prop-legend {
   background: rgba(28, 32, 40, 0.92);
 }
@@ -1527,5 +1591,99 @@ onUnmounted(() => {
 /* 拖拽幽灵文字 */
 :root[data-theme="dark"] .drag-ghost {
   color: #e0e0e0;
+}
+
+/* ========== 移动端适配（≤900px） ========== */
+@media (max-width: 900px) {
+  /* 左上即时工具栏：压缩尺寸并允许横向滑动兜底 */
+  .quick-toolbar {
+    top: 10px;
+    left: 10px;
+    gap: 4px;
+    padding: 6px 8px;
+    max-width: calc(100vw - 20px);
+    overflow-x: auto;
+  }
+
+  .quick-toolbar .tool-btn,
+  .quick-toolbar .tool-back-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .quick-toolbar .toolbar-divider {
+    height: 20px;
+  }
+
+  .sandbox-status {
+    top: 60px;
+    left: 12px;
+    font-size: 11px;
+  }
+
+  /* 浮动属性面板：保持紧凑悬浮卡（靠右），窄屏时收窄但不全宽 */
+  .float-panel {
+    top: 8px;
+    right: 8px;
+    width: min(310px, calc(100vw - 16px));
+    max-height: calc(100% - 16px);
+  }
+
+  .float-panel-body {
+    max-height: calc(100vh - 220px);
+  }
+
+  /* 底部胶囊：贴安全区 */
+  .capsule-toolbar {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .tab-chip {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
+  /* 展开面板：近全宽，胶囊上方弹出 */
+  .tool-panel {
+    left: 8px;
+    right: 8px;
+    transform: none;
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 58px);
+  }
+
+  .experiment-panel {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .settings-panel {
+    min-width: 0;
+    width: auto;
+  }
+
+  .settings-row {
+    flex-wrap: wrap;
+  }
+
+  /* 属性说明卡：近全宽 */
+  .prop-legend {
+    right: 12px;
+    bottom: 148px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - 210px);
+  }
+
+  .placement-overlay {
+    bottom: 200px;
+    font-size: 12px;
+    padding: 7px 14px;
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+    text-align: center;
+  }
 }
 </style>

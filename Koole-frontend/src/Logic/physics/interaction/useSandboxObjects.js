@@ -30,8 +30,8 @@ export function useSandboxObjects({ objects, selectedObject, selectedTypeId, onS
     const model = getModel(modelId)
     if (!model) return
 
+    // 放置后不自动选中，避免属性面板弹出打断连续放置/拖动（想看属性再点一下物体）
     objects.push(model.create(x, y))
-    selectObject(objects[objects.length - 1], modelId)
   }
 
   function selectObject(obj, typeId) {
