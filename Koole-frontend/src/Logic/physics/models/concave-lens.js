@@ -7,6 +7,7 @@ export default {
     category: "光学",
     name: "凹透镜成像",
     desc: "凹透镜始终成正立缩小的虚像",
+    autoPlay: true, // 演示型：进页面自动播放，改参数即重播光路
     knowledge: `## 凹透镜成像
 
 凹透镜比凸透镜简单多了——不管物距多少，永远成**正立、缩小、虚像**。

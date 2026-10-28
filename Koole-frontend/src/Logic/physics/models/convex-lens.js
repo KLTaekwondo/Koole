@@ -7,6 +7,7 @@ export default {
     category: "光学",
     name: "凸透镜成像",
     desc: "物距与像距的关系，观察实像与虚像",
+    autoPlay: true, // 演示型：进页面自动播放，改参数即重播光路
     knowledge: `## 凸透镜成像
 
 薄透镜公式：
@@ -29,8 +30,8 @@ $$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
 
 > 一倍焦距分虚实，二倍焦距分大小——记住这个口诀做题快很多。`,
     exploration: {
-      task: "把物体移到焦点以内（物距 < 焦距），点开始，看看会出现什么像？",
-      hint: "物距从 30 往小调，到 10 以下，再点开始播放。",
+      task: "把物体移到焦点以内（物距 < 焦距），看看会出现什么像？",
+      hint: "物距从 30 往小调，到 10 以下，光路会自动重播一遍。",
       check: (p, t) => p.objectDist < p.focalLength && t > 0.6,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,

@@ -7,6 +7,7 @@ export default {
     category: "光学",
     name: "平面镜成像",
     desc: "物体和平面镜中的像关于镜面对称",
+    autoPlay: true, // 演示型：进页面自动播放，改参数即重播光路
     knowledge: `## 平面镜成像
 
 平面镜成像的核心是“对称”。物体在镜前多远，像就在镜后多远。
@@ -24,9 +25,9 @@ export default {
 
 > 改变物距，观察虚像始终在镜后同样远的位置。`,
     exploration: {
-      task: "改变物距，点开始，观察虚像位置怎么变？",
+      task: "改变物距，观察虚像位置怎么变——像距和物距是什么关系？",
       hint: "来回拖动物距滑块，对比像距和物距的数值。",
-      check: (p, t) => t > 0.6,
+      check: (p, t, touched) => touched && t > 0.6,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M6 8v8"/><path d="M18 8v8" stroke-dasharray="3 3"/><path d="M6 10l6-2 6 2"/></svg>`,
     params: [
