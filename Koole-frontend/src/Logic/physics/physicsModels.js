@@ -5,8 +5,6 @@
 import freeFall from './models/free-fall.js'
 import uniformMotion from './models/uniform-motion.js'
 import twoForceBalance from './models/two-force-balance.js'
-import solidPressure from './models/solid-pressure.js'
-import liquidPressure from './models/liquid-pressure.js'
 import mechanicalEnergy from './models/mechanical-energy.js'
 import projectile from './models/projectile.js'
 import dragFall from './models/drag-fall.js'
@@ -31,7 +29,6 @@ import buoyancy from './models/buoyancy.js'
 import forceComposition from './models/force-composition.js'
 import stringWave from './models/string-wave.js'
 import soundProperties from './models/sound-properties.js'
-import meltingCurve from './models/melting-curve.js'
 import convexLens from './models/convex-lens.js'
 import planeMirror from './models/plane-mirror.js'
 import concaveLens from './models/concave-lens.js'
@@ -42,7 +39,6 @@ import underwaterLight from './models/underwater-light.js'
 import seriesCircuit from './models/series-circuit.js'
 import parallelCircuit from './models/parallel-circuit.js'
 import ohmSlider from './models/ohm-slider.js'
-import electromagnet from './models/electromagnet.js'
 
 export const DRAW_SCALE = 30 // 像素/米
 export const GROUND_Y = 0.4 // 球心贴地高度（球半径/DRAW_SCALE）
@@ -51,8 +47,6 @@ export const PHYSICS_MODELS = [
   freeFall,
   uniformMotion,
   twoForceBalance,
-  solidPressure,
-  liquidPressure,
   mechanicalEnergy,
   projectile,
   verticalThrow,
@@ -77,7 +71,6 @@ export const PHYSICS_MODELS = [
   forceComposition,
   stringWave,
   soundProperties,
-  meltingCurve,
   convexLens,
   planeMirror,
   concaveLens,
@@ -87,7 +80,6 @@ export const PHYSICS_MODELS = [
   seriesCircuit,
   parallelCircuit,
   ohmSlider,
-  electromagnet,
   echoRanging,
 ]
 
