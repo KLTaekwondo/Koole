@@ -1,5 +1,6 @@
 <template>
-    <div v-if="element" class="element-page" :style="{ '--element': color }">
+    <transition name="element-swap" mode="out-in">
+    <div v-if="element" :key="element.symbol" class="element-page" :style="{ '--element': color }">
         <!-- ── 顶部：返回 + 相邻元素 ── -->
         <header class="page-bar">
             <router-link to="/chem-lab/periodic-table" class="back-link">
@@ -301,11 +302,12 @@
         </main>
     </div>
 
-    <div v-else class="missing">
+    <div v-else key="missing" class="missing">
         <h1>没有找到这个元素</h1>
         <p>请检查元素符号，或返回周期表重新选择。</p>
         <router-link to="/chem-lab/periodic-table">返回元素周期表</router-link>
     </div>
+    </transition>
 </template>
 
 <script setup>
@@ -453,6 +455,8 @@ onMounted(() => window.addEventListener("keydown", onKeydown))
 const baseTitle = document.title
 watch(element, current => {
     document.title = current ? `${current.name}（${current.symbol}）· 元素周期表 · Koole` : baseTitle
+    // 用 ← → 或迷你周期表切换元素时回到顶部，否则会停在上一页的阅读位置
+    window.scrollTo({ top: 0 })
 }, { immediate: true })
 
 onBeforeUnmount(() => {
@@ -1461,6 +1465,24 @@ onBeforeUnmount(() => {
     line-height: 1.7;
 }
 
+/* ── 元素之间切换的过渡（← → 键 / 迷你周期表 / 相邻元素） ── */
+.element-swap-enter-active {
+    transition: opacity 0.26s var(--ease-out), transform 0.26s var(--ease-out);
+}
+
+.element-swap-leave-active {
+    transition: opacity 0.12s ease;
+}
+
+.element-swap-enter-from {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.element-swap-leave-to {
+    opacity: 0;
+}
+
 /* ── 404 ── */
 .missing {
     padding: 130px 20px;
@@ -1639,6 +1661,15 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
     .atom-orbit {
         animation: none;
+    }
+
+    .element-swap-enter-active,
+    .element-swap-leave-active {
+        transition: opacity 0.15s linear;
+    }
+
+    .element-swap-enter-from {
+        transform: none;
     }
 }
 </style>

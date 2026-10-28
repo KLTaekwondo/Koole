@@ -16,12 +16,57 @@
   border-color: var(--border-light);
 }
 
-/* Page transition (used in App.vue) */
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.3s var(--ease-out);
+/* Page transition (used in App.vue)
+   离场快、入场稍慢：切换不拖沓，新页面有一点「浮上来」的感觉。
+   mode="out-in" 下旧页面先淡出，新页面再从下方 14px 处淡入。 */
+.page-enter-active {
+  transition: opacity 0.34s var(--ease-out), transform 0.34s var(--ease-out);
 }
-.page-enter-from,
+
+.page-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
 .page-leave-to {
   opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: opacity 0.2s linear;
+  }
+
+  .page-enter-from,
+  .page-leave-to {
+    transform: none;
+  }
+}
+
+/* 全屏画布类页面（沙盒 / 经典模型 / 元素周期表 / 立体几何）：
+   只做淡入淡出，不做位移，避免过渡期间影响 position: fixed 的悬浮控件。 */
+.page-fade-enter-active {
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.page-fade-leave-active {
+  transition: opacity 0.14s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: opacity 0.15s linear;
+  }
 }

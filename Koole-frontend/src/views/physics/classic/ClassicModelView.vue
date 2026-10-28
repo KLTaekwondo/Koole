@@ -53,7 +53,9 @@
             </div>
         </section>
 
-        <section v-if="activeModel.exploration && !focusMode" class="exploration-section" :class="{ done: explorationDone }">
+        <transition name="model-swap" mode="out-in">
+        <div v-if="!focusMode" :key="activeModel.id" class="model-detail">
+        <section v-if="activeModel.exploration" class="exploration-section" :class="{ done: explorationDone }">
             <span class="exploration-badge">{{ explorationDone ? '✓' : '任务' }}</span>
             <div class="exploration-text">
                 <small>{{ explorationDone ? 'TASK DONE' : 'EXPLORE' }}</small>
@@ -62,7 +64,7 @@
             <span class="exploration-status">{{ explorationDone ? '探索完成' : '进行中' }}</span>
         </section>
 
-        <section v-if="!focusMode" class="parameter-section">
+        <section class="parameter-section">
             <header class="section-heading">
                 <span class="parameter-live-dot"></span>
                 <div>
@@ -101,7 +103,7 @@
             </div>
         </section>
 
-        <section v-if="!focusMode" class="content-section">
+        <section class="content-section">
             <div class="section-block">
                 <header class="section-heading">
                     <div>
@@ -144,6 +146,8 @@
                 </div>
             </div>
         </section>
+        </div>
+        </transition>
     </div>
 
     <div v-else class="model-not-found">
@@ -321,6 +325,29 @@ const {
 .model-workspace {
     display: grid;
     gap: 32px;
+}
+
+/* 参数 / 记录 / 探索任务这一列：切换模型时整块淡入，画布保持不动 */
+.model-detail {
+    display: grid;
+    gap: 32px;
+}
+
+.model-swap-enter-active {
+    transition: opacity 0.28s var(--ease-out), transform 0.28s var(--ease-out);
+}
+
+.model-swap-leave-active {
+    transition: opacity 0.14s ease;
+}
+
+.model-swap-enter-from {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.model-swap-leave-to {
+    opacity: 0;
 }
 
 .simulation-stage {
@@ -836,6 +863,16 @@ const {
         grid-template-columns: 1fr;
         justify-items: center;
         text-align: center;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .model-swap-enter-active,
+    .model-swap-leave-active {
+        transition: opacity 0.15s linear;
+    }
+
+    .model-swap-enter-from {
+        transform: none;
     }
 }
 </style>

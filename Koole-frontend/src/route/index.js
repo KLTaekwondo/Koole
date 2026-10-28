@@ -62,6 +62,7 @@ const routes = [
     {
         path: "/physics-lab/classic",
         component: ClassicPhysicsLayout,
+        meta: { transition: "fade" },
         children: [
             {
                 path: ":modelId",
@@ -74,6 +75,7 @@ const routes = [
         path: "/physics-lab/sandbox",
         name: "沙箱",
         component: SandboxView,
+        meta: { transition: "fade" },
     },
     {
         path: "/bio-lab",
@@ -84,6 +86,7 @@ const routes = [
         path: "/chem-lab/periodic-table",
         name: "元素周期表",
         component: PeriodicTable,
+        meta: { transition: "fade" },
     },
     {
         path: "/chem-lab/periodic-table/:symbol",
@@ -124,6 +127,7 @@ const routes = [
         path: "/math-lab/geometry-lab",
         name: "立体几何实验室",
         component: GeometryLab,
+        meta: { transition: "fade" },
     },
     {
         path: "/math-lab/probability-lab",

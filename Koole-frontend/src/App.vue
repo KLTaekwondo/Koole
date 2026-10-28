@@ -6,7 +6,7 @@
         </transition>
         <main class="main-content" :class="{ 'periodic-content': route.path.startsWith('/chem-lab/periodic-table') }">
             <router-view v-slot="{ Component }">
-                <transition name="page" mode="out-in">
+                <transition :name="transitionName" mode="out-in">
                     <component :is="Component" />
                 </transition>
             </router-view>
@@ -18,11 +18,15 @@
 <script setup>
 import NavBar from "./components/NavBar.vue"
 import Toast from "./components/Toast.vue"
-import { onBeforeUnmount, ref } from "vue"
+import { computed, onBeforeUnmount, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
 const router = useRouter()
+
+// 页面切换动画：默认带一点位移；画布/全屏类页面（固定定位元素多）只做淡入淡出，
+// 否则祖先元素在过渡期间的 transform 会让 position: fixed 的子元素短暂改变参照。
+const transitionName = computed(() => (route.meta?.transition === "fade" ? "page-fade" : "page"))
 
 // 路由级懒加载的 chunk 下载期间显示顶部进度条：下载完（afterEach）立即隐藏。
 // 120ms 延迟避免秒开的页面闪一下进度条；导航失败（onError）也要收掉。
