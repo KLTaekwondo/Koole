@@ -245,6 +245,31 @@ function scrollToTop() {
     }
 }
 
+@media (max-width: 420px) {
+    .element-dock {
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        gap: 0;
+        padding: 5px 6px;
+    }
+
+    .dock-home,
+    .dock-top,
+    .dock-step {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 5px;
+    }
+
+    .dock-center {
+        min-width: 68px;
+        padding: 2px 6px 3px;
+    }
+
+    .dock-divider {
+        height: 18px;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .dock-enter-active,
     .dock-leave-active {

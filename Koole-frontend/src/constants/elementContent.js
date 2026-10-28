@@ -1,9 +1,10 @@
-// 元素百科手写内容。
-// 每个键是元素符号，结构见文件底部的 ELEMENT_CONTENT_TEMPLATE。
-// 写作要求：史实与化学事实准确；语言简单、有点个人语气；反应要写清条件、现象和安全提示。
-// 目前先铺 8 个常见元素（氢、碳、氧、钠、铁、铜、金、铀），其余元素走数据版详情页。
+// 元素百科内容。
+// 8 个常见元素（氢、碳、氧、钠、铁、铜、金、铀）在这里是完整手写版；
+// 其余 110 个元素来自 elementStoryBriefs.js 的精简条目，由 buildStoryFromBrief() 展开，
+// 最终合并成一份 ELEMENT_CONTENT，页面只认这一个出口。
+import { ELEMENT_STORY_BRIEFS, buildStoryFromBrief } from "./elementStoryBriefs.js"
 
-export const ELEMENT_CONTENT = {
+const FULL_STORIES = {
     H: {
         intro: "氢是宇宙里最多的元素，也是元素周期表的第一个成员——只有一个质子和一个电子。它轻到会从地球大气里逃逸，却又是水和一切有机物的组成部分。",
         discovery: {
@@ -270,7 +271,14 @@ export const ELEMENT_CONTENT = {
     },
 }
 
-// Copy this shape into ELEMENT_CONTENT and use the element symbol as its key.
+// 其余 110 个元素：精简条目展开成完整结构
+const briefStories = Object.fromEntries(
+    Object.entries(ELEMENT_STORY_BRIEFS).map(([symbol, brief]) => [symbol, buildStoryFromBrief(symbol, brief)]),
+)
+
+export const ELEMENT_CONTENT = { ...FULL_STORIES, ...briefStories }
+
+// Copy this shape into elementStoryBriefs.js (or FULL_STORIES above) when adding content.
 export const ELEMENT_CONTENT_TEMPLATE = Object.freeze({
     intro: "",
     discovery: {

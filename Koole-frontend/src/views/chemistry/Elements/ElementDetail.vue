@@ -256,7 +256,7 @@
                     </header>
                     <div class="discovery-layout">
                         <div class="discovery-timeline">
-                            <span class="timeline-year">{{ story.discovery?.year }}</span>
+                            <span class="timeline-year" :class="{ 'is-long': !compactYear }">{{ story.discovery?.year }}</span>
                             <span v-if="storyYearsAgo" class="timeline-caption">距今约 {{ storyYearsAgo }} 年</span>
                             <span class="timeline-track" aria-hidden="true"><i></i><b></b></span>
                             <span class="timeline-now">今天</span>
@@ -325,7 +325,7 @@
 
             <!-- ── 底部说明（元素切换交给底部胶囊工具盒） ── -->
             <footer class="page-footer">
-                <p class="data-note">数据来自公开元素数据整理；缺少统一可靠测量的性质会明确显示「暂无可靠数据」。手写百科内容按批次补充。</p>
+                <p class="data-note">数据与百科条目来自公开资料整理：常见元素为完整条目，稀有与人工合成元素为简版条目，仍在持续校对；缺少统一可靠测量的性质会明确显示「暂无可靠数据」。</p>
             </footer>
         </main>
 
@@ -378,17 +378,20 @@ const element = computed(() => getElementBySymbol(route.params.symbol))
 const color = computed(() => (ELEMENT_CATEGORIES[element.value?.category] || ELEMENT_CATEGORIES.unknown).color)
 const story = computed(() => (element.value ? ELEMENT_CONTENT[element.value.symbol] || null : null))
 
-// 发现年份距今多少年：支持「前 1200」这种公元前的写法
+// 发现年份距今多少年：只接受「1766」「前 1200」这类能算的写法，
+// 「13 世纪」「20 世纪 60 年代」这种区间描述则不算（也就不显示「距今」）
 const storyYearsAgo = computed(() => {
-    const raw = story.value?.discovery?.year
-    if (!raw) return null
-    const matched = String(raw).match(/(\d+)/)
-    if (!matched) return null
-    const year = Number(matched[1])
-    const isBC = /公元前|^前/.test(String(raw))
+    const raw = String(story.value?.discovery?.year || "").trim()
     const now = new Date().getFullYear()
-    return isBC ? year + now : Math.max(now - year, 0)
+    const bc = raw.match(/^(?:公元前|前)\s*(\d{1,4})$/)
+    if (bc) return Number(bc[1]) + now
+    const ad = raw.match(/^(\d{3,4})$/)
+    if (ad) return Math.max(now - Number(ad[1]), 0)
+    return null
 })
+
+// 年份写法是否足够短（决定时间轴那行是用大字号还是缩小换行）
+const compactYear = computed(() => /^(?:\d{3,4}|(?:公元前|前)\s?\d{1,4})$/.test(String(story.value?.discovery?.year || "").trim()))
 
 // 反应现象的小图标：按现象关键词挑一个，纯装饰用
 const PHENOMENON_ICONS = {
@@ -1332,6 +1335,13 @@ onBeforeUnmount(() => {
     white-space: nowrap;
 }
 
+/* 「20 世纪 60 年代」这类长写法：缩小字号、允许换行 */
+.timeline-year.is-long {
+    font-size: clamp(18px, 2.2vw, 28px);
+    line-height: 1.3;
+    white-space: normal;
+}
+
 .timeline-caption {
     color: var(--text-muted);
     font-size: 11px;
@@ -1415,7 +1425,7 @@ onBeforeUnmount(() => {
 
 .application-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 14px;
 }
 
@@ -1463,7 +1473,7 @@ onBeforeUnmount(() => {
 
 .reaction-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 12px;
 }
 
@@ -1864,6 +1874,111 @@ onBeforeUnmount(() => {
 
     .question-band h2 {
         font-size: 26px;
+    }
+}
+
+@media (max-width: 480px) {
+    .element-page {
+        --page-pad: 12px;
+    }
+
+    .hero {
+        padding-block: 22px;
+    }
+
+    .hero h1 {
+        font-size: 34px;
+    }
+
+    .hero-kicker {
+        gap: 6px 8px;
+        font-size: 9px;
+    }
+
+    .hero-lede {
+        font-size: 13px;
+    }
+
+    .hero-atom {
+        height: 250px;
+        transform: scale(0.8);
+    }
+
+    .fact-strip > div {
+        padding: 14px 12px;
+    }
+
+    .band {
+        margin-bottom: 52px;
+    }
+
+    .band-heading h2 {
+        font-size: 22px;
+    }
+
+    .panel,
+    .position-notes article,
+    .neighbor-groups article,
+    .trivia-card {
+        padding: 18px;
+    }
+
+    .shell-row {
+        grid-template-columns: 22px minmax(0, 1fr) 42px;
+        gap: 8px;
+    }
+
+    .config-line {
+        font-size: 19px;
+    }
+
+    .application-grid article {
+        padding: 18px;
+        min-height: 0;
+    }
+
+    .application-grid article > span.app-index {
+        font-size: 42px;
+    }
+
+    .application-grid h3 {
+        margin-top: 48px;
+        font-size: 16px;
+    }
+
+    .reaction-card header {
+        padding: 12px 14px;
+    }
+
+    .equation {
+        padding: 20px 12px;
+        font-size: 14px;
+    }
+
+    .reaction-card dl {
+        padding: 0 14px 6px;
+    }
+
+    .reaction-card dl div {
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .question-band {
+        padding: 20px 16px;
+    }
+
+    .question-band h2 {
+        font-size: 20px;
+        margin: 12px 0 20px;
+    }
+
+    .discovery-timeline {
+        gap: 4px;
+    }
+
+    .timeline-year {
+        font-size: 28px;
     }
 }
 

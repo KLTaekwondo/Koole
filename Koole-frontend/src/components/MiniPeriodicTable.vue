@@ -23,6 +23,7 @@
             <span><i class="swatch group"></i>{{ groupLegendLabel }}</span>
             <span><i class="swatch period"></i>同一周期</span>
             <span class="legend-hint">点任意格子可以切过去看</span>
+            <span class="legend-hint-mobile">← 左右滑动查看整张周期表 →</span>
         </div>
     </div>
 </template>
@@ -190,6 +191,12 @@ function cellState(element) {
     color: var(--text-muted);
 }
 
+.legend-hint-mobile {
+    display: none;
+    margin-left: auto;
+    color: var(--text-muted);
+}
+
 @media (max-width: 760px) {
     .mini-table {
         min-width: 560px;
@@ -197,11 +204,24 @@ function cellState(element) {
 
     .mini-table-wrap {
         overflow-x: auto;
-        padding-bottom: 4px;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        padding: 2px 0 8px;
+    }
+
+    .cell {
+        scroll-snap-align: start;
     }
 
     .legend-hint {
         display: none !important;
+    }
+
+    .legend-hint-mobile {
+        display: inline-flex;
+        margin-left: 0;
+        font-size: 10px;
     }
 }
 </style>
