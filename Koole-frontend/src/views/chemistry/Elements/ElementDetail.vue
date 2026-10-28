@@ -1,6 +1,6 @@
 <template>
     <transition name="element-swap" mode="out-in">
-    <div v-if="element" :key="element.symbol" class="element-page" :style="{ '--element': color }">
+    <div v-if="element" :key="element.symbol" class="element-page" :class="`phase-${element.phase}`" :style="{ '--element': color }">
         <!-- ── 顶部：返回 + 相邻元素 ── -->
         <header class="page-bar">
             <router-link to="/chem-lab/periodic-table" class="back-link">
@@ -21,8 +21,9 @@
             </nav>
         </header>
 
-        <!-- ── HERO ── -->
-        <section class="hero">
+        <!-- ── HERO（整幅铺满，内容居中） ── -->
+        <section class="hero is-bleed" :class="`phase-${element.phase}`">
+            <div class="hero-inner">
             <div class="hero-copy">
                 <div class="hero-kicker">
                     <span class="category-chip">{{ categoryLabel(element) }}</span>
@@ -55,6 +56,7 @@
                 </div>
                 <div class="atom-core"><strong>{{ element.symbol }}</strong><small>{{ element.atomicNumber }}</small></div>
                 <span class="atom-caption">{{ totalElectrons }} ELECTRONS · {{ element.shells.length }} SHELLS</span>
+            </div>
             </div>
         </section>
 
@@ -248,15 +250,21 @@
                     <header class="band-heading">
                         <span>06 / DISCOVERY</span>
                         <h2>人类是怎么认识它的？</h2>
+                        <p>先看它被认出来的那一刻，再回到元素本身，想想为什么会是它。</p>
                     </header>
                     <div class="discovery-layout">
-                        <div class="discovery-year">{{ story.discovery?.year }}</div>
-                        <article>
+                        <div class="discovery-timeline">
+                            <span class="timeline-year">{{ story.discovery?.year }}</span>
+                            <span v-if="storyYearsAgo" class="timeline-caption">距今约 {{ storyYearsAgo }} 年</span>
+                            <span class="timeline-track" aria-hidden="true"><i></i><b></b></span>
+                            <span class="timeline-now">今天</span>
+                        </div>
+                        <article class="discovery-text">
                             <h3>{{ story.discovery?.title }}</h3>
                             <p>{{ story.discovery?.text }}</p>
                             <p v-if="story.narrative" class="story-narrative">{{ story.narrative }}</p>
                         </article>
-                        <aside>
+                        <aside class="discovery-aside">
                             <span>自然界中的它</span>
                             <p>{{ story.occurrence }}</p>
                         </aside>
@@ -270,7 +278,7 @@
                     </header>
                     <div class="application-grid">
                         <article v-for="(application, index) in story.applications" :key="application.title">
-                            <span>0{{ index + 1 }}</span>
+                            <span class="app-index">0{{ index + 1 }}</span>
                             <h3>{{ application.title }}</h3>
                             <p>{{ application.text }}</p>
                         </article>
@@ -287,7 +295,13 @@
                             <header><span>REACTION / 0{{ index + 1 }}</span><small>{{ reaction.condition }}</small></header>
                             <div class="equation">{{ reaction.equation }}</div>
                             <dl>
-                                <div><dt>观察现象</dt><dd>{{ reaction.phenomenon }}</dd></div>
+                                <div>
+                                    <dt>观察现象</dt>
+                                    <dd>
+                                        <span class="phenomenon-icon" v-html="phenomenonIcon(reaction.phenomenon)"></span>
+                                        {{ reaction.phenomenon }}
+                                    </dd>
+                                </div>
                                 <div><dt>它解释了什么</dt><dd>{{ reaction.meaning }}</dd></div>
                             </dl>
                             <p class="safety-note"><strong>安全提示</strong>{{ reaction.safety }}</p>
@@ -296,11 +310,13 @@
                 </section>
 
                 <section v-if="story.question" class="question-band">
-                    <span>带着一个问题离开</span>
-                    <h2>{{ story.question }}</h2>
-                    <div>
-                        <a v-if="story.source?.url" :href="story.source.url" target="_blank" rel="noreferrer">资料参考：{{ story.source.label }} ↗</a>
-                        <router-link to="/chem-lab/periodic-table">继续探索其他元素 →</router-link>
+                    <div class="question-inner">
+                        <span>带着一个问题离开</span>
+                        <h2>{{ story.question }}</h2>
+                        <div>
+                            <a v-if="story.source?.url" :href="story.source.url" target="_blank" rel="noreferrer">资料参考：{{ story.source.label }} ↗</a>
+                            <router-link to="/chem-lab/periodic-table">继续探索其他元素 →</router-link>
+                        </div>
                     </div>
                 </section>
             </template>
@@ -359,6 +375,33 @@ const totalElements = PERIODIC_ELEMENTS.length
 const element = computed(() => getElementBySymbol(route.params.symbol))
 const color = computed(() => (ELEMENT_CATEGORIES[element.value?.category] || ELEMENT_CATEGORIES.unknown).color)
 const story = computed(() => (element.value ? ELEMENT_CONTENT[element.value.symbol] || null : null))
+
+// 发现年份距今多少年：支持「前 1200」这种公元前的写法
+const storyYearsAgo = computed(() => {
+    const raw = story.value?.discovery?.year
+    if (!raw) return null
+    const matched = String(raw).match(/(\d+)/)
+    if (!matched) return null
+    const year = Number(matched[1])
+    const isBC = /公元前|^前/.test(String(raw))
+    const now = new Date().getFullYear()
+    return isBC ? year + now : Math.max(now - year, 0)
+})
+
+// 反应现象的小图标：按现象关键词挑一个，纯装饰用
+const PHENOMENON_ICONS = {
+    flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5 5.5 5 9a5 5 0 0 1-10 0c0-2 1-3.4 2.2-4.6"/><path d="M12 21c-1.7 0-3-1.3-3-3 0-1.6 1.3-2.6 3-4.4 1.7 1.8 3 2.8 3 4.4 0 1.7-1.3 3-3 3Z"/></svg>',
+    bubble: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="15" r="3.2"/><circle cx="16" cy="9" r="2.2"/><circle cx="15" cy="17" r="1.3"/><path d="M6 8.5a2 2 0 0 1 2-2"/></svg>',
+    color: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2.3-.9 2.3-2.1 0-1.3-1-1.9-1-3.1 0-1.1.9-2 2-2h1.6A4.1 4.1 0 0 0 21 9.9C21 6.1 17 3 12 3Z"/><circle cx="8" cy="9" r="1.1"/><circle cx="12.5" cy="7.5" r="1.1"/><circle cx="7.5" cy="13.5" r="1.1"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+}
+
+function phenomenonIcon(text = "") {
+    if (/火焰|燃烧|火星|发红|发光/.test(text)) return PHENOMENON_ICONS.flame
+    if (/气泡|气体|冒出|嘶嘶|浑浊/.test(text)) return PHENOMENON_ICONS.bubble
+    if (/变黑|变红|变蓝|变暗|变色|析出|铜层|银白|颜色/.test(text)) return PHENOMENON_ICONS.color
+    return PHENOMENON_ICONS.eye
+}
 const previous = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber - 2] || null : null))
 const next = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber] || null : null))
 
@@ -484,15 +527,26 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .element-page {
-    width: min(1180px, calc(100% - 32px));
+    --page-pad: clamp(18px, 4vw, 72px);
+    position: relative;
+    width: 100%;
     /* 底部留出胶囊工具盒的高度，滚到最底也不会被盖住 */
     margin: -20px auto 120px;
+    padding-inline: var(--page-pad);
     color: var(--text);
+}
+
+/* 需要横向铺满整屏的段落（英雄区 / 收尾问题）用它抵消页面内边距 */
+.is-bleed {
+    margin-inline: calc(var(--page-pad) * -1);
+    padding-inline: var(--page-pad);
 }
 
 /* ── 顶部条 ── */
 .page-bar {
+    width: min(1440px, 100%);
     min-height: 72px;
+    margin-inline: auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -561,18 +615,13 @@ onBeforeUnmount(() => {
     transform: translateY(-1px);
 }
 
-/* ── HERO ── */
+/* ── HERO：整幅铺满，内容居中 ── */
 .hero {
     position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) 380px;
-    align-items: center;
-    gap: 40px;
     overflow: hidden;
-    padding: 52px 54px;
-    border: 1px solid color-mix(in srgb, var(--element) 40%, var(--border));
-    border-radius: 24px;
-    background: linear-gradient(120deg, color-mix(in srgb, var(--element) 11%, var(--bg-card)) 0%, var(--bg-card) 64%);
+    padding-block: clamp(38px, 5vw, 78px);
+    border-block: 1px solid color-mix(in srgb, var(--element) 34%, var(--border));
+    background: linear-gradient(120deg, color-mix(in srgb, var(--element) 12%, var(--bg-card)) 0%, var(--bg-card) 62%);
 }
 
 .hero::before {
@@ -583,8 +632,29 @@ onBeforeUnmount(() => {
         linear-gradient(color-mix(in srgb, var(--element) 8%, transparent) 1px, transparent 1px),
         linear-gradient(90deg, color-mix(in srgb, var(--element) 8%, transparent) 1px, transparent 1px);
     background-size: 34px 34px;
-    mask-image: linear-gradient(90deg, transparent, #000 56%, #000);
+    mask-image: radial-gradient(circle at 74% 48%, #000 0%, transparent 74%);
     pointer-events: none;
+}
+
+/* 物态决定背景纹理：固态是网格、液态是斜纹、气态是散点 */
+.hero.phase-gas::before {
+    background-image: radial-gradient(circle, color-mix(in srgb, var(--element) 24%, transparent) 1.6px, transparent 1.7px);
+    background-size: 26px 26px;
+}
+
+.hero.phase-liquid::before {
+    background-image: repeating-linear-gradient(115deg, color-mix(in srgb, var(--element) 15%, transparent) 0 2px, transparent 2px 22px);
+}
+
+.hero-inner {
+    position: relative;
+    z-index: 1;
+    width: min(1440px, 100%);
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+    align-items: center;
+    gap: clamp(24px, 4vw, 56px);
 }
 
 .hero-copy {
@@ -779,7 +849,8 @@ onBeforeUnmount(() => {
 .fact-strip {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin-top: 12px;
+    width: min(1440px, 100%);
+    margin: 12px auto 0;
     border-block: 1px solid var(--border);
 }
 
@@ -818,7 +889,8 @@ onBeforeUnmount(() => {
 
 /* ── 内容区 ── */
 .element-content {
-    margin-top: 64px;
+    width: min(1440px, 100%);
+    margin: 64px auto 0;
 }
 
 .band {
@@ -1231,45 +1303,100 @@ onBeforeUnmount(() => {
 /* ── 手写故事区 ── */
 .discovery-layout {
     display: grid;
-    grid-template-columns: 200px minmax(0, 1fr) minmax(240px, 0.7fr);
-    gap: 28px;
+    grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.5fr) minmax(240px, 0.75fr);
+    gap: clamp(20px, 3vw, 40px);
     padding-top: 24px;
     border-top: 1px solid var(--border);
 }
 
-.discovery-year {
+.discovery-timeline {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+}
+
+.timeline-year {
     color: var(--element);
     font-family: var(--mono);
-    font-size: clamp(24px, 3.2vw, 40px);
+    font-size: clamp(26px, 3.4vw, 46px);
     font-weight: 800;
     line-height: 1.05;
     white-space: nowrap;
 }
 
-.discovery-layout h3 {
+.timeline-caption {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.timeline-track {
+    position: relative;
+    display: block;
+    height: 3px;
+    margin: 16px 0 6px;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.timeline-track i {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bg-card);
+    border-radius: 50%;
+    background: var(--element);
+    transform: translate(-1px, -50%);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--element) 18%, transparent);
+}
+
+.timeline-track b {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transform: translateY(-50%);
+}
+
+.timeline-now {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-align: right;
+}
+
+.discovery-text h3 {
     margin: 0 0 12px;
     font-size: 20px;
 }
 
-.discovery-layout p {
+.discovery-text p {
     color: var(--text-secondary);
     font-size: 13px;
     line-height: 1.9;
 }
 
-.discovery-layout aside {
+.discovery-aside {
     padding-left: 22px;
     border-left: 1px solid var(--border);
 }
 
-.discovery-layout aside span {
+.discovery-aside span {
     color: var(--element);
     font-size: 11px;
     font-weight: 800;
 }
 
-.discovery-layout aside p {
+.discovery-aside p {
     margin-top: 10px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.9;
 }
 
 .story-narrative {
@@ -1281,31 +1408,45 @@ onBeforeUnmount(() => {
 .application-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-block: 1px solid var(--border);
+    gap: 14px;
 }
 
 .application-grid article {
-    min-height: 220px;
-    padding: 28px;
-    border-right: 1px solid var(--border);
+    position: relative;
+    min-height: 240px;
+    overflow: hidden;
+    padding: 26px 28px;
+    border: 1px solid color-mix(in srgb, var(--element) 24%, var(--border));
+    border-radius: var(--radius-lg);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--element) 8%, var(--bg-card)), var(--bg-card) 64%);
+    transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
-.application-grid article:last-child {
-    border-right: 0;
+.application-grid article:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--element) 16%, transparent);
 }
 
-.application-grid article > span {
-    color: var(--element);
+.application-grid article > span.app-index {
+    position: absolute;
+    top: -6px;
+    right: 14px;
+    color: color-mix(in srgb, var(--element) 16%, transparent);
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 68px;
+    font-weight: 800;
+    line-height: 1;
+    pointer-events: none;
 }
 
 .application-grid h3 {
-    margin: 44px 0 12px;
+    position: relative;
+    margin: 74px 0 12px;
     font-size: 18px;
 }
 
 .application-grid p {
+    position: relative;
     margin: 0;
     color: var(--text-secondary);
     font-size: 13px;
@@ -1350,13 +1491,27 @@ onBeforeUnmount(() => {
 
 .equation {
     overflow-x: auto;
-    padding: 26px 18px;
+    padding: 28px 20px;
+    border-block: 1px solid color-mix(in srgb, var(--element) 16%, transparent);
+    background: color-mix(in srgb, var(--element) 7%, transparent);
     color: var(--text);
     font-family: var(--mono);
-    font-size: 21px;
+    font-size: clamp(16px, 1.7vw, 22px);
     font-weight: 800;
     text-align: center;
     white-space: nowrap;
+}
+
+.phenomenon-icon {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-right: 6px;
+    color: var(--element);
+}
+
+.phenomenon-icon svg {
+    width: 14px;
+    height: 14px;
 }
 
 .reaction-card dl {
@@ -1399,25 +1554,34 @@ onBeforeUnmount(() => {
     flex: 0 0 auto;
 }
 
+/* ── 收尾问题：带色块面板 ── */
 .question-band {
-    padding: 46px 0 20px;
-    border-top: 2px solid var(--element);
+    padding: clamp(26px, 4vw, 46px);
+    border: 1px solid color-mix(in srgb, var(--element) 30%, var(--border));
+    border-radius: var(--radius-xl);
+    background:
+        radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--element) 18%, transparent), transparent 62%),
+        color-mix(in srgb, var(--element) 5%, var(--bg-card));
 }
 
-.question-band > span {
+.question-inner {
+    width: 100%;
+}
+
+.question-inner > span {
     color: var(--element);
     font-size: 11px;
     font-weight: 800;
 }
 
 .question-band h2 {
-    max-width: 820px;
+    max-width: 900px;
     margin: 16px 0 30px;
-    font-size: 34px;
+    font-size: clamp(26px, 3vw, 38px);
     line-height: 1.4;
 }
 
-.question-band > div {
+.question-inner > div {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
@@ -1479,6 +1643,8 @@ onBeforeUnmount(() => {
 
 /* ── 底部 ── */
 .page-footer {
+    width: min(1440px, 100%);
+    margin-inline: auto;
     padding-top: 32px;
     border-top: 1px solid var(--border);
 }
@@ -1540,9 +1706,8 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
-    .hero {
+    .hero-inner {
         grid-template-columns: 1fr;
-        padding: 40px;
     }
 
     .hero-atom {
@@ -1578,7 +1743,7 @@ onBeforeUnmount(() => {
     }
 
     .discovery-layout {
-        grid-template-columns: 150px minmax(0, 1fr);
+        grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1.4fr);
     }
 
     .discovery-layout aside {
@@ -1595,8 +1760,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
     .element-page {
-        width: calc(100% - 20px);
         margin-top: -24px;
+        --page-pad: 14px;
     }
 
     .page-bar {
@@ -1608,9 +1773,11 @@ onBeforeUnmount(() => {
     }
 
     .hero {
+        padding-block: 28px;
+    }
+
+    .hero-inner {
         gap: 18px;
-        padding: 26px 20px;
-        border-radius: 14px;
     }
 
     .hero h1 {
@@ -1652,7 +1819,7 @@ onBeforeUnmount(() => {
         grid-column: auto;
     }
 
-    .discovery-year {
+    .timeline-year {
         font-size: 32px;
     }
 
@@ -1663,16 +1830,16 @@ onBeforeUnmount(() => {
 
     .application-grid article {
         min-height: 0;
-        border-right: 0;
-        border-bottom: 1px solid var(--border);
+        padding: 22px;
     }
 
-    .application-grid article:last-child {
-        border-bottom: 0;
+    .application-grid article > span.app-index {
+        font-size: 48px;
+        right: 12px;
     }
 
     .application-grid h3 {
-        margin-top: 20px;
+        margin-top: 36px;
     }
 
     .equation {
