@@ -183,3 +183,104 @@ export function peersWithPhysicalData(element) {
 export function isRadioactiveMass(element) {
     return typeof element?.atomicMass === "string" && element.atomicMass.startsWith("[")
 }
+
+/** 中文命名的偏旁规律：按「物态 + 分类」推出通则，个别例外在文案里点明 */
+function namingTrivia(element) {
+    const isSolidLike = element.phase === "solid" || element.phase === "unknown"
+
+    if (element.phase === "gas") {
+        return { label: "中文命名", text: "中文名带「气」字头，这类元素在常温下通常都是气体。" }
+    }
+    if (element.phase === "liquid") {
+        return { label: "中文命名", text: "常温下是液体；中文名用偏旁来体现：汞写成「水」字底，溴用「氵」旁。" }
+    }
+    if (!isSolidLike) return null
+
+    // 稀有气体：常温都是气体，上面已经处理；这里兜住「物态未知」的超重稀有气体（如 Og）
+    if (element.category === "noble-gas") {
+        return { label: "中文命名", text: "稀有气体的中文名都带「气」字头。" }
+    }
+    if (element.category === "nonmetal" || element.category === "metalloid" || element.category === "halogen") {
+        return { label: "中文命名", text: "固态的非金属、类金属和卤素，中文名多用「石」字旁。" }
+    }
+    if (element.symbol === "Au") {
+        return { label: "中文命名", text: "金属元素的中文名一般带金属偏旁；金是例外，直接用「金」字表示。" }
+    }
+    if (element.category === "unknown") return null
+    return { label: "中文命名", text: "金属元素的中文名一般带金属偏旁（「钅」或「金」），看一眼基本能分出金属和非金属。" }
+}
+
+/** 相对原子质量的含义：一个原子的平均质量是碳-12 原子质量的多少倍 */
+function massTrivia(element) {
+    const mass = Number(element.atomicMass)
+    if (!Number.isFinite(mass)) return null
+    return {
+        label: "相对原子质量",
+        text: `相对原子质量约 ${element.atomicMass}，意思是它的原子平均质量约为碳-12 原子的 ${(mass / 12).toFixed(3)} 倍。`,
+    }
+}
+
+/** 兜底小知识：保证每个元素至少有两条内容可看 */
+function positionTrivia(element) {
+    if (!element.group) {
+        return {
+            label: "周期表位置",
+            text: `它属于${categoryLabel(element)}，按惯例单独列在周期表下方，周期数仍然是 ${element.period}。`,
+        }
+    }
+    return {
+        label: "周期表位置",
+        text: `第 ${element.period} 周期第 ${element.group} 族：周期数等于它的电子层数，族数对应最外层电子数（主族元素）。`,
+    }
+}
+
+/**
+ * 元素小知识：全部从已有数据结构推导，不写没核对过的数值。
+ * 顺序上先给「有意思的」信息（命名、物态稀有度、同位素、同周期极值），
+ * 再用相对原子质量 / 周期表位置兜底，保证任何元素都有内容。
+ */
+export function elementTrivia(element) {
+    if (!element) return []
+    const items = []
+
+    const naming = namingTrivia(element)
+    if (naming) items.push(naming)
+
+    // 物态的稀有程度：气体 11 种、液体 2 种，这个数字本身就很直观
+    if (element.phase === "gas") {
+        items.push({ label: "物态", text: "常温常压下是气体的元素一共只有 11 种，绝大多数集中在周期表右侧和稀有气体一列。" })
+    } else if (element.phase === "liquid") {
+        items.push({ label: "物态", text: "常温常压下呈液态的元素只有汞和溴两种，它是其中之一。" })
+    } else if (element.phase === "unknown" && element.atomicNumber >= 104) {
+        items.push({ label: "物态", text: "人工合成的超重元素寿命极短，常温下的物态只能靠理论推测。" })
+    }
+
+    // 没有稳定同位素的元素，质量数写法不一样
+    if (isRadioactiveMass(element)) {
+        items.push({ label: "同位素", text: "它没有稳定的同位素，方括号里的数字是最稳定同位素的质量数，不是平均相对原子质量。" })
+    }
+
+    // 同周期熔点极值（只在已录入数据的元素之间比较，避免和全表数据混淆）
+    if (typeof element.meltingPoint === "number") {
+        const scoped = [element, ...periodPeers(element)].filter(item => typeof item.meltingPoint === "number")
+        if (scoped.length >= 3) {
+            const sorted = [...scoped].sort((a, b) => a.meltingPoint - b.meltingPoint)
+            const lowest = sorted[0]
+            const highest = sorted[sorted.length - 1]
+            if (element.atomicNumber === lowest.atomicNumber) {
+                items.push({ label: "同周期", text: `在已录入熔点数据的第 ${element.period} 周期元素里，它的熔点最低（${lowest.meltingPoint} °C）。` })
+            } else if (element.atomicNumber === highest.atomicNumber) {
+                items.push({ label: "同周期", text: `在已录入熔点数据的第 ${element.period} 周期元素里，它的熔点最高（${highest.meltingPoint} °C）。` })
+            }
+        }
+    }
+
+    // 兜底：保证至少两条，页面上的小知识区不会空着
+    const fallbacks = [massTrivia(element), positionTrivia(element)]
+    for (const item of fallbacks) {
+        if (items.length >= 2) break
+        if (item && !items.some(existing => existing.label === item.label)) items.push(item)
+    }
+
+    return items.slice(0, 4)
+}

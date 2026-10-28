@@ -227,11 +227,26 @@
                 </div>
             </section>
 
+            <!-- ── 05 小知识 ── -->
+            <section v-if="trivia.length" id="trivia" class="band">
+                <header class="band-heading">
+                    <span>05 / SMALL NOTES</span>
+                    <h2>关于它的小知识</h2>
+                    <p>这些信息是从位置、物态和中文字形里直接读出来的，不需要额外查数据表。</p>
+                </header>
+                <div class="trivia-grid">
+                    <article v-for="item in trivia" :key="item.label" class="trivia-card">
+                        <span>{{ item.label }}</span>
+                        <p>{{ item.text }}</p>
+                    </article>
+                </div>
+            </section>
+
             <!-- ── 手写故事（有内容时才出现） ── -->
             <template v-if="story">
                 <section id="story" class="band">
                     <header class="band-heading">
-                        <span>05 / DISCOVERY</span>
+                        <span>06 / DISCOVERY</span>
                         <h2>人类是怎么认识它的？</h2>
                     </header>
                     <div class="discovery-layout">
@@ -250,7 +265,7 @@
 
                 <section v-if="story.applications?.length" class="band">
                     <header class="band-heading">
-                        <span>06 / IN THE REAL WORLD</span>
+                        <span>07 / IN THE REAL WORLD</span>
                         <h2>它如何进入我们的生活？</h2>
                     </header>
                     <div class="application-grid">
@@ -264,7 +279,7 @@
 
                 <section v-if="story.reactions?.length" class="band">
                     <header class="band-heading">
-                        <span>07 / WATCH THE REACTION</span>
+                        <span>08 / WATCH THE REACTION</span>
                         <h2>把现象写成化学语言</h2>
                     </header>
                     <div class="reaction-grid">
@@ -290,16 +305,13 @@
                 </section>
             </template>
 
-            <!-- ── 底部 ── -->
+            <!-- ── 底部说明（元素切换交给底部胶囊工具盒） ── -->
             <footer class="page-footer">
-                <router-link to="/chem-lab/periodic-table" class="cta-button">回到周期表选下一个 →</router-link>
-                <div class="footer-neighbors">
-                    <router-link v-if="previous" :to="`/chem-lab/periodic-table/${previous.symbol}`">← {{ previous.name }}</router-link>
-                    <router-link v-if="next" :to="`/chem-lab/periodic-table/${next.symbol}`">{{ next.name }} →</router-link>
-                </div>
                 <p class="data-note">数据来自公开元素数据整理；缺少统一可靠测量的性质会明确显示「暂无可靠数据」。手写百科内容按批次补充。</p>
             </footer>
         </main>
+
+        <ElementDock :element="element" :previous="previous" :next="next" :total="totalElements" />
     </div>
 
     <div v-else key="missing" class="missing">
@@ -314,6 +326,7 @@
 import { computed, onBeforeUnmount, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import MiniPeriodicTable from "../../../components/MiniPeriodicTable.vue"
+import ElementDock from "../../../components/ElementDock.vue"
 import {
     PERIODIC_ELEMENTS,
     ELEMENT_CATEGORIES,
@@ -326,6 +339,7 @@ import {
     buildElementSummary,
     categoryFact,
     categoryLabel,
+    elementTrivia,
     groupPeers,
     groupPeersLabel,
     isRadioactiveMass,
@@ -340,6 +354,8 @@ import {
 const route = useRoute()
 const router = useRouter()
 
+const totalElements = PERIODIC_ELEMENTS.length
+
 const element = computed(() => getElementBySymbol(route.params.symbol))
 const color = computed(() => (ELEMENT_CATEGORIES[element.value?.category] || ELEMENT_CATEGORIES.unknown).color)
 const story = computed(() => (element.value ? ELEMENT_CONTENT[element.value.symbol] || null : null))
@@ -347,6 +363,7 @@ const previous = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value
 const next = computed(() => (element.value ? PERIODIC_ELEMENTS[element.value.atomicNumber] || null : null))
 
 const summary = computed(() => buildElementSummary(element.value))
+const trivia = computed(() => elementTrivia(element.value))
 const totalElectrons = computed(() => element.value?.shells.reduce((sum, count) => sum + count, 0) || 0)
 const groupDisplay = computed(() => {
     const current = element.value
@@ -468,7 +485,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .element-page {
     width: min(1180px, calc(100% - 32px));
-    margin: -20px auto 80px;
+    /* 底部留出胶囊工具盒的高度，滚到最底也不会被盖住 */
+    margin: -20px auto 120px;
     color: var(--text);
 }
 
@@ -1415,46 +1433,53 @@ onBeforeUnmount(() => {
     color: var(--element);
 }
 
+/* ── 05 小知识 ── */
+.trivia-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.trivia-card {
+    position: relative;
+    padding: 20px 22px 20px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--element) 4%, var(--bg-card));
+}
+
+.trivia-card::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    left: 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--element);
+    opacity: 0.7;
+}
+
+.trivia-card span {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--element);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.trivia-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
 /* ── 底部 ── */
 .page-footer {
-    display: grid;
-    gap: 16px;
-    padding-top: 36px;
+    padding-top: 32px;
     border-top: 1px solid var(--border);
-}
-
-.cta-button {
-    justify-self: start;
-    display: inline-flex;
-    align-items: center;
-    padding: 12px 20px;
-    border-radius: 999px;
-    background: var(--element);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: var(--transition);
-}
-
-.cta-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px color-mix(in srgb, var(--element) 30%, transparent);
-}
-
-.footer-neighbors {
-    display: flex;
-    gap: 18px;
-}
-
-.footer-neighbors a {
-    color: var(--text-secondary);
-    font-size: 12px;
-    text-decoration: none;
-}
-
-.footer-neighbors a:hover {
-    color: var(--element);
 }
 
 .data-note {
