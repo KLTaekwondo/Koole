@@ -77,6 +77,9 @@
                         }"
                         :style="tileStyle(element)"
                         :aria-label="`${element.atomicNumber} 号元素 ${element.name} ${element.symbol}`"
+                        @mouseenter="prefetchElementDetail"
+                        @focus="prefetchElementDetail"
+                        @touchstart.passive="prefetchElementDetail"
                     >
                         <small>{{ element.atomicNumber }}</small>
                         <strong>{{ element.symbol }}</strong>
@@ -95,6 +98,9 @@
                         class="element-tile"
                         :class="{ muted: !matches(element) }"
                         :style="seriesTileStyle(element, index, 1)"
+                        @mouseenter="prefetchElementDetail"
+                        @focus="prefetchElementDetail"
+                        @touchstart.passive="prefetchElementDetail"
                     >
                         <small>{{ element.atomicNumber }}</small>
                         <strong>{{ element.symbol }}</strong>
@@ -109,6 +115,9 @@
                         class="element-tile"
                         :class="{ muted: !matches(element) }"
                         :style="seriesTileStyle(element, index, 2)"
+                        @mouseenter="prefetchElementDetail"
+                        @focus="prefetchElementDetail"
+                        @touchstart.passive="prefetchElementDetail"
                     >
                         <small>{{ element.atomicNumber }}</small>
                         <strong>{{ element.symbol }}</strong>
@@ -281,6 +290,15 @@ function clearFilters() {
     query.value = ""
     categoryFilter.value = "all"
     phaseFilter.value = "all"
+}
+
+// 预取元素详情页的代码包：元素详情是懒加载路由（含全部百科数据，约 180 kB），
+// 鼠标悬停 / 键盘聚焦 / 手指按下元素格子时就开始下载，点进去时不用再等。
+// 注意：这里只是提前把同一个 chunk 拉下来，数据仍然是一次性加载，没有按元素拆包。
+let elementDetailModule = null
+function prefetchElementDetail() {
+    if (!elementDetailModule) elementDetailModule = import("./ElementDetail.vue")
+    return elementDetailModule
 }
 
 function toggleSearch() {
