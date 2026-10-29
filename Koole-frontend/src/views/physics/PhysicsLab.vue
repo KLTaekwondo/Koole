@@ -20,10 +20,20 @@
             :devices="devices"
         />
 
+        <!-- 现象与发现：放在实验方式之前，先看「为什么」，再选「怎么玩」 -->
+        <PhenomenonExplorer
+            subject="physics"
+            subject-label="物理"
+            base-path="/physics-lab/phenomena"
+            accent="#3b82f6"
+            kicker="01 / PHENOMENA"
+            title="这些现象，是怎么被发现的？"
+        />
+
         <section class="modes-section">
             <header class="section-heading">
                 <div>
-                    <small>01 / MODES</small>
+                    <small>02 / MODES</small>
                     <h2>选择你的实验方式。</h2>
                 </div>
                 <p>经典模型适合逐参数验证规律，物理关卡用目标推动理解，沙盒模式适合自由搭建与试错。三种入口，三种节奏。</p>
@@ -104,14 +114,6 @@
                 </router-link>
             </div>
         </section>
-
-        <!-- 现象与发现：直接挂在物理主页里，可搜索、可横向滚时间轴 -->
-        <PhenomenonExplorer
-            subject="physics"
-            subject-label="物理"
-            base-path="/physics-lab/phenomena"
-            kicker="02 / PHENOMENA"
-        />
     </div>
 </template>
 

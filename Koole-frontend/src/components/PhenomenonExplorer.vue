@@ -1,5 +1,5 @@
 <template>
-    <section class="phenomena-section">
+    <section class="phenomena-section" :style="{ '--subject': accent }">
         <header class="section-heading">
             <div>
                 <small>{{ kicker }}</small>
@@ -72,6 +72,7 @@ import { getPhenomenaBySubject, getPhenomenaCategories } from "../content/phenom
 
 const props = defineProps({
     subject: { type: String, default: "physics" },
+    accent: { type: String, default: "#3b82f6" },
     kicker: { type: String, default: "02 / PHENOMENA" },
     title: { type: String, default: "这些现象，是怎么被发现的？" },
     description: { type: String, default: "每篇先讲发现故事，再拆开规律，最后把可调节的模拟放在你手上。可以搜索，也可以左右拖动时间轴。" },
@@ -112,12 +113,12 @@ function resetFilters() {
 </script>
 
 <style scoped>
+/* 区块整体透明：背景固定着 Three.js 场景，这里不铺任何底色、不留分割线 */
 .phenomena-section {
     width: 100vw;
     margin-left: calc(50% - 50vw);
-    padding: 88px max(24px, calc((100vw - 1180px) / 2)) 96px;
-    background: color-mix(in srgb, var(--bg-card) 60%, transparent);
-    border-top: 1px solid var(--border);
+    padding: 76px max(24px, calc((100vw - 1180px) / 2)) 84px;
+    background: transparent;
 }
 
 .section-heading {
@@ -129,7 +130,7 @@ function resetFilters() {
 }
 
 .section-heading small {
-    color: var(--primary);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 700;
@@ -165,14 +166,18 @@ function resetFilters() {
     flex: 1 1 280px;
     max-width: 420px;
     padding: 9px 14px;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 999px;
-    background: var(--bg-card);
-    transition: border-color 0.2s;
+    background: color-mix(in srgb, var(--subject) 7%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject) 18%, transparent);
+    transition: box-shadow 0.2s, background 0.2s;
 }
 
 .search-box:focus-within {
-    border-color: var(--primary);
+    background: color-mix(in srgb, var(--subject) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--subject) 55%, transparent);
 }
 
 .search-box svg {
@@ -217,9 +222,12 @@ function resetFilters() {
 
 .category-chip {
     padding: 7px 14px;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 999px;
-    background: transparent;
+    background: color-mix(in srgb, var(--subject) 7%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject) 16%, transparent);
     color: var(--text-secondary);
     font-family: var(--sans);
     font-size: 12px;
@@ -228,14 +236,15 @@ function resetFilters() {
 }
 
 .category-chip:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+    color: var(--subject);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject) 45%, transparent);
 }
 
 .category-chip.active {
-    border-color: var(--primary);
-    background: var(--primary);
+    background: var(--subject);
+    box-shadow: none;
     color: #fff;
+    font-weight: 600;
 }
 
 /* ── 时间轴（横向滚动） ── */
@@ -256,7 +265,7 @@ function resetFilters() {
 
 .timeline-track::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: var(--border);
+    background: color-mix(in srgb, var(--subject) 24%, transparent);
 }
 
 .timeline-item {
@@ -264,28 +273,17 @@ function resetFilters() {
     display: grid;
     grid-template-rows: auto auto 1fr;
     gap: 8px;
-    padding-top: 30px;
+    padding-top: 26px;
     scroll-snap-align: start;
     text-decoration: none;
     color: var(--text);
-}
-
-/* 每个条目顶部的一小段横线 + 圆点，拼起来就是时间轴 */
-.timeline-item::before {
-    content: "";
-    position: absolute;
-    top: 20px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--border);
 }
 
 .item-era {
     position: absolute;
     top: 0;
     left: 0;
-    color: var(--text-muted);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 700;
@@ -294,34 +292,38 @@ function resetFilters() {
 
 .item-dot {
     position: absolute;
-    top: 16px;
+    top: 17px;
     left: 0;
-    width: 9px;
-    height: 9px;
-    border: 2px solid var(--bg-card);
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--subject);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--subject) 18%, transparent);
 }
 
+/* 卡片：不铺白底、不描边框，只用学科色的极淡透明层 + 毛玻璃，让 3D 场景透出来 */
 .item-card {
     display: grid;
     gap: 7px;
     height: 100%;
     padding: 18px 18px 16px;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: var(--radius-lg);
-    background: var(--bg-card);
-    transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), border-color 0.25s;
+    background: color-mix(in srgb, var(--subject) 7%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 0.25s var(--ease-out), background 0.25s, box-shadow 0.25s;
 }
 
-.timeline-item:hover .item-card {
+.timeline-item:hover .item-card,
+.timeline-item:focus-visible .item-card {
     transform: translateY(-3px);
-    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-    box-shadow: var(--shadow-hover);
+    background: color-mix(in srgb, var(--subject) 11%, transparent);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--subject) 18%, transparent);
 }
 
 .item-category {
-    color: var(--primary);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 9px;
     font-weight: 700;
@@ -353,7 +355,7 @@ function resetFilters() {
 }
 
 .item-card footer b {
-    color: var(--primary);
+    color: var(--subject);
     font-size: 11px;
     white-space: nowrap;
 }
@@ -363,8 +365,11 @@ function resetFilters() {
     justify-items: center;
     gap: 12px;
     padding: 40px 20px;
-    border: 1px dashed var(--border);
+    border: 0;
     border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--subject) 6%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .phenomena-empty p {
@@ -375,12 +380,13 @@ function resetFilters() {
 
 .phenomena-empty button {
     padding: 8px 16px;
-    border: 1px solid var(--primary);
+    border: 0;
     border-radius: 999px;
-    background: transparent;
-    color: var(--primary);
+    background: color-mix(in srgb, var(--subject) 14%, transparent);
+    color: var(--subject);
     font-family: var(--sans);
     font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
 }
 
