@@ -1,7 +1,7 @@
 {
   "name": "koole-frontend",
   "private": true,
-  "version": "1.10.4",
+  "version": "1.10.5",
   "main": "electron/main.js",
   "engines": {
     "node": ">=20.19"

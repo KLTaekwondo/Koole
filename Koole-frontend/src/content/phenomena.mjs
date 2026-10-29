@@ -20,6 +20,7 @@ export const PHENOMENA = [
         era: "1583",
         eraSort: 1583,
         category: "力学",
+        visual: "pendulum",
         figure: {
             name: "伽利略",
             years: "1564–1642",
@@ -106,6 +107,7 @@ $$T = 2\\pi\\sqrt{\\frac{L}{g}}\\left(1 + \\frac{1}{16}\\theta_0^2 + \\cdots\\ri
         era: "前 250",
         eraSort: -250,
         category: "力学",
+        visual: "buoyancy",
         figure: {
             name: "阿基米德",
             years: "前 287–前 212",
@@ -177,6 +179,7 @@ $$T = 2\\pi\\sqrt{\\frac{L}{g}}\\left(1 + \\frac{1}{16}\\theta_0^2 + \\cdots\\ri
         era: "1621",
         eraSort: 1621,
         category: "光学",
+        visual: "refraction",
         figure: {
             name: "斯涅尔",
             years: "1580–1626",
@@ -251,6 +254,7 @@ $$\\theta_c = \\arcsin\\frac{n_2}{n_1}$$
         era: "前 300",
         eraSort: -300,
         category: "光学",
+        visual: "mirror",
         figure: {
             name: "欧几里得",
             years: "约前 325–前 265",
@@ -327,6 +331,7 @@ $$\\theta_i = \\theta_r$$
         era: "前 250",
         eraSort: -250,
         category: "力学",
+        visual: "lever",
         figure: {
             name: "阿基米德",
             years: "前 287–前 212",
@@ -401,6 +406,7 @@ $$L = d\\sin\\theta$$
         era: "1638",
         eraSort: 1638,
         category: "力学",
+        visual: "freefall",
         figure: {
             name: "伽利略",
             years: "1564–1642",
@@ -479,6 +485,7 @@ $$1 : 3 : 5 : 7 : \\cdots$$
         era: "1659",
         eraSort: 1659,
         category: "力学",
+        visual: "circular",
         figure: {
             name: "惠更斯",
             years: "1629–1695",
@@ -551,6 +558,7 @@ $$1 : 3 : 5 : 7 : \\cdots$$
         era: "1660",
         eraSort: 1660,
         category: "力学",
+        visual: "spring",
         figure: {
             name: "胡克",
             years: "1635–1703",
@@ -618,6 +626,7 @@ $$T = 2\\pi\\sqrt{\\frac{m}{k}}$$
         era: "1826",
         eraSort: 1826,
         category: "电学",
+        visual: "ohm",
         figure: {
             name: "欧姆",
             years: "1789–1854",
@@ -683,6 +692,7 @@ $$I = \\frac{U}{R}$$
         era: "1609",
         eraSort: 1609,
         category: "光学",
+        visual: "lens",
         figure: {
             name: "伽利略",
             years: "1564–1642",

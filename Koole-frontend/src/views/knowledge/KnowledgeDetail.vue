@@ -1,29 +1,35 @@
 <template>
     <div v-if="item" class="detail-page" :style="{ '--subject': accent }">
-        <header class="detail-header">
-            <button type="button" class="back-link" @click="goBack">← 物理实验室 · 现象与发现</button>
-            <div class="kicker">
-                <span class="era-badge">{{ item.era }}</span>
-                <span>{{ item.category }}</span>
-            </div>
-            <h1>{{ item.title }}</h1>
-            <p class="hook">{{ item.hook }}</p>
+        <!-- 封面：学科色渐变 + 主题线条，向下渐隐到正文 -->
+        <header class="article-cover">
+            <div class="cover-inner">
+                <button type="button" class="back-link" @click="goBack">← 物理实验室 · 现象与发现</button>
+                <div class="kicker">
+                    <span class="era-badge">{{ item.era }}</span>
+                    <span>{{ item.category }}</span>
+                    <span v-if="item.figure?.name" class="kicker-figure">{{ item.figure.name }}</span>
+                </div>
+                <h1>{{ item.title }}</h1>
+                <p class="hook">{{ item.hook }}</p>
 
-            <!-- 主人公：卡片上只写名字，这里给出生卒年与身份 -->
-            <div v-if="item.figure" class="figure-strip">
-                <div class="figure-main">
-                    <span class="figure-label">主人公</span>
-                    <strong>{{ item.figure.name }}</strong>
-                    <span v-if="item.figure.years" class="figure-years">{{ item.figure.years }}</span>
-                    <p v-if="item.figure.note">{{ item.figure.note }}</p>
-                </div>
-                <div v-for="figure in item.coFigures || []" :key="figure.name" class="figure-co">
-                    <span class="figure-label">共同相关</span>
-                    <strong>{{ figure.name }}</strong>
-                    <span v-if="figure.years" class="figure-years">{{ figure.years }}</span>
-                    <p v-if="figure.note">{{ figure.note }}</p>
+                <!-- 主人公：卡片上只写名字，这里给出生卒年与身份 -->
+                <div v-if="item.figure" class="figure-strip">
+                    <div class="figure-main">
+                        <span class="figure-label">主人公</span>
+                        <strong>{{ item.figure.name }}</strong>
+                        <span v-if="item.figure.years" class="figure-years">{{ item.figure.years }}</span>
+                        <p v-if="item.figure.note">{{ item.figure.note }}</p>
+                    </div>
+                    <div v-for="figure in item.coFigures || []" :key="figure.name" class="figure-co">
+                        <span class="figure-label">共同相关</span>
+                        <strong>{{ figure.name }}</strong>
+                        <span v-if="figure.years" class="figure-years">{{ figure.years }}</span>
+                        <p v-if="figure.note">{{ figure.note }}</p>
+                    </div>
                 </div>
             </div>
+
+            <PhenomenonMotif class="cover-motif" :variant="item.visual" :color="accent" :opacity="0.42" />
         </header>
 
         <main class="detail-content">
@@ -110,6 +116,41 @@
                 </div>
             </section>
 
+            <!-- 接着读：同主人公优先，再用同分类补足，最后是年代上的前后篇 -->
+            <section v-if="relatedItems.length || prevItem || nextItem" class="related-band">
+                <header class="band-heading">
+                    <span>05 / KEEP READING</span>
+                    <h2>接着读</h2>
+                </header>
+
+                <div v-if="relatedItems.length" class="related-grid">
+                    <router-link
+                        v-for="related in relatedItems"
+                        :key="related.id"
+                        :to="`/physics-lab/phenomena/${related.id}`"
+                        class="related-card"
+                    >
+                        <div class="related-top">
+                            <span class="related-era">{{ related.era }}</span>
+                            <span class="related-why">{{ relatedReason(related) }}</span>
+                        </div>
+                        <h3>{{ related.title }}</h3>
+                        <p>{{ related.hook }}</p>
+                    </router-link>
+                </div>
+
+                <nav v-if="prevItem || nextItem" class="related-pager" aria-label="按年代前后翻页">
+                    <router-link v-if="prevItem" :to="`/physics-lab/phenomena/${prevItem.id}`" class="pager-link">
+                        <small>← 更早的发现</small>
+                        <span>{{ prevItem.title }}</span>
+                    </router-link>
+                    <router-link v-if="nextItem" :to="`/physics-lab/phenomena/${nextItem.id}`" class="pager-link is-next">
+                        <small>更晚的发现 →</small>
+                        <span>{{ nextItem.title }}</span>
+                    </router-link>
+                </nav>
+            </section>
+
             <footer class="detail-footer">
                 <div v-if="item.sources?.length" class="sources">
                     <span>参考资料</span>
@@ -135,8 +176,9 @@ import { MdPreview } from "md-editor-v3"
 import "../../plugins/markdown.js"
 
 import "md-editor-v3/lib/preview.css"
+import PhenomenonMotif from "../../components/PhenomenonMotif.vue"
 import { theme } from "../../stores/theme.js"
-import { getPhenomenonById } from "../../content/phenomena.mjs"
+import { getPhenomenaBySubject, getPhenomenonById } from "../../content/phenomena.mjs"
 import { getSubjectById } from "../../constants/subjects.js"
 
 const route = useRoute()
@@ -177,6 +219,47 @@ const updateTitle = () => {
 // 故事与「容易想错」里也可能带 $...$ 公式，只有这类段落才挂 Markdown 渲染
 const hasMath = text => typeof text === "string" && text.includes("$")
 
+// ── 接着读 ──
+// 优先同一主人公（比如伽利略的三篇），再用同分类补足，最多 3 篇
+const siblingItems = computed(() => {
+    const current = item.value
+    if (!current) return []
+    return getPhenomenaBySubject(current.subject || "physics").filter(other => other.id !== current.id)
+})
+
+const relatedItems = computed(() => {
+    const current = item.value
+    if (!current) return []
+    const byFigure = siblingItems.value.filter(other => (
+        current.figure?.name && other.figure?.name === current.figure.name
+    ))
+    const byCategory = siblingItems.value.filter(other => (
+        other.category === current.category && !byFigure.includes(other)
+    ))
+    const picked = [...byFigure, ...byCategory].slice(0, 3)
+    // 不够 3 篇时用其他任意篇目补足，避免空一大块
+    const rest = siblingItems.value.filter(other => !picked.includes(other))
+    return [...picked, ...rest].slice(0, 3)
+})
+
+function relatedReason(other) {
+    const current = item.value
+    if (current?.figure?.name && other.figure?.name === current.figure.name) {
+        return `同为 ${other.figure.name} 的发现`
+    }
+    if (other.category === current?.category) return `同属${other.category}`
+    return "同期物理"
+}
+
+// 年代上的前后篇
+const eraOrder = computed(() => getPhenomenaBySubject(item.value?.subject || "physics"))
+const currentIndex = computed(() => eraOrder.value.findIndex(other => other.id === item.value?.id))
+const prevItem = computed(() => (currentIndex.value > 0 ? eraOrder.value[currentIndex.value - 1] : null))
+const nextItem = computed(() => {
+    const index = currentIndex.value
+    return index >= 0 && index < eraOrder.value.length - 1 ? eraOrder.value[index + 1] : null
+})
+
 onMounted(updateTitle)
 watch(() => route.params.id, updateTitle)
 </script>
@@ -189,12 +272,65 @@ watch(() => route.params.id, updateTitle)
     color: var(--text);
 }
 
-/* ── 头部 ── */
-.detail-header {
+/* ── 封面：学科色渐变 + 细网格 + 主题线条，底部渐隐进正文 ── */
+.article-cover {
+    position: relative;
+    width: 100vw;
+    margin: -32px calc(50% - 50vw) 0;
+    padding: 40px max(24px, calc((100vw - 1080px) / 2)) 46px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--subject) 22%, transparent), transparent 58%),
+        linear-gradient(160deg, color-mix(in srgb, var(--subject) 12%, var(--bg)) 0%, var(--bg) 76%);
+}
+
+/* 细网格 + 底部渐隐，避免封面和正文之间出现硬边 */
+.article-cover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--subject) 9%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--subject) 9%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, #000 0%, #000 48%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, transparent 100%);
+    pointer-events: none;
+}
+
+.article-cover::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 90px;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+}
+
+.cover-inner {
+    position: relative;
+    z-index: 1;
     display: grid;
     gap: 12px;
-    padding: 40px 0 18px;
+    max-width: 720px;
 }
+
+/* 主题线条：贴封面右下角，随学科色，弱化到不抢文字 */
+.cover-motif {
+    position: absolute;
+    right: max(24px, calc((100vw - 1080px) / 2 - 90px));
+    bottom: 22px;
+    z-index: 1;
+    width: min(420px, 34vw);
+    height: 340px;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at 60% 55%, #000 30%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at 60% 55%, #000 30%, transparent 78%);
+}
+
+/* ── 头部 ── */
 
 /* 返回入口是 button（要走 history.back），这里抹掉默认按钮外观 */
 .back-link,
@@ -238,7 +374,7 @@ watch(() => route.params.id, updateTitle)
     font-weight: 800;
 }
 
-.detail-header h1 {
+.cover-inner h1 {
     margin: 0;
     font-size: clamp(30px, 4.6vw, 50px);
     line-height: 1.16;
@@ -632,6 +768,111 @@ watch(() => route.params.id, updateTitle)
     font-size: 11px;
 }
 
+/* ── 接着读 ── */
+.related-band {
+    margin-top: 12px;
+    padding-top: 8px;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.related-card {
+    display: grid;
+    gap: 8px;
+    padding: 18px 20px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--subject) 6%, var(--bg-card));
+    color: var(--text);
+    text-decoration: none;
+    transition: transform 0.25s var(--ease-out), background 0.25s, box-shadow 0.25s;
+}
+
+.related-card:hover,
+.related-card:focus-visible {
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--subject) 10%, var(--bg-card));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--subject) 16%, transparent);
+}
+
+.related-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.related-era {
+    color: var(--subject);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.related-why {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--subject) 14%, transparent);
+    color: color-mix(in srgb, var(--subject) 82%, var(--text));
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.related-card h3 {
+    margin: 0;
+    font-size: 15.5px;
+    line-height: 1.45;
+}
+
+.related-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    line-height: 1.75;
+}
+
+.related-pager {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-light);
+}
+
+.pager-link {
+    display: grid;
+    gap: 4px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.pager-link small {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.pager-link span {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.pager-link:hover span {
+    color: var(--subject);
+}
+
+.pager-link.is-next {
+    text-align: right;
+    justify-items: end;
+}
+
 /* ── 底部 ── */
 .detail-footer {
     display: flex;
@@ -688,6 +929,33 @@ watch(() => route.params.id, updateTitle)
 @media (max-width: 760px) {
     .detail-page {
         width: calc(100% - 28px);
+    }
+
+    /* 封面收紧，主题线条缩小并贴近角落 */
+    .article-cover {
+        margin-top: -24px;
+        padding: 26px 18px 32px;
+    }
+
+    .cover-inner {
+        max-width: none;
+    }
+
+    .cover-motif {
+        right: 4px;
+        bottom: 4px;
+        width: 190px;
+        height: 170px;
+        opacity: 0.66;
+    }
+
+    .related-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pager-link.is-next {
+        justify-items: start;
+        text-align: left;
     }
 
     .band-heading {
