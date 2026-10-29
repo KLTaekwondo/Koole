@@ -121,7 +121,9 @@ const router = useRouter()
 const subjectsSection = ref(null)
 const carouselPaused = ref(false)
 const physicsCount = PHYSICS_MODEL_COUNT
-const revealObservers = []// 首页学科卡片：public + planned 各占一张，archived 收进一张「其他学科」卡片。
+const revealObservers = []
+
+// 首页学科卡片：public + planned 各占一张，archived 收进一张「其他学科」卡片。
 // 卡片信息全部来自 constants/subjects.js，这里不再硬编码学科名称、描述和颜色。
 const MORE_SUBJECTS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>`
 
