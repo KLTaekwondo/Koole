@@ -103,9 +103,9 @@ Koole/
         │   ├── math/               # 函数求值、采样、几何构建、求交、渲染
         │   └── chemistry/          # 元素详情页派生内容（分类/分区说明、电子层、性质对比）
         ├── Levels/                 # 物理关卡、数学关卡数据
-        ├── content/                # 知识小站：现象条目（发现故事 + 知识点 + 对应模拟）
+        ├── content/                # 现象与发现：发现故事 + 知识点 + 对应模拟（嵌在学科主页里）
         ├── views/                  # 页面（按学科分目录）
-        │   ├── home / about / progress / knowledge / subjects # 首页、关于、进度、知识小站、其他学科
+        │   ├── home / about / progress / subjects # 首页、关于、进度、其他学科
         │   ├── physics/            # 实验室入口、经典模型、物理关卡、沙盒
         │   ├── math/               # 函数、立体几何、概率、函数关卡
         │   ├── chemistry/          # 化学实验室、元素周期表
