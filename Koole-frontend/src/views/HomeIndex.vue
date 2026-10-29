@@ -6,7 +6,7 @@
             <div class="hero-copy">
                 <p class="eyebrow">KOOLE / VISUAL KNOWLEDGE</p>
                 <h1>把知识变成<br><em>可探索的世界</em></h1>
-                <p class="hero-description">九门学科，一个持续生长的可视化平台。观察规律，调节参数，亲手理解那些原本只存在于课本里的内容。</p>
+                <p class="hero-description">理科可视实验室：物理、数学、化学。观察规律，调节参数，亲手理解那些原本只存在于课本里的内容。</p>
                 <div class="hero-actions">
                     <button class="primary-button" type="button" @click="goExplore">开始探索 <span>↗</span></button>
                     <button class="outline-button" type="button" @click="scrollToSubjects">查看学科 <span>↓</span></button>
@@ -42,31 +42,31 @@
                 <button class="carousel-arrow" :class="{ previous: true }" type="button" aria-label="上一门学科" @click.stop="previousSubject">←</button>
                 <div class="carousel-stage">
                     <router-link
-                        v-for="(subject, index) in subjects"
+                        v-for="(subject, index) in subjectCards"
                         :key="subject.id"
                         :to="subject.path"
                         class="subject-card"
-                        :class="[{ ready: subject.status === 'ready' }, subjectPositionClass(index)]"
+                        :class="[subject.tier, subjectPositionClass(index)]"
                         :style="{ color: subject.color }"
                         :aria-hidden="index !== activeSubject"
                         :tabindex="index === activeSubject ? 0 : -1"
                     >
                         <div class="subject-top">
                             <span>{{ subject.number }}</span>
-                            <span>{{ subject.status === 'ready' ? 'OPEN LAB' : 'IN DEVELOPMENT' }}</span>
+                            <span>{{ subject.tier === 'public' ? 'OPEN LAB' : subject.tier === 'planned' ? 'COMING SOON' : 'MORE' }}</span>
                         </div>
                         <div class="subject-icon" v-html="subject.icon"></div>
                         <h3>{{ subject.name }}</h3>
                         <p>{{ subject.description }}</p>
                         <div class="subject-bottom">
                             <span>{{ subject.vision }}</span>
-                            <b>{{ subject.status === 'ready' ? '进入 ↗' : '查看规划 ↗' }}</b>
+                            <b>{{ subject.tier === 'public' ? '进入 ↗' : subject.tier === 'planned' ? '即将开放 ↗' : '查看规划 ↗' }}</b>
                         </div>
                     </router-link>
                 </div>
                 <button class="carousel-arrow" :class="{ next: true }" type="button" aria-label="下一门学科" @click.stop="nextSubject">→</button>
                 <div class="carousel-footer">
-                    <span><b>{{ currentSubjectNumber }}</b> / {{ String(subjects.length).padStart(2, "0") }}</span>
+                    <span><b>{{ currentSubjectNumber }}</b> / {{ String(subjectCards.length).padStart(2, "0") }}</span>
                     <div class="carousel-progress"><i :style="{ width: subjectProgress }"></i></div>
                 </div>
             </div>
@@ -110,7 +110,7 @@
 <script setup>
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
-import { SUBJECTS } from "../constants/subjects.js"
+import { ARCHIVED_SUBJECTS, SUBJECTS } from "../constants/subjects.js"
 import { PHYSICS_MODEL_COUNT } from "../constants/siteStats.js"
 import { HOME_SUBJECT_ICONS } from "../constants/homeSubjects.js"
 
@@ -119,53 +119,67 @@ const HomeScene = defineAsyncComponent(() => import("../components/HomeScene.vue
 
 const router = useRouter()
 const subjectsSection = ref(null)
-const activeSubject = ref(3)
 const carouselPaused = ref(false)
 const physicsCount = PHYSICS_MODEL_COUNT
-const openLabCount = SUBJECTS.filter(subject => subject.status === 'ready').length
-const revealObservers = []
-const subjectRoutes = Object.fromEntries(SUBJECTS.map(subject => [subject.id, subject]))
-const subjects = [
-    { id: "chinese", number: "01", name: "语文", description: "从文字、人物与意象，看见文章内部的脉络。", vision: "文本 · 关系 · 意象", color: "#d95b4c", path: subjectRoutes.chinese.path, status: subjectRoutes.chinese.status, icon: HOME_SUBJECT_ICONS.chinese },
-    { id: "math", number: "02", name: "数学", description: "拖动变量，让函数、几何和概率呈现变化。", vision: "函数 · 几何 · 概率", color: "#477cdb", path: subjectRoutes.math.path, status: subjectRoutes.math.status, icon: HOME_SUBJECT_ICONS.math },
-    { id: "english", number: "03", name: "英语", description: "拆解句子结构，在语境里连接词义与表达。", vision: "语境 · 句法 · 发音", color: "#866bd5", path: subjectRoutes.english.path, status: subjectRoutes.english.status, icon: HOME_SUBJECT_ICONS.english },
-    { id: "physics", number: "04", name: "物理", description: "改变参数，观察力、运动、光与电如何作用。", vision: `${physicsCount} 个模型 · 沙盒`, color: "#e05a4d", path: subjectRoutes.physics.path, status: subjectRoutes.physics.status, icon: HOME_SUBJECT_ICONS.physics },
-    { id: "chemistry", number: "05", name: "化学", description: "旋转分子与晶体，从微观结构认识物质。", vision: "分子 · 化学键 · 晶体", color: "#2aa27f", path: subjectRoutes.chemistry.path, status: subjectRoutes.chemistry.status, icon: HOME_SUBJECT_ICONS.chemistry },
-    { id: "biology", number: "06", name: "生物", description: "进入细胞与生命结构，在三维空间观察层次。", vision: "细胞 · DNA · 神经元", color: "#6ca647", path: subjectRoutes.biology.path, status: subjectRoutes.biology.status, icon: HOME_SUBJECT_ICONS.biology },
-    { id: "politics", number: "07", name: "政治", description: "连接概念、制度与现实案例，建立思考框架。", vision: "概念 · 制度 · 案例", color: "#cf9136", path: subjectRoutes.politics.path, status: subjectRoutes.politics.status, icon: HOME_SUBJECT_ICONS.politics },
-    { id: "history", number: "08", name: "历史", description: "在时间、人物与事件之间看清因果联系。", vision: "时间 · 人物 · 事件", color: "#a8744c", path: subjectRoutes.history.path, status: subjectRoutes.history.status, icon: HOME_SUBJECT_ICONS.history },
-    { id: "geography", number: "09", name: "地理", description: "转动地球、展开地图，理解空间中的自然规律。", vision: "地球 · 地图 · 气候", color: "#2b9cab", path: subjectRoutes.geography.path, status: subjectRoutes.geography.status, icon: HOME_SUBJECT_ICONS.geography },
+const revealObservers = []// 首页学科卡片：public + planned 各占一张，archived 收进一张「其他学科」卡片。
+// 卡片信息全部来自 constants/subjects.js，这里不再硬编码学科名称、描述和颜色。
+const MORE_SUBJECTS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>`
+
+const subjectCards = [
+    ...SUBJECTS
+        .filter(subject => subject.visibility === "public" || subject.visibility === "planned")
+        .map(subject => ({
+            ...subject,
+            tier: subject.visibility === "public" ? "public" : "planned",
+            icon: HOME_SUBJECT_ICONS[subject.id],
+            vision: subject.id === "physics" ? `${physicsCount} 个模型 · 关卡 · 沙盒` : subject.vision,
+        })),
+    ...(ARCHIVED_SUBJECTS.length ? [{
+        id: "more",
+        tier: "more",
+        number: String(SUBJECTS.length - ARCHIVED_SUBJECTS.length + 1).padStart(2, "0"),
+        name: "其他学科",
+        path: "/subjects",
+        color: "#7c8794",
+        description: `${ARCHIVED_SUBJECTS.map(subject => subject.name).join("、")}等学科暂未纳入规划。`,
+        vision: "查看规划",
+        icon: MORE_SUBJECTS_ICON,
+    }] : []),
 ]
 
+const initialSubjectIndex = Math.max(subjectCards.findIndex(subject => subject.id === "physics"), 0)
+const activeSubject = ref(initialSubjectIndex)
+const openLabCount = SUBJECTS.filter(subject => subject.visibility === "public").length
+
 const currentSubjectNumber = computed(() => String(activeSubject.value + 1).padStart(2, "0"))
-const subjectProgress = computed(() => `${((activeSubject.value + 1) / subjects.length) * 100}%`)
+const subjectProgress = computed(() => `${((activeSubject.value + 1) / subjectCards.length) * 100}%`)
 
 let carouselTimer = null
 let dragStartX = null
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 function subjectPositionClass(index) {
-    const offset = (index - activeSubject.value + subjects.length) % subjects.length
+    const offset = (index - activeSubject.value + subjectCards.length) % subjectCards.length
     if (offset === 0) return "is-active"
     if (offset === 1) return "is-next"
-    if (offset === subjects.length - 1) return "is-previous"
+    if (offset === subjectCards.length - 1) return "is-previous"
     return "is-hidden"
 }
 
 function nextSubject() {
-    activeSubject.value = (activeSubject.value + 1) % subjects.length
+    activeSubject.value = (activeSubject.value + 1) % subjectCards.length
     restartCarousel()
 }
 
 function previousSubject() {
-    activeSubject.value = (activeSubject.value - 1 + subjects.length) % subjects.length
+    activeSubject.value = (activeSubject.value - 1 + subjectCards.length) % subjectCards.length
     restartCarousel()
 }
 
 function startCarousel() {
     if (reducedMotion || carouselPaused.value || carouselTimer) return
     carouselTimer = window.setInterval(() => {
-        activeSubject.value = (activeSubject.value + 1) % subjects.length
+        activeSubject.value = (activeSubject.value + 1) % subjectCards.length
     }, 5000)
 }
 
@@ -464,6 +478,18 @@ onBeforeUnmount(() => {
 
 .subject-card.is-hidden {
     visibility: hidden;
+}
+
+/* 计划中 / 其他学科：用虚线边框和更淡的底色与已开放学科区分 */
+.subject-card.planned,
+.subject-card.more {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+}
+
+.subject-card.planned .subject-top span:last-child,
+.subject-card.more .subject-top span:last-child {
+    color: var(--text-muted);
 }
 
 .subject-card:hover.is-active {

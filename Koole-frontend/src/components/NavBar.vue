@@ -12,16 +12,17 @@
                     <span v-if="exploredCount" class="nav-badge">{{ exploredCount }}</span>
                 </router-link>
                 <router-link
-                    v-for="subject in SUBJECTS"
+                    v-for="subject in navSubjects"
                     :key="subject.id"
                     :to="subject.path"
                     class="nav-link"
-                    :class="{ active: route.path.startsWith(subject.path), pending: subject.status === 'building' }"
-                    :title="subject.status === 'ready' ? subject.name : `${subject.name}建设中`"
+                    :class="{ active: route.path.startsWith(subject.path) }"
+                    :title="subject.name"
                     @click="menuOpen = false"
                 >
                     {{ subject.name }}
                 </router-link>
+                <router-link to="/subjects" class="nav-link" :class="{ active: route.path === '/subjects' }" @click="menuOpen = false">其他学科</router-link>
             </div>
             <div class="nav-right">
                 <button
@@ -47,10 +48,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { theme, toggleTheme } from "../stores/theme.js"
-import { SUBJECTS } from "../constants/subjects.js"
+import { PUBLIC_SUBJECTS } from "../constants/subjects.js"
 import { useLearning } from "../stores/learning.js"
 import themeMoonIcon from "../assets/icons/theme-moon.svg"
 import themeSunIcon from "../assets/icons/theme-sun.svg"
@@ -58,6 +59,9 @@ import themeSunIcon from "../assets/icons/theme-sun.svg"
 const route = useRoute()
 const menuOpen = ref(false)
 const { exploredCount } = useLearning()
+
+// 导航只放已开放的学科；planned / archived 的学科从首页「其他学科」入口进
+const navSubjects = computed(() => PUBLIC_SUBJECTS)
 
 // 路由变化时关闭菜单
 watch(() => route.path, () => { menuOpen.value = false })
