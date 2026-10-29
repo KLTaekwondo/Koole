@@ -127,7 +127,8 @@ Koole/
 | Canvas 2D | 物理 / 数学模拟渲染（自研引擎，无 Box2D / Matter.js） |
 | [Three.js](https://threejs.org/) | 立体几何实验室 |
 | [ECharts](https://echarts.apache.org/) | 轨迹对比图表 |
-| [md-editor-v3](https://imzbf.github.io/md-editor-v3/) | Markdown + LaTeX 知识内容渲染 |
+| [md-editor-v3](https://imzbf.github.io/md-editor-v3/) | Markdown 渲染（知识内容、现象文章） |
+| [KaTeX](https://katex.org/) | 公式排版（本地打包，不依赖 CDN） |
 | [Electron](https://www.electronjs.org/) | 桌面端打包 |
 
 ## 🎯 特色

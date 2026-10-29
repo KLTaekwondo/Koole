@@ -22,6 +22,9 @@
 <script setup>
 import { computed } from "vue"
 import { MdPreview } from "md-editor-v3"
+// 让 md-editor 用本地 KaTeX（默认从 unpkg CDN 加载，离线时公式不渲染）
+import "../../../plugins/markdown.js"
+
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../../stores/theme.js"
 import { getPhenomenaByModelId } from "../../../content/phenomena.mjs"

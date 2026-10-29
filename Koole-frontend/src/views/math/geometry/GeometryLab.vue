@@ -146,6 +146,9 @@ import * as THREE from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js"
 import { MdPreview } from "md-editor-v3"
+// 让 md-editor 用本地 KaTeX（默认从 unpkg CDN 加载，离线时公式不渲染）
+import "../../../plugins/markdown.js"
+
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../../stores/theme.js"
 import ArcPicker from "../../../components/ArcPicker.vue"

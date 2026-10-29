@@ -38,13 +38,34 @@
                         <span class="beat-dot" aria-hidden="true"></span>
                         <div class="beat-body">
                             <h3>{{ beat.title }}</h3>
-                            <p>{{ beat.text }}</p>
+                            <!-- 含公式的段落走 md-editor 渲染（KaTeX），其余保持普通段落，避免多挂组件 -->
+                            <MdPreview
+                                v-if="hasMath(beat.text)"
+                                class="beat-math"
+                                :modelValue="beat.text"
+                                :theme="theme"
+                                previewTheme="stackoverflow"
+                                codeTheme="stackoverflow"
+                                :noKatex="false"
+                                style="background: transparent;"
+                            />
+                            <p v-else>{{ beat.text }}</p>
                         </div>
                     </li>
                 </ol>
                 <aside v-if="item.misconception" class="misconception">
                     <strong>这里容易被想错</strong>
-                    <p>{{ item.misconception }}</p>
+                    <MdPreview
+                        v-if="hasMath(item.misconception)"
+                        class="beat-math misconception-math"
+                        :modelValue="item.misconception"
+                        :theme="theme"
+                        previewTheme="stackoverflow"
+                        codeTheme="stackoverflow"
+                        :noKatex="false"
+                        style="background: transparent;"
+                    />
+                    <p v-else>{{ item.misconception }}</p>
                 </aside>
             </section>
 
@@ -110,6 +131,9 @@
 import { computed, onMounted, watch } from "vue"
 import { useRoute } from "vue-router"
 import { MdPreview } from "md-editor-v3"
+// 让 md-editor 用本地 KaTeX（默认从 unpkg CDN 加载，离线时公式不渲染）
+import "../../plugins/markdown.js"
+
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../stores/theme.js"
 import { getPhenomenonById } from "../../content/phenomena.mjs"
@@ -137,6 +161,9 @@ const simulationLink = computed(() => {
 const updateTitle = () => {
     document.title = item.value ? `${item.value.title} · 现象与发现 · Koole` : "现象与发现 · Koole"
 }
+
+// 故事与「容易想错」里也可能带 $...$ 公式，只有这类段落才挂 Markdown 渲染
+const hasMath = text => typeof text === "string" && text.includes("$")
 
 onMounted(updateTitle)
 watch(() => route.params.id, updateTitle)
@@ -355,6 +382,41 @@ watch(() => route.params.id, updateTitle)
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.95;
+}
+
+/* 含公式的段落：抹掉 md-editor 预览的默认间距，让它读起来和普通段落一致 */
+.beat-math {
+    margin: 0;
+}
+
+.beat-math :deep(.md-editor-preview) {
+    padding: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.95;
+}
+
+.beat-math :deep(.md-editor-preview p) {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.95;
+}
+
+.beat-math :deep(.katex) {
+    font-size: 1.02em;
+    color: var(--subject);
+}
+
+.misconception-math :deep(.md-editor-preview) {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.9;
+}
+
+.misconception-math :deep(.md-editor-preview p) {
+    font-size: 13px;
+    line-height: 1.9;
 }
 
 .misconception {
