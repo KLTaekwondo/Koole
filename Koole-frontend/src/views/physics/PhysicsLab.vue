@@ -20,14 +20,13 @@
             :devices="devices"
         />
 
-        <!-- 现象与发现：放在实验方式之前，先看「为什么」，再选「怎么玩」 -->
-        <PhenomenonExplorer
+        <!-- 现象与发现：竖直时间轴，放在实验方式之前，先看「为什么」，再选「怎么玩」 -->
+        <PhenomenonTimeline
             subject="physics"
             subject-label="物理"
             base-path="/physics-lab/phenomena"
             accent="#3b82f6"
             kicker="01 / PHENOMENA"
-            title="这些现象，是怎么被发现的？"
         />
 
         <section class="modes-section">
@@ -122,7 +121,7 @@ import * as THREE from "three"
 import { PHYSICS_MODELS } from "../../constants"
 import DepthLabHero from "../../components/DepthLabHero.vue"
 import SvgIcon from "../../components/SvgIcon.vue"
-import PhenomenonExplorer from "../../components/PhenomenonExplorer.vue"
+import PhenomenonTimeline from "../../components/PhenomenonTimeline.vue"
 
 const physicsCount = PHYSICS_MODELS.length
 
