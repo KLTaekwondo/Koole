@@ -263,6 +263,13 @@ async function checkPhenomena(modelIds) {
         for (const field of ["title", "hook", "era", "category", "knowledge"]) {
             if (!item[field]) error(where, `现象 ${item.id} 缺少字段 ${field}`)
         }
+        const VALID_SUBJECTS = ["physics", "chemistry", "math"]
+        if (!VALID_SUBJECTS.includes(item.subject)) {
+            error(where, `现象 ${item.id} 的 subject 必须是 ${VALID_SUBJECTS.join(" / ")} 之一`)
+        }
+        if (!Array.isArray(item.tags) || item.tags.length === 0) {
+            warn(where, `现象 ${item.id} 没有搜索标签（tags），主页搜索会少一条命中路径`)
+        }
         if (!Array.isArray(item.story) || item.story.length === 0) {
             error(where, `现象 ${item.id} 的 story 不能为空`)
         } else {

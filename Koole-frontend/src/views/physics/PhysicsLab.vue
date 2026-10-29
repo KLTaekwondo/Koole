@@ -104,6 +104,14 @@
                 </router-link>
             </div>
         </section>
+
+        <!-- 现象与发现：直接挂在物理主页里，可搜索、可横向滚时间轴 -->
+        <PhenomenonExplorer
+            subject="physics"
+            subject-label="物理"
+            base-path="/physics-lab/phenomena"
+            kicker="02 / PHENOMENA"
+        />
     </div>
 </template>
 
@@ -112,6 +120,7 @@ import * as THREE from "three"
 import { PHYSICS_MODELS } from "../../constants"
 import DepthLabHero from "../../components/DepthLabHero.vue"
 import SvgIcon from "../../components/SvgIcon.vue"
+import PhenomenonExplorer from "../../components/PhenomenonExplorer.vue"
 
 const physicsCount = PHYSICS_MODELS.length
 

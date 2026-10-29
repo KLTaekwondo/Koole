@@ -1,7 +1,7 @@
 <template>
     <div v-if="item" class="detail-page">
         <header class="detail-header">
-            <router-link to="/knowledge" class="back-link">← 知识小站</router-link>
+            <router-link to="/physics-lab" class="back-link">← 物理实验室 · 现象与发现</router-link>
             <div class="kicker">
                 <span class="era-badge">{{ item.era }}</span>
                 <span>{{ item.category }}</span>
@@ -78,7 +78,7 @@
                     <span>参考资料</span>
                     <a v-for="source in item.sources" :key="source.url" :href="source.url" target="_blank" rel="noreferrer">{{ source.label }} ↗</a>
                 </div>
-                <router-link to="/knowledge" class="back-footer">← 回到知识小站</router-link>
+                <router-link to="/physics-lab" class="back-footer">← 回到物理实验室</router-link>
             </footer>
         </main>
     </div>
@@ -86,7 +86,7 @@
     <div v-else class="missing">
         <h1>没有找到这个现象</h1>
         <p>它可能还没写完，或者链接已经失效。</p>
-        <router-link to="/knowledge">回到知识小站</router-link>
+        <router-link to="/physics-lab">回到物理实验室</router-link>
     </div>
 </template>
 
@@ -104,7 +104,7 @@ const item = computed(() => getPhenomenonById(route.params.id))
 // 「去模拟」链接：把文章里预设的参数一起带过去，打开就是那组条件
 const simulationLink = computed(() => {
     const simulation = item.value?.simulation
-    if (!simulation?.modelId) return "/knowledge"
+    if (!simulation?.modelId) return "/physics-lab"
     return {
         path: `/physics-lab/classic/${simulation.modelId}`,
         query: simulation.params || {},
@@ -112,7 +112,7 @@ const simulationLink = computed(() => {
 })
 
 const updateTitle = () => {
-    document.title = item.value ? `${item.value.title} · 知识小站 · Koole` : "知识小站 · Koole"
+    document.title = item.value ? `${item.value.title} · 现象与发现 · Koole` : "现象与发现 · Koole"
 }
 
 onMounted(updateTitle)

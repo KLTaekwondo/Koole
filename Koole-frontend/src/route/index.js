@@ -7,7 +7,6 @@ import HomeIndex from "../views/HomeIndex.vue"
 const AboutIndex = () => import("../views/AboutIndex.vue")
 const ProgressIndex = () => import("../views/ProgressIndex.vue")
 const MoreSubjects = () => import("../views/MoreSubjects.vue")
-const KnowledgeIndex = () => import("../views/knowledge/KnowledgeIndex.vue")
 const KnowledgeDetail = () => import("../views/knowledge/KnowledgeDetail.vue")
 const PhysicsLab = () => import("../views/physics/PhysicsLab.vue")
 const PhysicsLevels = () => import("../views/physics/levels/PhysicsLevels.vue")
@@ -54,18 +53,22 @@ const routes = [
     },
     {
         path: "/knowledge",
-        name: "知识小站",
-        component: KnowledgeIndex,
+        // 知识小站已并入物理主页：保留旧链接的跳转，避免已分享的地址失效
+        redirect: "/physics-lab",
     },
     {
         path: "/knowledge/:id",
-        name: "知识详情",
-        component: KnowledgeDetail,
+        redirect: to => `/physics-lab/phenomena/${to.params.id}`,
     },
     {
         path: "/physics-lab",
         name: "物理小工具",
         component: PhysicsLab,
+    },
+    {
+        path: "/physics-lab/phenomena/:id",
+        name: "现象详情",
+        component: KnowledgeDetail,
     },
     {
         path: "/physics-lab/levels",

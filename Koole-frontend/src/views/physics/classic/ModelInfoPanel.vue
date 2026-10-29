@@ -12,7 +12,7 @@
         </div>
         <div v-if="relatedPhenomena.length" class="related-knowledge">
             <span>这个现象是怎么被发现的？</span>
-            <router-link v-for="phenomenon in relatedPhenomena" :key="phenomenon.id" :to="`/knowledge/${phenomenon.id}`">
+            <router-link v-for="phenomenon in relatedPhenomena" :key="phenomenon.id" :to="`/physics-lab/phenomena/${phenomenon.id}`">
                 {{ phenomenon.title }} →
             </router-link>
         </div>
