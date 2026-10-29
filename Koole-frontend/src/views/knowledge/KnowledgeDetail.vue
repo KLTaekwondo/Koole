@@ -232,66 +232,86 @@ watch(() => route.params.id, updateTitle)
 .figure-strip {
     display: grid;
     gap: 10px;
-    margin-top: 22px;
-    max-width: 860px;
+    margin-top: 24px;
+    max-width: 880px;
 }
 
 .figure-main,
 .figure-co {
     display: grid;
-    grid-template-columns: 62px auto auto minmax(0, 1fr);
+    grid-template-columns: auto auto auto minmax(0, 1fr);
     align-items: baseline;
-    gap: 4px 10px;
-    padding: 12px 16px;
-    border-left: 2px solid color-mix(in srgb, var(--subject) 55%, transparent);
-    border-radius: 0 10px 10px 0;
-    background: color-mix(in srgb, var(--bg-card) 62%, transparent);
+    gap: 4px 12px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--subject);
+    border-radius: 0 12px 12px 0;
+    /* 学科色打底而不是半透明白：在浅色页面和 3D 背景前都能看清边界 */
+    background: color-mix(in srgb, var(--subject) 13%, var(--bg-card));
 }
 
 .figure-co {
-    border-left-color: color-mix(in srgb, var(--border) 90%, transparent);
-    background: color-mix(in srgb, var(--bg-card) 42%, transparent);
+    border-left-color: color-mix(in srgb, var(--subject) 42%, var(--border));
+    background: color-mix(in srgb, var(--subject) 7%, var(--bg-card));
 }
 
+/* 「主人公 / 共同相关」做成小色块标签，代替原来的浅灰小字 */
 .figure-label {
-    color: var(--text-muted);
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--subject);
+    color: #fff;
     font-family: var(--mono);
     font-size: 10px;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.figure-co .figure-label {
+    background: color-mix(in srgb, var(--subject) 55%, var(--bg-card));
+    color: color-mix(in srgb, var(--subject) 35%, #fff);
 }
 
 .figure-main strong,
 .figure-co strong {
-    font-size: 15px;
+    color: var(--text);
+    font-size: 16px;
     font-weight: 800;
 }
 
 .figure-years {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 11.5px;
     font-variant-numeric: tabular-nums;
 }
 
 .figure-main p,
 .figure-co p {
     grid-column: 1 / -1;
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 12.5px;
-    line-height: 1.8;
+    margin: 2px 0 0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.85;
+    opacity: 0.86;
 }
 
 @media (max-width: 640px) {
     .figure-main,
     .figure-co {
-        grid-template-columns: 56px auto minmax(0, 1fr);
-        padding: 10px 12px;
+        grid-template-columns: auto auto minmax(0, 1fr);
+        gap: 4px 8px;
+        padding: 12px 14px;
+    }
+
+    .figure-main strong,
+    .figure-co strong {
+        font-size: 15px;
     }
 
     .figure-main p,
     .figure-co p {
-        font-size: 12px;
+        font-size: 12.5px;
     }
 }
 
