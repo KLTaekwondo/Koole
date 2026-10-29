@@ -43,13 +43,12 @@
                 :style="{ '--step': `${entry.stepPx}px` }"
                 :class="{ first: index === 0 }"
             >
-                <span v-if="entry.gapLabel" class="gap-label">{{ entry.gapLabel }}</span>
-                <span class="era-label">{{ entry.era }}</span>
                 <span class="node" aria-hidden="true"></span>
                 <router-link :to="`${basePath}/${entry.id}`" class="entry-card">
                     <div class="entry-top">
+                        <span class="entry-era">{{ entry.era }}</span>
                         <small>{{ entry.category }}</small>
-                        <span v-if="entry.simulation?.modelName">模拟：{{ entry.simulation.modelName }}</span>
+                        <span v-if="entry.simulation?.modelName" class="entry-model">模拟：{{ entry.simulation.modelName }}</span>
                     </div>
                     <h3>{{ entry.title }}</h3>
                     <p>{{ entry.hook }}</p>
@@ -123,15 +122,10 @@ function gapToPx(gapYears) {
 }
 
 const entries = computed(() => visible.value.map((item, index, list) => {
-    if (index === 0) return { ...item, stepPx: 0, gapLabel: "" }
+    if (index === 0) return { ...item, stepPx: 0 }
     const previous = list[index - 1]
     const gapYears = (item.eraSort ?? 0) - (previous.eraSort ?? 0)
-    return {
-        ...item,
-        stepPx: gapToPx(gapYears),
-        // 年份差被压缩显示时，标出真实间隔，避免读者误判时间尺度
-        gapLabel: gapYears > MAX_YEAR_STEP ? `相隔 ${gapYears} 年` : "",
-    }
+    return { ...item, stepPx: gapToPx(gapYears) }
 }))
 
 function resetFilters() {
@@ -276,20 +270,20 @@ function resetFilters() {
 
 /* ── 竖直时间轴 ── */
 .timeline-rail {
-    --rail-width: 104px;
+    --rail-width: 26px;
     position: relative;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0 var(--rail-width);
     list-style: none;
 }
 
-/* 时间轴本体：一条学科色的细竖线 */
+/* 时间轴本体：一条学科色的细竖线，轴上不写任何文字 */
 .timeline-rail::before {
     content: "";
     position: absolute;
     top: 8px;
     bottom: 12px;
-    left: var(--rail-width);
+    left: 12px;
     width: 1px;
     background: linear-gradient(
         to bottom,
@@ -302,9 +296,6 @@ function resetFilters() {
 
 .timeline-entry {
     position: relative;
-    display: grid;
-    grid-template-columns: var(--rail-width) minmax(0, 1fr);
-    column-gap: 22px;
     padding-top: var(--step);
     transition: padding 0.3s var(--ease-out);
 }
@@ -313,46 +304,11 @@ function resetFilters() {
     padding-top: 0;
 }
 
-/* 年代紧贴蓝色节点左侧，和节点同高，加一层浅底保证在 3D 背景上看得清 */
-.era-label {
-    position: absolute;
-    top: calc(var(--step) + 5px);
-    right: calc(100% - var(--rail-width) + 14px);
-    transform: translateY(-50%);
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 72%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: var(--subject);
-    font-family: var(--mono);
-    font-size: 12.5px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(20, 28, 34, 0.06);
-}
-
-.timeline-entry.first .era-label {
-    top: 10px;
-}
-
-/* 两篇之间被压缩的跨度，放在轴的左侧中点，字号更小、颜色更淡 */
-.gap-label {
-    position: absolute;
-    top: calc(var(--step) / 2);
-    right: calc(100% - var(--rail-width) + 14px);
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-family: var(--mono);
-    font-size: 9px;
-    white-space: nowrap;
-}
-
+/* 蓝色节点：贴在轴上，与卡片顶部同高 */
 .node {
     position: absolute;
-    top: calc(var(--step) + 5px);
-    left: calc(var(--rail-width) - 4px);
+    top: calc(var(--step) + 22px);
+    left: 8px;
     width: 9px;
     height: 9px;
     border-radius: 50%;
@@ -362,7 +318,7 @@ function resetFilters() {
 }
 
 .timeline-entry.first .node {
-    top: 10px;
+    top: 22px;
 }
 
 /* 卡片：保留一层底色作为文字依托（半透明），不描边 */
@@ -393,19 +349,31 @@ function resetFilters() {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
+}
+
+/* 年代写在卡片上：学科色等宽数字，作为卡片的第一个信息 */
+.entry-era {
+    color: var(--subject);
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 
 .entry-top small {
-    color: var(--subject);
+    padding-left: 10px;
+    border-left: 1px solid color-mix(in srgb, var(--subject) 30%, transparent);
+    color: var(--text-secondary);
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
 }
 
-.entry-top span {
+.entry-model {
+    margin-left: auto;
     color: var(--text-muted);
     font-size: 10px;
 }
@@ -480,24 +448,20 @@ function resetFilters() {
         max-width: none;
     }
 
-    /* 竖轴整体左移，年代标签仍紧贴节点左侧 */
     .timeline-rail {
-        --rail-width: 68px;
+        --rail-width: 20px;
     }
 
-    .timeline-entry {
-        column-gap: 14px;
+    .timeline-rail::before {
+        left: 8px;
     }
 
-    .era-label {
-        right: calc(100% - var(--rail-width) + 12px);
-        font-size: 11px;
-        padding: 2px 6px;
+    .node {
+        left: 4px;
     }
 
-    .gap-label {
-        right: calc(100% - var(--rail-width) + 12px);
-        font-size: 8.5px;
+    .entry-era {
+        font-size: 15px;
     }
 
     .entry-card {
