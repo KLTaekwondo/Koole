@@ -267,9 +267,11 @@ watch(() => route.params.id, updateTitle)
     white-space: nowrap;
 }
 
+/* 共同相关：同样是实心标签，只把字号压小一点表示次级，保证对比度 */
 .figure-co .figure-label {
-    background: color-mix(in srgb, var(--subject) 55%, var(--bg-card));
-    color: color-mix(in srgb, var(--subject) 35%, #fff);
+    background: color-mix(in srgb, var(--subject) 82%, #0f2740);
+    font-size: 9.5px;
+    letter-spacing: 0.02em;
 }
 
 .figure-main strong,
