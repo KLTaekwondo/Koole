@@ -125,16 +125,20 @@ const entries = computed(() => visible.value.map((item, index) => ({
     stepPx: index === 0 ? 0 : ENTRY_STEP_PX,
 })))
 
-// ── 时间轴内部滚动位置的记忆 ──
-// 从文章页返回时，页面级的滚动由 router.scrollBehavior 恢复；
-// 但时间轴是独立滚动容器（overflow-y: auto），路由管不到，这里自己记一份。
+// ── 滚动位置记忆 ──
+// 从文章页返回时有两层滚动要还原：
+//   1. 页面级：路由的 scrollBehavior 负责（前提是走 history.back，才会有 savedPosition）
+//   2. 时间轴内部：它是独立滚动容器，路由管不到，这里自己记一份
+// 另外再存一份页面 scrollY 兜底：如果路由没恢复（比如从别的入口回来），至少能回到时间轴附近。
 const SCROLL_MEMORY_TTL = 10 * 60 * 1000
 const viewportRef = ref(null)
-let savedScrollTop = 0
+let savedInnerTop = 0
+let savedPageY = 0
 let savedAt = 0
 
 onBeforeUnmount(() => {
-    savedScrollTop = viewportRef.value?.scrollTop || 0
+    savedInnerTop = viewportRef.value?.scrollTop || 0
+    savedPageY = window.scrollY || 0
     savedAt = Date.now()
 })
 
@@ -143,7 +147,12 @@ onMounted(() => {
     // 等卡片渲染完成、容器有高度之后再恢复
     nextTick(() => {
         requestAnimationFrame(() => {
-            if (viewportRef.value) viewportRef.value.scrollTop = savedScrollTop
+            if (viewportRef.value) viewportRef.value.scrollTop = savedInnerTop
+            // 路由的 scrollBehavior 会在 340ms 后覆盖为它记下的位置；
+            // 这里只在页面还停在顶部时兜底，避免两者打架。
+            if (savedPageY > 0 && window.scrollY === 0) {
+                window.scrollTo({ top: savedPageY, behavior: "auto" })
+            }
         })
     })
 })

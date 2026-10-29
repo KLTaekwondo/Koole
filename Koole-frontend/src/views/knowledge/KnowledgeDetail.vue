@@ -1,7 +1,7 @@
 <template>
     <div v-if="item" class="detail-page" :style="{ '--subject': accent }">
         <header class="detail-header">
-            <router-link to="/physics-lab" class="back-link">← 物理实验室 · 现象与发现</router-link>
+            <button type="button" class="back-link" @click="goBack">← 物理实验室 · 现象与发现</button>
             <div class="kicker">
                 <span class="era-badge">{{ item.era }}</span>
                 <span>{{ item.category }}</span>
@@ -115,7 +115,7 @@
                     <span>参考资料</span>
                     <a v-for="source in item.sources" :key="source.url" :href="source.url" target="_blank" rel="noreferrer">{{ source.label }} ↗</a>
                 </div>
-                <router-link to="/physics-lab" class="back-footer">← 回到物理实验室</router-link>
+                <button type="button" class="back-footer" @click="goBack">← 回到物理实验室</button>
             </footer>
         </main>
     </div>
@@ -129,7 +129,7 @@
 
 <script setup>
 import { computed, onMounted, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { MdPreview } from "md-editor-v3"
 // 让 md-editor 用本地 KaTeX（默认从 unpkg CDN 加载，离线时公式不渲染）
 import "../../plugins/markdown.js"
@@ -140,7 +140,19 @@ import { getPhenomenonById } from "../../content/phenomena.mjs"
 import { getSubjectById } from "../../constants/subjects.js"
 
 const route = useRoute()
+const router = useRouter()
 const item = computed(() => getPhenomenonById(route.params.id))
+
+// 「返回」用 history.back() 而不是 push：只有真正回退，路由的 scrollBehavior
+// 才会拿回 savedPosition，把物理主页的滚动位置还原。直接打开文章时才用 push 兜底。
+function goBack() {
+    const previous = window.history.state?.back
+    if (typeof previous === "string" && previous.startsWith("/physics-lab") && previous !== route.path) {
+        router.back()
+        return
+    }
+    router.push("/physics-lab")
+}
 
 // 文章主题色跟随所属学科（物理蓝 / 化学绿 / 数学蓝），不再用主站红
 const accent = computed(() => {
@@ -182,6 +194,16 @@ watch(() => route.params.id, updateTitle)
     display: grid;
     gap: 12px;
     padding: 40px 0 18px;
+}
+
+/* 返回入口是 button（要走 history.back），这里抹掉默认按钮外观 */
+.back-link,
+.back-footer {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
 }
 
 .back-link {
