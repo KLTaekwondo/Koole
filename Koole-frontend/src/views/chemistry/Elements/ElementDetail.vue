@@ -283,6 +283,7 @@
                             <span class="app-index">0{{ index + 1 }}</span>
                             <h3>{{ application.title }}</h3>
                             <p>{{ application.text }}</p>
+                            <span v-if="application.example" class="app-example">生活里：{{ application.example }}</span>
                         </article>
                     </div>
                 </section>
@@ -1431,7 +1432,9 @@ onBeforeUnmount(() => {
 
 .application-grid article {
     position: relative;
-    min-height: 240px;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     padding: 26px 28px;
     border: 1px solid color-mix(in srgb, var(--element) 24%, var(--border));
@@ -1469,6 +1472,19 @@ onBeforeUnmount(() => {
     color: var(--text-secondary);
     font-size: 13px;
     line-height: 1.85;
+}
+
+/* 「生活里：…」的例子标签，贴在卡片底部 */
+.app-example {
+    position: relative;
+    align-self: flex-start;
+    margin-top: auto;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--element) 11%, var(--bg-card));
+    color: color-mix(in srgb, var(--element) 78%, var(--text));
+    font-size: 11px;
+    line-height: 1.6;
 }
 
 .reaction-grid {
@@ -1944,6 +1960,11 @@ onBeforeUnmount(() => {
     .application-grid h3 {
         margin-top: 48px;
         font-size: 16px;
+    }
+
+    .app-example {
+        padding: 4px 9px;
+        font-size: 10px;
     }
 
     .reaction-card header {

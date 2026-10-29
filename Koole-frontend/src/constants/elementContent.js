@@ -3,6 +3,7 @@
 // 其余 110 个元素来自 elementStoryBriefs.js 的精简条目，由 buildStoryFromBrief() 展开，
 // 最终合并成一份 ELEMENT_CONTENT，页面只认这一个出口。
 import { ELEMENT_STORY_BRIEFS, buildStoryFromBrief } from "./elementStoryBriefs.js"
+import { ELEMENT_APPLICATIONS } from "./elementApplications.js"
 
 const FULL_STORIES = {
     H: {
@@ -276,9 +277,23 @@ const briefStories = Object.fromEntries(
     Object.entries(ELEMENT_STORY_BRIEFS).map(([symbol, brief]) => [symbol, buildStoryFromBrief(symbol, brief)]),
 )
 
-export const ELEMENT_CONTENT = { ...FULL_STORIES, ...briefStories }
+// 「它如何进入我们的生活」这一段统一用 elementApplications.js 的详细版本覆盖：
+// 每条带「说明（为什么用它 / 怎么用）+ 生活里的具体例子」，比精简条目里的简版应用更具体。
+function withDetailedApplications(symbol, story) {
+    const detailed = ELEMENT_APPLICATIONS[symbol]
+    if (!detailed) return story
+    return {
+        ...story,
+        applications: detailed.map(([title, text, example]) => ({ title, text, example: example || "" })),
+    }
+}
 
-// Copy this shape into elementStoryBriefs.js (or FULL_STORIES above) when adding content.
+export const ELEMENT_CONTENT = Object.fromEntries(
+    Object.entries({ ...FULL_STORIES, ...briefStories })
+        .map(([symbol, story]) => [symbol, withDetailedApplications(symbol, story)]),
+)
+
+// Copy this shape into elementStoryBriefs.js / elementApplications.js when adding content.
 export const ELEMENT_CONTENT_TEMPLATE = Object.freeze({
     intro: "",
     discovery: {
@@ -289,7 +304,7 @@ export const ELEMENT_CONTENT_TEMPLATE = Object.freeze({
     occurrence: "",
     narrative: "",
     applications: [
-        { title: "", text: "" },
+        { title: "", text: "", example: "" },
     ],
     reactions: [
         {
