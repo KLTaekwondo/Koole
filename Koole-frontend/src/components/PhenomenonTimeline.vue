@@ -57,7 +57,6 @@
                 </router-link>
             </li>
         </ol>
-
         <div v-else class="timeline-empty">
             <p>没有匹配「{{ keyword }}」的现象。</p>
             <button type="button" @click="resetFilters">清空筛选</button>
@@ -277,9 +276,10 @@ function resetFilters() {
 
 /* ── 竖直时间轴 ── */
 .timeline-rail {
+    --rail-width: 104px;
     position: relative;
     margin: 0;
-    padding: 0 0 0 96px;
+    padding: 0;
     list-style: none;
 }
 
@@ -289,7 +289,7 @@ function resetFilters() {
     position: absolute;
     top: 8px;
     bottom: 12px;
-    left: 76px;
+    left: var(--rail-width);
     width: 1px;
     background: linear-gradient(
         to bottom,
@@ -302,6 +302,9 @@ function resetFilters() {
 
 .timeline-entry {
     position: relative;
+    display: grid;
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+    column-gap: 22px;
     padding-top: var(--step);
     transition: padding 0.3s var(--ease-out);
 }
@@ -310,26 +313,35 @@ function resetFilters() {
     padding-top: 0;
 }
 
+/* 年代紧贴蓝色节点左侧，和节点同高，加一层浅底保证在 3D 背景上看得清 */
 .era-label {
     position: absolute;
-    top: var(--step);
-    right: calc(100% - 66px);
+    top: calc(var(--step) + 5px);
+    right: calc(100% - var(--rail-width) + 14px);
+    transform: translateY(-50%);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--subject);
     font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 12.5px;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(20, 28, 34, 0.06);
 }
 
 .timeline-entry.first .era-label {
-    top: 6px;
+    top: 10px;
 }
 
+/* 两篇之间被压缩的跨度，放在轴的左侧中点，字号更小、颜色更淡 */
 .gap-label {
     position: absolute;
     top: calc(var(--step) / 2);
-    right: calc(100% - 66px);
+    right: calc(100% - var(--rail-width) + 14px);
     transform: translateY(-50%);
     color: var(--text-muted);
     font-family: var(--mono);
@@ -339,17 +351,18 @@ function resetFilters() {
 
 .node {
     position: absolute;
-    top: var(--step);
-    left: -24px;
+    top: calc(var(--step) + 5px);
+    left: calc(var(--rail-width) - 4px);
     width: 9px;
     height: 9px;
     border-radius: 50%;
     background: var(--subject);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--subject) 18%, transparent);
+    transform: translateY(-50%);
 }
 
 .timeline-entry.first .node {
-    top: 6px;
+    top: 10px;
 }
 
 /* 卡片：保留一层底色作为文字依托（半透明），不描边 */
@@ -467,22 +480,24 @@ function resetFilters() {
         max-width: none;
     }
 
+    /* 竖轴整体左移，年代标签仍紧贴节点左侧 */
     .timeline-rail {
-        padding-left: 60px;
+        --rail-width: 68px;
     }
 
-    .timeline-rail::before {
-        left: 44px;
+    .timeline-entry {
+        column-gap: 14px;
     }
 
-    .era-label,
+    .era-label {
+        right: calc(100% - var(--rail-width) + 12px);
+        font-size: 11px;
+        padding: 2px 6px;
+    }
+
     .gap-label {
-        right: calc(100% - 40px);
-        font-size: 10px;
-    }
-
-    .node {
-        left: -20px;
+        right: calc(100% - var(--rail-width) + 12px);
+        font-size: 8.5px;
     }
 
     .entry-card {
