@@ -34,32 +34,38 @@
             </div>
         </div>
 
-        <!-- 竖直时间轴：纵向位置按年代拉开，相邻不足 50 年按 50 年算，避免几个发现挤在一起 -->
-        <ol v-if="entries.length" class="timeline-rail">
-            <li
-                v-for="(entry, index) in entries"
-                :key="entry.id"
-                class="timeline-entry"
-                :style="{ '--step': `${entry.stepPx}px` }"
-                :class="{ first: index === 0 }"
-            >
-                <span class="node" aria-hidden="true"></span>
-                <router-link :to="`${basePath}/${entry.id}`" class="entry-card">
-                    <div class="entry-top">
-                        <span class="entry-era">{{ entry.era }}</span>
-                        <small>{{ entry.category }}</small>
-                        <span v-if="entry.simulation?.modelName" class="entry-model">模拟：{{ entry.simulation.modelName }}</span>
-                    </div>
-                    <h3>{{ entry.title }}</h3>
-                    <p>{{ entry.hook }}</p>
-                    <span class="entry-cta">读故事 →</span>
-                </router-link>
-            </li>
-        </ol>
+        <!-- 竖直时间轴：固定高度、内部滚动，条目变多也不会把页面一直往下拉 -->
+        <div v-if="entries.length" class="timeline-viewport">
+            <ol class="timeline-rail">
+                <li
+                    v-for="(entry, index) in entries"
+                    :key="entry.id"
+                    class="timeline-entry"
+                    :style="{ '--step': `${entry.stepPx}px` }"
+                    :class="{ first: index === 0 }"
+                >
+                    <span class="node" aria-hidden="true"></span>
+                    <router-link :to="`${basePath}/${entry.id}`" class="entry-card">
+                        <div class="entry-top">
+                            <span class="entry-era">{{ entry.era }}</span>
+                            <small>{{ entry.category }}</small>
+                            <span v-if="entry.simulation?.modelName" class="entry-model">模拟：{{ entry.simulation.modelName }}</span>
+                        </div>
+                        <h3>{{ entry.title }}</h3>
+                        <p>{{ entry.hook }}</p>
+                        <span class="entry-cta">读故事 →</span>
+                    </router-link>
+                </li>
+            </ol>
+        </div>
         <div v-else class="timeline-empty">
             <p>没有匹配「{{ keyword }}」的现象。</p>
             <button type="button" @click="resetFilters">清空筛选</button>
         </div>
+
+        <p v-if="entries.length > 2" class="timeline-hint">
+            共 {{ entries.length }} 篇 · 在框内上下滚动查看
+        </p>
     </section>
 </template>
 
@@ -256,6 +262,34 @@ function resetFilters() {
 }
 
 /* ── 竖直时间轴 ── */
+/* 固定高度的可视窗口：内部滚动，条目再多也不会把页面越拉越长 */
+.timeline-viewport {
+    position: relative;
+    max-height: clamp(380px, 56vh, 620px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding: 6px 14px 6px 0;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--subject) 40%, transparent) transparent;
+}
+
+.timeline-viewport::-webkit-scrollbar {
+    width: 6px;
+}
+
+.timeline-viewport::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.timeline-viewport::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--subject) 34%, transparent);
+}
+
+.timeline-viewport::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--subject) 55%, transparent);
+}
+
 .timeline-rail {
     --rail-width: 26px;
     position: relative;
@@ -412,6 +446,14 @@ function resetFilters() {
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+}
+
+.timeline-hint {
+    margin: 12px 0 0;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
 }
 
 @media (max-width: 900px) {
