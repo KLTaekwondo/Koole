@@ -270,6 +270,13 @@ async function checkPhenomena(modelIds) {
         if (!Array.isArray(item.tags) || item.tags.length === 0) {
             warn(where, `现象 ${item.id} 没有搜索标签（tags），主页搜索会少一条命中路径`)
         }
+        // 主人公：卡片只显示姓名，详情页显示生卒年与身份
+        if (!item.figure?.name) {
+            warn(where, `现象 ${item.id} 没有主人公（figure.name）`)
+        }
+        for (const [index, coFigure] of (item.coFigures || []).entries()) {
+            if (!coFigure?.name) error(where, `现象 ${item.id} 的 coFigures[${index}] 缺少 name`)
+        }
         if (!Array.isArray(item.story) || item.story.length === 0) {
             error(where, `现象 ${item.id} 的 story 不能为空`)
         } else {

@@ -48,7 +48,9 @@
                     <router-link :to="`${basePath}/${entry.id}`" class="entry-card">
                         <div class="entry-top">
                             <span class="entry-era">{{ entry.era }}</span>
-                            <small>{{ entry.category }}</small>
+                            <span class="entry-meta">
+                                {{ entry.category }}<template v-if="entry.figure?.name"> · {{ entry.figure.name }}</template>
+                            </span>
                             <span v-if="entry.simulation?.modelName" class="entry-model">模拟：{{ entry.simulation.modelName }}</span>
                         </div>
                         <h3>{{ entry.title }}</h3>
@@ -100,6 +102,8 @@ const searchableText = item => [
     item.title,
     item.hook,
     item.category,
+    item.figure?.name || "",
+    ...(item.coFigures || []).map(figure => figure.name),
     ...(item.tags || []),
     ...(item.story || []).map(beat => `${beat.title} ${beat.text}`),
     item.misconception || "",
@@ -383,7 +387,7 @@ function resetFilters() {
     line-height: 1;
 }
 
-.entry-top small {
+.entry-meta {
     padding-left: 10px;
     border-left: 1px solid color-mix(in srgb, var(--subject) 30%, transparent);
     color: var(--text-secondary);

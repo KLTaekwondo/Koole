@@ -8,6 +8,22 @@
             </div>
             <h1>{{ item.title }}</h1>
             <p class="hook">{{ item.hook }}</p>
+
+            <!-- 主人公：卡片上只写名字，这里给出生卒年与身份 -->
+            <div v-if="item.figure" class="figure-strip">
+                <div class="figure-main">
+                    <span class="figure-label">主人公</span>
+                    <strong>{{ item.figure.name }}</strong>
+                    <span v-if="item.figure.years" class="figure-years">{{ item.figure.years }}</span>
+                    <p v-if="item.figure.note">{{ item.figure.note }}</p>
+                </div>
+                <div v-for="figure in item.coFigures || []" :key="figure.name" class="figure-co">
+                    <span class="figure-label">共同相关</span>
+                    <strong>{{ figure.name }}</strong>
+                    <span v-if="figure.years" class="figure-years">{{ figure.years }}</span>
+                    <p v-if="figure.note">{{ figure.note }}</p>
+                </div>
+            </div>
         </header>
 
         <main class="detail-content">
@@ -176,6 +192,73 @@ watch(() => route.params.id, updateTitle)
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1.9;
+}
+
+/* ── 主人公 ── */
+.figure-strip {
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+    max-width: 860px;
+}
+
+.figure-main,
+.figure-co {
+    display: grid;
+    grid-template-columns: 62px auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+    padding: 12px 16px;
+    border-left: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+    border-radius: 0 10px 10px 0;
+    background: color-mix(in srgb, var(--bg-card) 62%, transparent);
+}
+
+.figure-co {
+    border-left-color: color-mix(in srgb, var(--border) 90%, transparent);
+    background: color-mix(in srgb, var(--bg-card) 42%, transparent);
+}
+
+.figure-label {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+}
+
+.figure-main strong,
+.figure-co strong {
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.figure-years {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.figure-main p,
+.figure-co p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    line-height: 1.8;
+}
+
+@media (max-width: 640px) {
+    .figure-main,
+    .figure-co {
+        grid-template-columns: 56px auto minmax(0, 1fr);
+        padding: 10px 12px;
+    }
+
+    .figure-main p,
+    .figure-co p {
+        font-size: 12px;
+    }
 }
 
 /* ── 通用段落 ── */
