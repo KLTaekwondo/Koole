@@ -199,10 +199,13 @@ watch(() => route.params.id, updateTitle)
 /* 返回入口是 button（要走 history.back），这里抹掉默认按钮外观 */
 .back-link,
 .back-footer {
+    justify-self: start;
+    width: fit-content;
     border: 0;
     background: transparent;
     padding: 0;
     font-family: inherit;
+    text-align: left;
     cursor: pointer;
 }
 

@@ -507,11 +507,19 @@ function resetFilters() {
 @media (max-width: 640px) {
     .timeline-toolbar {
         flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
+        gap: 10px;
     }
 
+    /* 手机上搜索框不再拉满整行：限制宽度、降低高度，避免又宽又大 */
     .search-box {
-        max-width: none;
+        width: 100%;
+        max-width: 268px;
+        padding: 7px 12px;
+    }
+
+    .search-box input {
+        font-size: 12.5px;
     }
 
     .timeline-rail {
