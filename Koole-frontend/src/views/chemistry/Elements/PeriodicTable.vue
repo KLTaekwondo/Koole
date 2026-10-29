@@ -86,8 +86,6 @@
                         <span>{{ element.name }}</span>
                         <i>{{ element.atomicMass }}</i>
                     </router-link>
-                    <div class="series-placeholder lanthanide-placeholder">57–71<br>镧系</div>
-                    <div class="series-placeholder actinide-placeholder">89–103<br>锕系</div>
                 </div>
                 <div class="series-table">
                     <div class="series-label">镧系</div>
@@ -705,26 +703,6 @@ function toggleFilters() {
     font-style: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.series-placeholder {
-    display: grid;
-    place-items: center;
-    border: 1px dashed var(--border);
-    border-radius: 9px;
-    color: var(--text-muted);
-    font-size: 9px;
-    text-align: center;
-}
-
-.lanthanide-placeholder {
-    grid-row: 6;
-    grid-column: 3;
-}
-
-.actinide-placeholder {
-    grid-row: 7;
-    grid-column: 3;
 }
 
 .series-table {
