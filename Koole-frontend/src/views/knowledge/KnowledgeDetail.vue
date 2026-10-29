@@ -1,5 +1,5 @@
 <template>
-    <div v-if="item" class="detail-page">
+    <div v-if="item" class="detail-page" :style="{ '--subject': accent }">
         <header class="detail-header">
             <router-link to="/physics-lab" class="back-link">← 物理实验室 · 现象与发现</router-link>
             <div class="kicker">
@@ -113,9 +113,16 @@ import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../stores/theme.js"
 import { getPhenomenonById } from "../../content/phenomena.mjs"
+import { getSubjectById } from "../../constants/subjects.js"
 
 const route = useRoute()
 const item = computed(() => getPhenomenonById(route.params.id))
+
+// 文章主题色跟随所属学科（物理蓝 / 化学绿 / 数学蓝），不再用主站红
+const accent = computed(() => {
+    const subject = getSubjectById(item.value?.subject || "physics")
+    return subject?.accent || subject?.color || "#3b82f6"
+})
 
 // 「去模拟」链接：把文章里预设的参数一起带过去，打开就是那组条件
 const simulationLink = computed(() => {
@@ -158,7 +165,7 @@ watch(() => route.params.id, updateTitle)
 }
 
 .back-link:hover {
-    color: var(--primary);
+    color: var(--subject);
 }
 
 .kicker {
@@ -174,8 +181,8 @@ watch(() => route.params.id, updateTitle)
 .era-badge {
     padding: 4px 10px;
     border-radius: 999px;
-    background: var(--primary-light);
-    color: var(--primary);
+    background: color-mix(in srgb, var(--subject) 16%, transparent);
+    color: var(--subject);
     font-weight: 800;
 }
 
@@ -209,7 +216,7 @@ watch(() => route.params.id, updateTitle)
     align-items: baseline;
     gap: 4px 10px;
     padding: 12px 16px;
-    border-left: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--subject) 55%, transparent);
     border-radius: 0 10px 10px 0;
     background: color-mix(in srgb, var(--bg-card) 62%, transparent);
 }
@@ -279,7 +286,7 @@ watch(() => route.params.id, updateTitle)
 }
 
 .band-heading > span {
-    color: var(--primary);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 800;
@@ -320,7 +327,7 @@ watch(() => route.params.id, updateTitle)
 
 .beat-year {
     padding-top: 2px;
-    color: var(--primary);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 700;
@@ -334,8 +341,8 @@ watch(() => route.params.id, updateTitle)
     margin-top: 6px;
     border: 2px solid var(--bg-card);
     border-radius: 50%;
-    background: var(--primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
+    background: var(--subject);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--subject) 16%, transparent);
 }
 
 .beat-body h3 {
@@ -456,15 +463,15 @@ watch(() => route.params.id, updateTitle)
     justify-content: space-between;
     gap: 24px;
     padding: clamp(24px, 4vw, 40px);
-    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--subject) 30%, var(--border));
     border-radius: var(--radius-xl);
     background:
-        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%),
-        color-mix(in srgb, var(--primary) 5%, var(--bg-card));
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--subject) 16%, transparent), transparent 60%),
+        color-mix(in srgb, var(--subject) 5%, var(--bg-card));
 }
 
 .cta-kicker {
-    color: var(--primary);
+    color: var(--subject);
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 800;
@@ -496,18 +503,18 @@ watch(() => route.params.id, updateTitle)
     align-items: center;
     padding: 14px 26px;
     border-radius: 999px;
-    background: var(--primary-gradient);
+    background: linear-gradient(135deg, var(--subject), color-mix(in srgb, var(--subject) 74%, #ffffff));
     color: #fff;
     font-size: 14px;
     font-weight: 700;
     text-decoration: none;
-    box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 26%, transparent);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--subject) 26%, transparent);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
 .cta-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 34px color-mix(in srgb, var(--primary) 32%, transparent);
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--subject) 32%, transparent);
 }
 
 .cta-model {
@@ -542,7 +549,7 @@ watch(() => route.params.id, updateTitle)
 }
 
 .sources a:hover {
-    color: var(--primary);
+    color: var(--subject);
 }
 
 .back-footer {
@@ -552,7 +559,7 @@ watch(() => route.params.id, updateTitle)
 }
 
 .back-footer:hover {
-    color: var(--primary);
+    color: var(--subject);
 }
 
 .missing {
@@ -566,7 +573,7 @@ watch(() => route.params.id, updateTitle)
 }
 
 .missing a {
-    color: var(--primary);
+    color: var(--subject);
 }
 
 @media (max-width: 760px) {

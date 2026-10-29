@@ -25,7 +25,7 @@
             subject="physics"
             subject-label="物理"
             base-path="/physics-lab/phenomena"
-            accent="#3b82f6"
+            :accent="physicsAccent"
             kicker="01 / PHENOMENA"
         />
 
@@ -122,8 +122,11 @@ import { PHYSICS_MODELS } from "../../constants"
 import DepthLabHero from "../../components/DepthLabHero.vue"
 import SvgIcon from "../../components/SvgIcon.vue"
 import PhenomenonTimeline from "../../components/PhenomenonTimeline.vue"
+import { getSubjectById } from "../../constants/subjects.js"
 
 const physicsCount = PHYSICS_MODELS.length
+// 学科主题色统一从 subjects.js 取，避免页面里再写死 #3b82f6
+const physicsAccent = getSubjectById("physics")?.accent || "#3b82f6"
 
 /* ── 景深场景装置 ─────────────────────────────────────── */
 
