@@ -74,20 +74,16 @@ const props = defineProps({
     title: { type: String, default: "这些现象，是怎么被发现的？" },
     description: {
         type: String,
-        default: "纵向时间轴按年代拉开：相邻发现不足 50 年的按 50 年计，避免挤在一起。先看故事，再看规律，最后亲手把模拟调一遍。",
+        default: "按年代从上到下排列。先看故事，再看规律，最后亲手把模拟调一遍。",
     },
     basePath: { type: String, default: "/physics-lab/phenomena" },
     subjectLabel: { type: String, default: "物理" },
 })
 
 // ── 时间轴刻度 ──
-// 相邻两篇的年份差小于 MIN_YEAR_STEP 时，按 MIN_YEAR_STEP 计（防止几个同年发现挤成一团）；
-// 年份差超过 MAX_YEAR_STEP 时按 MAX_YEAR_STEP 计（防止「前 250 → 1583」把页面拉到几屏长），
-// 并在中间标注真实跨年数。
-const MIN_YEAR_STEP = 50
-const MAX_YEAR_STEP = 400
-const MIN_STEP_PX = 96
-const MAX_STEP_PX = 260
+// 不再按年代差缩放：卡片之间保持统一的间距，时间顺序靠排序和卡片上的年份表达，
+// 避免「前 250 → 1583」这种大跨度把页面拉出几屏空白。
+const ENTRY_STEP_PX = 30
 
 const all = computed(() => getPhenomenaBySubject(props.subject))
 const categories = computed(() => getPhenomenaCategories(props.subject))
@@ -114,19 +110,10 @@ const visible = computed(() => {
     })
 })
 
-/** 把真实年份差映射成纵向间距（px） */
-function gapToPx(gapYears) {
-    const clamped = Math.min(MAX_YEAR_STEP, Math.max(MIN_YEAR_STEP, gapYears))
-    const ratio = (clamped - MIN_YEAR_STEP) / (MAX_YEAR_STEP - MIN_YEAR_STEP)
-    return Math.round(MIN_STEP_PX + ratio * (MAX_STEP_PX - MIN_STEP_PX))
-}
-
-const entries = computed(() => visible.value.map((item, index, list) => {
-    if (index === 0) return { ...item, stepPx: 0 }
-    const previous = list[index - 1]
-    const gapYears = (item.eraSort ?? 0) - (previous.eraSort ?? 0)
-    return { ...item, stepPx: gapToPx(gapYears) }
-}))
+const entries = computed(() => visible.value.map((item, index) => ({
+    ...item,
+    stepPx: index === 0 ? 0 : ENTRY_STEP_PX,
+})))
 
 function resetFilters() {
     keyword.value = ""
