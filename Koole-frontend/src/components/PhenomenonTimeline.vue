@@ -511,11 +511,15 @@ function resetFilters() {
         gap: 10px;
     }
 
-    /* 手机上搜索框不再拉满整行：限制宽度、降低高度，避免又宽又大 */
+    /* 手机上搜索框不再拉满整行：限制宽度、固定高度。
+       注意要重置 flex：工具栏变成纵向后，flex-basis 会作用在「高度」上，
+       原来写的 flex: 1 1 280px 会让搜索框变成一个 280px 高的圆块。 */
     .search-box {
+        flex: 0 0 auto;
         width: 100%;
         max-width: 268px;
-        padding: 7px 12px;
+        height: 36px;
+        padding: 0 12px;
     }
 
     .search-box input {
