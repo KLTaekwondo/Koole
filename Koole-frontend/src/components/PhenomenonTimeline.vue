@@ -35,7 +35,7 @@
         </div>
 
         <!-- 竖直时间轴：固定高度、内部滚动，条目变多也不会把页面一直往下拉 -->
-        <div v-if="entries.length" class="timeline-viewport">
+        <div v-if="entries.length" ref="viewportRef" class="timeline-viewport">
             <ol class="timeline-rail">
                 <li
                     v-for="(entry, index) in entries"
@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue"
 import { getPhenomenaBySubject, getPhenomenaCategories } from "../content/phenomena.mjs"
 
 const props = defineProps({
@@ -125,9 +125,33 @@ const entries = computed(() => visible.value.map((item, index) => ({
     stepPx: index === 0 ? 0 : ENTRY_STEP_PX,
 })))
 
+// ── 时间轴内部滚动位置的记忆 ──
+// 从文章页返回时，页面级的滚动由 router.scrollBehavior 恢复；
+// 但时间轴是独立滚动容器（overflow-y: auto），路由管不到，这里自己记一份。
+const SCROLL_MEMORY_TTL = 10 * 60 * 1000
+const viewportRef = ref(null)
+let savedScrollTop = 0
+let savedAt = 0
+
+onBeforeUnmount(() => {
+    savedScrollTop = viewportRef.value?.scrollTop || 0
+    savedAt = Date.now()
+})
+
+onMounted(() => {
+    if (Date.now() - savedAt > SCROLL_MEMORY_TTL) return
+    // 等卡片渲染完成、容器有高度之后再恢复
+    nextTick(() => {
+        requestAnimationFrame(() => {
+            if (viewportRef.value) viewportRef.value.scrollTop = savedScrollTop
+        })
+    })
+})
+
 function resetFilters() {
     keyword.value = ""
     activeCategory.value = "全部"
+    if (viewportRef.value) viewportRef.value.scrollTop = 0
 }
 </script>
 

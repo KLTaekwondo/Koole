@@ -180,6 +180,16 @@ const routes = [
 const router = createRouter({
     history: createWebHashHistory(),
     routes,
+    // 前进/后退时恢复原来的滚动位置，其余跳转一律回到页面顶部。
+    // 页面切换用的是 out-in 过渡（旧页先淡出），要等新页渲染完再恢复，否则此时页面高度还是 0。
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return new Promise(resolve => {
+                setTimeout(() => resolve(savedPosition), 340)
+            })
+        }
+        return { top: 0 }
+    },
 })
 
 export default router
