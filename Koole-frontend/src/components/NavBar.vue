@@ -11,6 +11,7 @@
                     进度
                     <span v-if="exploredCount" class="nav-badge">{{ exploredCount }}</span>
                 </router-link>
+                <router-link to="/knowledge" class="nav-link" :class="{ active: route.path.startsWith('/knowledge') }" @click="menuOpen = false">知识</router-link>
                 <router-link
                     v-for="subject in navSubjects"
                     :key="subject.id"

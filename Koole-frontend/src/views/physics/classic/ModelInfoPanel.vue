@@ -10,18 +10,29 @@
                 style="background: transparent;"
             />
         </div>
+        <div v-if="relatedPhenomena.length" class="related-knowledge">
+            <span>这个现象是怎么被发现的？</span>
+            <router-link v-for="phenomenon in relatedPhenomena" :key="phenomenon.id" :to="`/knowledge/${phenomenon.id}`">
+                {{ phenomenon.title }} →
+            </router-link>
+        </div>
     </div>
 </template>
 
 <script setup>
+import { computed } from "vue"
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/preview.css"
 import { theme } from "../../../stores/theme.js"
+import { getPhenomenaByModelId } from "../../../content/phenomena.mjs"
 
-defineProps({
+const props = defineProps({
     modelId: { type: String, default: "" },
     knowledge: { type: String, default: "" },
 })
+
+// 反向链接：知识小站里哪些现象指向了这个模型
+const relatedPhenomena = computed(() => getPhenomenaByModelId(props.modelId))
 </script>
 
 <style scoped>
@@ -117,5 +128,32 @@ defineProps({
 .info-content :deep(.katex) {
     font-size: 1em;
     color: #e74c3c;
+}
+
+/* 反向链接：知识小站的相关现象 */
+.related-knowledge {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 14px clamp(20px, 4vw, 48px) 18px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.related-knowledge span {
+    flex-shrink: 0;
+}
+
+.related-knowledge a {
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.related-knowledge a:hover {
+    text-decoration: underline;
 }
 </style>

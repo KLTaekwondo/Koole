@@ -14,7 +14,7 @@
  */
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL as pathToFileUrl } from "node:url"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const SRC = path.join(ROOT, "src")
@@ -241,9 +241,67 @@ function checkEncoding() {
     return files.length
 }
 
-// ── 4. 主流程 ──
+// ── 4. 知识小站：现象条目与模型注册表是否对得上 ──
 
-function main() {
+async function checkPhenomena(modelIds) {
+    const file = path.join(SRC, "content", "phenomena.mjs")
+    if (!fs.existsSync(file)) return 0
+
+    const { PHENOMENA } = await import(pathToFileUrl(file).href)
+    if (!Array.isArray(PHENOMENA)) {
+        error(file, "phenomena.mjs 没有导出 PHENOMENA 数组")
+        return 0
+    }
+
+    const slugSet = new Set()
+    for (const item of PHENOMENA) {
+        const where = path.join(SRC, "content", "phenomena.mjs")
+        if (!item.id) { error(where, "有现象条目缺少 id"); continue }
+        if (slugSet.has(item.id)) error(where, `现象 id 重复：${item.id}`)
+        slugSet.add(item.id)
+
+        for (const field of ["title", "hook", "era", "category", "knowledge"]) {
+            if (!item[field]) error(where, `现象 ${item.id} 缺少字段 ${field}`)
+        }
+        if (!Array.isArray(item.story) || item.story.length === 0) {
+            error(where, `现象 ${item.id} 的 story 不能为空`)
+        } else {
+            for (const [index, beat] of item.story.entries()) {
+                if (!beat.year || !beat.title || !beat.text) {
+                    error(where, `现象 ${item.id} 的 story[${index}] 需要 year/title/text`)
+                }
+            }
+        }
+        if (!Array.isArray(item.pitfalls) || item.pitfalls.length === 0) {
+            warn(where, `现象 ${item.id} 没有易错点（pitfalls）`)
+        }
+        if (!Array.isArray(item.sources) || item.sources.length === 0) {
+            warn(where, `现象 ${item.id} 没有参考资料（sources）`)
+        }
+
+        const simulation = item.simulation
+        if (!simulation?.modelId) {
+            warn(where, `现象 ${item.id} 没有关联模拟，页面不会出现「去调一调」按钮`)
+            continue
+        }
+        if (!modelIds.has(simulation.modelId)) {
+            error(where, `现象 ${item.id} 指向的模型 ${simulation.modelId} 不在注册表里`)
+            continue
+        }
+        // 预设参数必须是该模型真实存在的参数名，否则分享链接里会静默失效
+        const modelText = readText(path.join(MODEL_DIR, modelIds.get(simulation.modelId))) || ""
+        for (const key of Object.keys(simulation.params || {})) {
+            if (!new RegExp(`key:\\s*"${key}"`).test(modelText)) {
+                error(where, `现象 ${item.id} 的预设参数 ${key} 在模型 ${simulation.modelId} 里不存在`)
+            }
+        }
+    }
+    return PHENOMENA.length
+}
+
+// ── 5. 主流程 ──
+
+async function main() {
     const { imports, registered } = checkRegistry()
     const files = fs.readdirSync(MODEL_DIR).filter(f => f.endsWith(".js") && !HELPERS.has(f))
 
@@ -272,6 +330,7 @@ function main() {
     }
 
     // ── 输出 ──
+    const phenomenonCount = await checkPhenomena(ids)
     const srcCount = checkEncoding()
     const okCount = files.length
     if (warnings.length) {
@@ -281,10 +340,10 @@ function main() {
     if (errors.length) {
         console.log(`\n✗  ${errors.length} 个错误：`)
         for (const e of errors) console.log("   " + e)
-        console.log(`\n共检查 ${okCount} 个模型、${srcCount} 个文本文件，未通过。`)
+        console.log(`\n共检查 ${okCount} 个模型、${phenomenonCount} 篇知识条目、${srcCount} 个文本文件，未通过。`)
         process.exit(1)
     }
-    console.log(`\n✓ 内容校验通过：${okCount} 个物理模型、${srcCount} 个文本文件，knowledge 格式 / 注册表 / 首页统计 / 编码均正常。`)
+    console.log(`\n✓ 内容校验通过：${okCount} 个物理模型、${phenomenonCount} 篇知识条目、${srcCount} 个文本文件，knowledge 格式 / 注册表 / 首页统计 / 编码均正常。`)
     if (warnings.length) console.log(`  （警告 ${warnings.length} 条，不影响结果）`)
 }
 

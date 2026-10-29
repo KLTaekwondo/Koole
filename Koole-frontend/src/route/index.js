@@ -7,6 +7,8 @@ import HomeIndex from "../views/HomeIndex.vue"
 const AboutIndex = () => import("../views/AboutIndex.vue")
 const ProgressIndex = () => import("../views/ProgressIndex.vue")
 const MoreSubjects = () => import("../views/MoreSubjects.vue")
+const KnowledgeIndex = () => import("../views/knowledge/KnowledgeIndex.vue")
+const KnowledgeDetail = () => import("../views/knowledge/KnowledgeDetail.vue")
 const PhysicsLab = () => import("../views/physics/PhysicsLab.vue")
 const PhysicsLevels = () => import("../views/physics/levels/PhysicsLevels.vue")
 const PhysicsLevelView = () => import("../views/physics/levels/PhysicsLevelView.vue")
@@ -49,6 +51,16 @@ const routes = [
         path: "/subjects",
         name: "其他学科",
         component: MoreSubjects,
+    },
+    {
+        path: "/knowledge",
+        name: "知识小站",
+        component: KnowledgeIndex,
+    },
+    {
+        path: "/knowledge/:id",
+        name: "知识详情",
+        component: KnowledgeDetail,
     },
     {
         path: "/physics-lab",
