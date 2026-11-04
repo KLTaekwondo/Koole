@@ -155,6 +155,7 @@ export function createExperimentSampler(spec = {}, meta = {}) {
       metrics,
       series: cleanedSeries,
       charts: chartsSpec.map(chart => ({ title: chart.title, series: [...(chart.series || [])] })),
+      sweepAxis: spec.sweepAxis || null,
       events: [...events],
     }
 

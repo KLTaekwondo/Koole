@@ -28,6 +28,16 @@ export default {
       hint: "默认两边力矩不等，杠杆会倾斜。调整 F 和 L 让杠杆平下来。",
       check: (p, t, touched) => touched && Math.abs(p.F1 * p.d1 * (p.dir1 || 1) - p.F2 * p.d2 * (p.dir2 || 1)) < 0.5,
     },
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "d1",
+        metrics: [
+            { key: "左力矩", label: "左力矩", unit: "N·m", compute: (s, p) => p.F1 * p.d1 },
+            { key: "右力矩", label: "右力矩", unit: "N·m", compute: (s, p) => p.F2 * p.d2 },
+            { key: "差值", label: "力矩差（0 即平衡）", unit: "N·m", compute: (s, p) => p.F1 * p.d1 - p.F2 * p.d2 },
+        ],
+    },
+
     params: [
       { key: "F1", label: "左侧力 F₁ (N)", value: 3, min: 0, max: 20, step: 0.5 },
       { key: "d1", label: "左侧力臂 L₁ (m)", value: 3, min: 0.5, max: 5, step: 0.1 },

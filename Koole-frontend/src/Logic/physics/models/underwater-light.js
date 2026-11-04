@@ -24,6 +24,17 @@ export default {
       check: (p, t, touched) => touched && (p.refractiveIndex >= 1.6 || p.depth >= 260),
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="0" y="8" width="24" height="16" fill="rgba(52,152,219,0.15)"/><line x1="12" y1="20" x2="6" y2="8" stroke="#f1c40f" stroke-width="1.5"/><line x1="12" y1="20" x2="12" y2="8" stroke="#f1c40f" stroke-width="1.5"/><line x1="12" y1="20" x2="18" y2="8" stroke="#f1c40f" stroke-width="1.5"/><circle cx="12" cy="20" r="2" fill="#f1c40f"/></svg>`,
+    // ── 实验记录：临界角随折射率变化 ──
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "refractiveIndex",
+        metrics: [
+            { key: "临界角", label: "全反射临界角", unit: "°", compute: (s, p) => (Math.asin(1 / p.refractiveIndex) * 180) / Math.PI },
+            { key: "折射率", label: "折射率", unit: "", compute: (s, p) => p.refractiveIndex },
+            { key: "水深", label: "水深", unit: "cm", compute: (s, p) => p.depth },
+        ],
+    },
+
     params: [
       { key: "depth", label: "水深 (cm)", value: 120, min: 30, max: 300, step: 5 },
       { key: "sourcePos", label: "光源水平位置 (%)", value: 35, min: 10, max: 60, step: 1 },

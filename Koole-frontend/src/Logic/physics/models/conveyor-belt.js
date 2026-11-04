@@ -101,7 +101,7 @@ if (Math.abs(dv) > 0.05) {
     },
 
     // ── 渲染逻辑 ──
-    environment: "landscape",
+    environment: "none",
     dataSpec: {
         kind: "series",
         settle: "finish",

@@ -17,9 +17,10 @@ export class InclineScene extends MechanicsModel {
       { color: "rgba(52,152,219,0.5)", width: 2, fill: "rgba(52,152,219,0.08)" },
     )
     // 滑块位置：沿斜面下滑 dist
+    // 沿斜面法线抬起半径，球才贴着斜面而不是陷进去
     const ball = [
-      state.dist * Math.cos(theta),
-      params.rampHeight - state.dist * Math.sin(theta) + BALL_RADIUS,
+      state.dist * Math.cos(theta) - BALL_RADIUS * Math.sin(theta),
+      params.rampHeight - state.dist * Math.sin(theta) + BALL_RADIUS * Math.cos(theta),
     ]
     view.circle(ball, BALL_RADIUS, {
       fill: view.colors.body,

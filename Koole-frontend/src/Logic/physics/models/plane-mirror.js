@@ -30,6 +30,17 @@ export default {
       check: (p, t, touched) => touched && t > 0.6,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M6 8v8"/><path d="M18 8v8" stroke-dasharray="3 3"/><path d="M6 10l6-2 6 2"/></svg>`,
+    // ── 实验记录：平面镜像距恒等于物距 ──
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "objectDist",
+        metrics: [
+            { key: "像距", label: "像距", unit: "cm", compute: (s, p) => p.objectDist },
+            { key: "像高", label: "像高", unit: "cm", compute: (s, p) => p.objectHeight },
+            { key: "物距", label: "物距", unit: "cm", compute: (s, p) => p.objectDist },
+        ],
+    },
+
     params: [
       { key: "objectDist", label: "物距 (cm)", value: 30, min: 8, max: 70, step: 2 },
       { key: "objectHeight", label: "物高 (cm)", value: 10, min: 4, max: 20, step: 1 },

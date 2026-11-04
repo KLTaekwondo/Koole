@@ -25,6 +25,20 @@ export default {
       hint: "固定两力大小，只把夹角从 0° 慢慢调到 180°，看合力如何变化。",
       check: (p, t, touched) => touched,
     },
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "angle",
+        metrics: [
+            { key: "合力", label: "合力大小", unit: "N", compute: (s, p) => {
+                const rad = (p.angle * Math.PI) / 180;
+                const a = p.f1 ?? 3;
+                const b = p.f2 ?? 4;
+                return Math.sqrt(a * a + b * b + 2 * a * b * Math.cos(rad));
+            } },
+            { key: "夹角", label: "两力夹角", unit: "°", compute: (s, p) => p.angle },
+        ],
+    },
+
     params: [
       { key: "F1", label: "力 F₁ (N)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "F2", label: "力 F₂ (N)", value: 5, min: 1, max: 15, step: 0.5 },

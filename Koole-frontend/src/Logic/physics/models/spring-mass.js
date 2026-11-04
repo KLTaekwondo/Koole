@@ -34,6 +34,20 @@ export default {
       hint: "质量调大、调小各一次，再改劲度系数 k，对比完成一次全振动的时间。",
       check: (p, t, touched) => touched && t > 1,
     },
+    dataSpec: {
+        kind: "series",
+        settle: "window",
+        windowSeconds: 8,
+        series: [
+            { key: "x", label: "位移", unit: "m", sample: (s) => s.x ?? 0 },
+            { key: "v", label: "速度", unit: "m/s", sample: (s) => s.v ?? 0 },
+        ],
+        metrics: [
+            { key: "理论周期", label: "理论周期", unit: "s", compute: (s, p) => 2 * Math.PI * Math.sqrt(p.mass / p.k) },
+            { key: "劲度系数", label: "劲度系数", unit: "N/m", compute: (s, p) => p.k },
+        ],
+    },
+
     params: [
       { key: "mass", label: "质量 (kg)", value: 1, min: 0.2, max: 5, step: 0.1 },
       { key: "k", label: "劲度系数 (N/m)", value: 10, min: 1, max: 30, step: 0.5 },

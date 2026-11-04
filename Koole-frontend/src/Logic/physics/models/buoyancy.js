@@ -28,6 +28,21 @@ export default {
       hint: "物体密度小于液体漂浮、等于悬浮、大于沉底——自己动手试出来。",
       check: (p, t, touched) => touched && t > 1,
     },
+    dataSpec: {
+        kind: "series",
+        settle: "window",
+        windowSeconds: 8,
+        series: [
+            { key: "depth", label: "浸没深度", unit: "m", sample: (s) => s.submerged ?? 0 },
+            { key: "buoyancy", label: "浮力", unit: "N", sample: (s, p) => (p.rhoLiquid * p.gravity * (s.submerged ?? 0) * p.volume) },
+        ],
+        metrics: [
+            { key: "物体密度", label: "物体密度", unit: "kg/m³", compute: (s, p) => p.rhoObj },
+            { key: "液体密度", label: "液体密度", unit: "kg/m³", compute: (s, p) => p.rhoLiquid },
+            { key: "状态", label: "沉浮判据（物体/液体密度比）", unit: "", compute: (s, p) => p.rhoObj / p.rhoLiquid },
+        ],
+    },
+
     params: [
       { key: "rhoObj", label: "物体密度 (kg/m³)", value: 600, min: 100, max: 3000, step: 50 },
       { key: "rhoLiquid", label: "液体密度 (kg/m³)", value: 1000, min: 500, max: 2000, step: 50 },

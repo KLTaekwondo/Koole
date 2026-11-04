@@ -71,6 +71,8 @@ export function createView({ ctx, cw, ch, viewTransform, theme }) {
 
   /** 世界 y 对应的屏幕 y（不含偏移计算，便于画分界线） */
   const screenYOf = (worldY) => anchorY() - worldY * unit()
+  /** 屏幕 y → 世界 y（光学图按画面居中排版时用） */
+  const worldYAt = (screenY) => (anchorY() - screenY) / unit()
 
   const view = {
     ctx,
@@ -83,6 +85,7 @@ export function createView({ ctx, cw, ch, viewTransform, theme }) {
     len,
     toScreen,
     screenYOf,
+    worldYAt,
     anchorY,
 
     // ── 背景与舞台 ──────────────────────────────

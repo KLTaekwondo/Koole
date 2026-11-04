@@ -1,3 +1,5 @@
+import { refractionScene } from "../render/scenes/refractionScene.js"
+
 // refraction 模型数据
 export default {
     id: "refraction",
@@ -27,6 +29,30 @@ $$n_1 \\sin\\theta_1 = n_2 \\sin\\theta_2$$
       },
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="3 2" opacity="0.4"/><line x1="4" y1="6" x2="12" y2="12"/><line x1="12" y1="12" x2="20" y2="18"/><rect x="0" y="12" width="24" height="12" fill="rgba(52,152,219,0.1)"/></svg>`,
+    environment: "none",
+
+    // ── 实验记录：快照形态，记录「入射角 → 折射角」这类关系 ──
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "incidentAngle",
+        metrics: [
+            { key: "折射角", label: "折射角", unit: "°", compute: (s, p) => {
+                const sinT2 = (p.n1 / p.n2) * Math.sin((p.incidentAngle * Math.PI) / 180);
+                if (sinT2 > 1) return null;
+                return (Math.asin(sinT2) * 180) / Math.PI;
+            } },
+            { key: "临界角", label: "临界角", unit: "°", compute: (s, p) => {
+                if (p.n1 <= p.n2) return null;
+                return (Math.asin(p.n2 / p.n1) * 180) / Math.PI;
+            } },
+            { key: "入射角", label: "入射角", unit: "°", compute: (s, p) => p.incidentAngle },
+        ],
+    },
+
+    drawScene(view, state, params) {
+        refractionScene.drawScene(view, state, params)
+    },
+
     params: [
       { key: "incidentAngle", label: "入射角 (°)", value: 30, min: 0, max: 89, step: 1 },
       { key: "n1", label: "介质1折射率 n₁", value: 1.0, min: 1.0, max: 2.5, step: 0.01 },

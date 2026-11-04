@@ -30,6 +30,20 @@ export default {
       hint: "把角速度调大一倍，注意观察速度方向转得有多快。",
       check: (p, t, touched) => touched && t > 1,
     },
+    dataSpec: {
+        kind: "series",
+        settle: "window",
+        windowSeconds: 8,
+        series: [
+            { key: "angle", label: "转过的角度", unit: "rad", sample: (s) => s.angle ?? 0 },
+        ],
+        metrics: [
+            { key: "线速度", label: "线速度", unit: "m/s", compute: (s, p) => p.omega * p.radius },
+            { key: "向心加速度", label: "向心加速度", unit: "m/s²", compute: (s, p) => p.omega * p.omega * p.radius },
+            { key: "周期", label: "周期", unit: "s", compute: (s, p) => (2 * Math.PI) / p.omega },
+        ],
+    },
+
     params: [
       { key: "radius", label: "轨道半径 (m)", value: 5, min: 1, max: 15, step: 0.5 },
       { key: "omega", label: "角速度 (rad/s)", value: 2, min: 0.5, max: 6, step: 0.1 },

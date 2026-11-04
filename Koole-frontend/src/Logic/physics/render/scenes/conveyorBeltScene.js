@@ -11,13 +11,16 @@ export class ConveyorBeltScene extends MechanicsModel {
   drawWorld(view, state, params) {
     const left = -1
     const right = params.beltLength + 1
-    // 传送带带面
+    // 传送带带面（基准线以下，画在道具层里，不会被地面盖住）
     view.polyline([[left, 0], [right, 0], [right, -BELT_THICKNESS], [left, -BELT_THICKNESS]], {
       color: "#90a4ae", width: 2, fill: "#cfd8dc",
     })
-    // 滚筒
-    view.circle([left, -BELT_THICKNESS / 2], 0.18, { stroke: "#607d8b", width: 2 })
-    view.circle([right, -BELT_THICKNESS / 2], 0.18, { stroke: "#607d8b", width: 2 })
+    // 两端滚筒
+    view.circle([left, -BELT_THICKNESS / 2], 0.2, { stroke: "#607d8b", width: 2, fill: "#b0bec5" })
+    view.circle([right, -BELT_THICKNESS / 2], 0.2, { stroke: "#607d8b", width: 2, fill: "#b0bec5" })
+    // 支腿
+    view.line([left, -BELT_THICKNESS], [left, -BELT_THICKNESS - 0.5], { color: "#78909c", width: 2 })
+    view.line([right, -BELT_THICKNESS], [right, -BELT_THICKNESS - 0.5], { color: "#78909c", width: 2 })
     // 滑块
     const x = state.x
     view.polyline([

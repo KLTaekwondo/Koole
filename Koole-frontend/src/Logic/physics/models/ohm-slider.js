@@ -27,6 +27,20 @@ export default {
       check: (p, t, touched) => touched && p.switchOn === 1 && p.sliderPercent >= 90,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4"/><path d="M17 12h4"/><path d="M7 12l2-4 3 8 3-8 2 4"/><path d="M10 6l7 10"/><circle cx="17" cy="16" r="1"/></svg>`,
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "sliderPercent",
+        metrics: [
+            { key: "电流", label: "电流 I", unit: "A", compute: (s, p) => {
+                if (p.switchOn === 0) return null;
+                const R = p.fixedR + (p.sliderPercent / 100) * p.sliderMax;
+                return p.voltage / R;
+            } },
+            { key: "总电阻", label: "总电阻 R", unit: "Ω", compute: (s, p) => p.fixedR + (p.sliderPercent / 100) * p.sliderMax },
+            { key: "滑片", label: "滑片位置", unit: "%", compute: (s, p) => p.sliderPercent },
+        ],
+    },
+
     params: [
       { key: "voltage", label: "电源电压 U (V)", value: 6, min: 1.5, max: 12, step: 0.5 },
       { key: "fixedR", label: "定值电阻 R₀ (Ω)", value: 5, min: 1, max: 20, step: 0.5 },

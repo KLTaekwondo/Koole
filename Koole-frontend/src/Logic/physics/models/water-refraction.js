@@ -26,6 +26,17 @@ $$d' = d \\cdot \\frac{n_2 \\cos \\theta_2}{n_1 \\cos \\theta_1}$$
       check: (p, t, touched) => touched && p.viewAngle >= 65,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="10" width="20" height="12" fill="rgba(52,152,219,0.2)" stroke="rgba(52,152,219,0.5)"/><line x1="8" y1="8" x2="14" y2="16" stroke="#e74c3c" stroke-width="1.5"/><line x1="14" y1="16" x2="19" y2="10" stroke="#e74c3c" stroke-width="1.5"/><line x1="14" y1="16" x2="14" y2="6" stroke-dasharray="3 2" opacity="0.4"/><circle cx="8" cy="6" r="2" fill="#e74c3c"/><polygon points="19,10 21,11 20,8" fill="#e74c3c"/></svg>`,
+    // ── 实验记录：视深与折射率的关系 ──
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "depth",
+        metrics: [
+            { key: "视深", label: "视深", unit: "cm", compute: (s, p) => p.depth / p.refractiveIndex },
+            { key: "实深", label: "实深", unit: "cm", compute: (s, p) => p.depth },
+            { key: "折射率", label: "折射率", unit: "", compute: (s, p) => p.refractiveIndex },
+        ],
+    },
+
     params: [
       { key: "depth", label: "实深 (cm)", value: 100, min: 30, max: 250, step: 1 },
       { key: "viewAngle", label: "观察角 (°)", value: 30, min: 1, max: 75, step: 1 },

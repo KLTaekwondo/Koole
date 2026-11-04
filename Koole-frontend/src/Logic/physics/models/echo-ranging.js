@@ -28,6 +28,18 @@ export default {
       check: (p, t, touched) => touched && p.v0 >= 20,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="8" height="6" rx="1"/><line x1="14" y1="4" x2="14" y2="20"/><path d="M18 8 Q22 12 18 16" stroke-dasharray="2 2"/><circle cx="5" cy="10" r="1" fill="currentColor"/></svg>`,
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "echoTime", label: "回波时间", unit: "s", sample: (s) => s.echoTime ?? 0 },
+        ],
+        metrics: [
+            { key: "距离", label: "测得的距离", unit: "m", compute: (s, p) => ((s.echoTime ?? 0) * (p.soundSpeed ?? 340)) / 2 },
+            { key: "声速", label: "声速", unit: "m/s", compute: (s, p) => p.soundSpeed ?? 340 },
+        ],
+    },
+
     params: [
       { key: "wallDist", label: "墙的距离 (m)", value: 170, min: 20, max: 1000, step: 10 },
       { key: "v0", label: "车速 (m/s)", value: 20, min: 0, max: 50, step: 1 },

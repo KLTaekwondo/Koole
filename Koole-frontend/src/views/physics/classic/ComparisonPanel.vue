@@ -118,6 +118,20 @@ const chartDefs = computed(() => {
   if (!trail) return []
   // 旧记录：模型自己声明的图表定义
   if (trail.chartDefs?.length) return trail.chartDefs
+  // 快照记录：横轴是参数（sweepAxis），纵轴是指标
+  if (trail.kind === "snapshot" && trail.sweepAxis && trail.metricsMap) {
+    const axisLabel = trail.paramLabels?.[trail.sweepAxis] || trail.sweepAxis
+    const firstMetric = Object.keys(trail.metricsMap)[0]
+    if (firstMetric) {
+      return [{
+        title: `${axisLabel} → ${firstMetric}`,
+        xLabel: axisLabel,
+        yLabel: firstMetric,
+        snapshotMetric: firstMetric,
+      }]
+    }
+  }
+
   // 新记录：优先用 dataSpec.charts 分组（多条线同图），再退回「一序列一图」
   if (Array.isArray(trail.charts) && trail.charts.length && Array.isArray(trail.series)) {
     const PALETTE = ["#3b82f6", "#e67e22", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6"]
@@ -217,6 +231,39 @@ function updateCharts() {
       xAxis: { type: "value", name: "x (m)", nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
       yAxis: { type: "value", name: "y (m)", nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
       series,
+    }, true)
+    return
+  }
+
+  // 快照：把所有可见记录聚成一条「参数 → 结果」折线
+  const snapshotDef = defs.find(d => d.snapshotMetric)
+  if (snapshotDef && defs.length === 1) {
+    const inst = chartInstances.value[0]
+    if (!inst) return
+    const points = visibleTrails
+      .map(t => {
+        const x = Number(t.params?.[t.sweepAxis])
+        const y = Number(t.metricsMap?.[snapshotDef.snapshotMetric])
+        return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null
+      })
+      .filter(Boolean)
+      .sort((a, b) => a[0] - b[0])
+    if (points.length === 0) { inst.clear(); return }
+    inst.setOption({
+      backgroundColor: tc.bg,
+      title: { text: snapshotDef.title, left: "center", top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: tc.title } },
+      grid: { top: 35, right: 18, bottom: 30, left: 52 },
+      tooltip: { trigger: "axis" },
+      xAxis: { type: "value", name: snapshotDef.xLabel, nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
+      yAxis: { type: "value", name: snapshotDef.yLabel, nameTextStyle: { fontSize: 11, color: tc.text }, axisLabel: { fontSize: 10, color: tc.text }, splitLine: { lineStyle: { color: tc.grid } } },
+      series: [{
+        type: "line",
+        data: points,
+        symbol: "circle",
+        symbolSize: 6,
+        lineStyle: { width: 2, color: "#3b82f6" },
+        itemStyle: { color: "#3b82f6" },
+      }],
     }, true)
     return
   }

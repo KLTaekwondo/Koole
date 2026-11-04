@@ -35,6 +35,25 @@ $$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$
       check: (p, t) => p.objectDist < p.focalLength && t > 0.6,
     },
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="3" ry="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,
+    // ── 实验记录：物距 → 像距 / 放大率 ──
+    dataSpec: {
+        kind: "snapshot",
+        sweepAxis: "objectDist",
+        metrics: [
+            { key: "像距", label: "像距 v", unit: "cm", compute: (s, p) => {
+                const { focalLength: f, objectDist: u } = p;
+                if (Math.abs(u - f) < 1e-6) return null;
+                return (u * f) / (u - f);
+            } },
+            { key: "放大率", label: "放大率", unit: "×", compute: (s, p) => {
+                const { focalLength: f, objectDist: u } = p;
+                if (Math.abs(u - f) < 1e-6) return null;
+                return Math.abs(f / (u - f));
+            } },
+            { key: "物距", label: "物距 u", unit: "cm", compute: (s, p) => p.objectDist },
+        ],
+    },
+
     params: [
       { key: "focalLength", label: "焦距 f (cm)", value: 10, min: 3, max: 20, step: 1 },
       { key: "objectDist", label: "物距 u (cm)", value: 30, min: 3, max: 60, step: 1 },
