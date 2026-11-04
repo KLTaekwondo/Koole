@@ -140,6 +140,12 @@ watch(activeModelId, modelId => {
 
 <style scoped>
 .classic-workspace {
+    /* 经典模型整块统一成物理蓝，模型库、筛选 chip、激活态都跟着变 */
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-hover: #60a5fa;
+    --primary-light: color-mix(in srgb, #3b82f6 14%, transparent);
+
     position: relative;
     width: min(1520px, calc(100% - 24px));
     margin: -20px auto 0;
@@ -149,6 +155,18 @@ watch(activeModelId, modelId => {
 .workspace-stage {
     position: relative;
     min-height: calc(100svh - var(--nav-height) - 24px);
+}
+
+/* 全屏工作台：抵消页面上下内边距，让画布正好填满导航以下的视口 */
+.classic-workspace.focus-mode {
+    width: 100%;
+    margin: -32px 0 -32px;
+    padding-bottom: 0;
+}
+
+.classic-workspace.focus-mode .workspace-stage {
+    min-height: 0;
+    height: 100%;
 }
 
 .stage-actions {
@@ -248,31 +266,33 @@ watch(activeModelId, modelId => {
     color: #fff;
 }
 
+/* 不做蒙版：只留一个透明点击区，点空白处关掉模型库，画面不压暗也不模糊 */
 .drawer-backdrop {
     position: fixed;
     inset: var(--nav-height) 0 0;
     z-index: 180;
     border: 0;
-    background: rgba(12, 18, 24, 0.26);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    background: transparent;
 }
 
 .model-drawer {
+    /* 和参数面板同一套语言：悬浮卡片，不贴底 */
     position: fixed;
-    top: calc(var(--nav-height) + 12px);
-    bottom: 12px;
-    left: 12px;
+    top: auto;
+    bottom: 78px;
+    left: 50%;
     z-index: 190;
-    width: min(360px, calc(100vw - 24px));
+    transform: translateX(-50%);
+    width: min(980px, calc(100vw - 32px));
+    max-height: min(48vh, 460px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
-    box-shadow: 0 24px 70px rgba(15, 23, 32, 0.24);
-    backdrop-filter: blur(20px);
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--bg-card) 96%, transparent);
+    box-shadow: 0 24px 60px rgba(20, 28, 34, 0.16);
+    backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(20px);
 }
 
@@ -280,7 +300,9 @@ watch(activeModelId, modelId => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 22px 16px;
+    gap: 12px;
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
 .drawer-header small {
@@ -291,9 +313,10 @@ watch(activeModelId, modelId => {
 }
 
 .drawer-header h2 {
-    margin-top: 4px;
+    margin-top: 2px;
     color: var(--text);
-    font-size: 23px;
+    font-size: 15px;
+    font-weight: 750;
 }
 
 .icon-button {
@@ -314,7 +337,7 @@ watch(activeModelId, modelId => {
 .search-box {
     position: relative;
     display: block;
-    margin: 0 18px 14px;
+    margin: 14px 18px 12px;
 }
 
 .search-box > span {
@@ -356,7 +379,7 @@ watch(activeModelId, modelId => {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 7px;
-    padding: 0 18px 14px;
+    padding: 0 18px 12px;
 }
 
 .filter-chip {
@@ -381,23 +404,23 @@ watch(activeModelId, modelId => {
 
 .model-list {
     min-height: 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
     gap: 6px;
     overflow-y: auto;
-    padding: 0 12px 16px;
+    padding: 0 18px 16px;
 }
 
 .model-item {
     width: 100%;
-    min-height: 68px;
+    min-height: 58px;
     display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 8px 11px;
     border: 1px solid transparent;
-    border-radius: 16px;
+    border-radius: 12px;
     background: transparent;
     color: var(--text-secondary);
     text-align: left;
@@ -471,7 +494,7 @@ watch(activeModelId, modelId => {
 .drawer-slide-enter-from,
 .drawer-slide-leave-to {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translate(-50%, 14px);
 }
 
 @media (max-width: 680px) {
@@ -502,21 +525,25 @@ watch(activeModelId, modelId => {
 
     .model-drawer {
         top: auto;
-        right: 6px;
-        bottom: 6px;
-        left: 6px;
-        width: auto;
-        max-height: min(78svh, 720px);
-        border-radius: 24px 24px 18px 18px;
+        bottom: 70px;
+        left: 50%;
+        width: calc(100vw - 16px);
+        max-height: min(58svh, 520px);
+        transform: translateX(-50%);
+        border-radius: 18px;
     }
 
     .filter-row {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .model-list {
+        grid-template-columns: 1fr;
+    }
+
     .drawer-slide-enter-from,
     .drawer-slide-leave-to {
-        transform: translateY(28px);
+        transform: translate(-50%, 14px);
     }
 }
 </style>

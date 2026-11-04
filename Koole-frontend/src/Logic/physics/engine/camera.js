@@ -12,7 +12,7 @@ import { DRAW_SCALE } from "../physicsModels.js"
  * @returns {Object} 相机状态和控制方法
  */
 export function createCamera(canvasRef, modelRef, simState, viewTransform, draw) {
-  const { offsetX, offsetY, viewWidth, viewHeight, worldToScreen } = viewTransform
+  const { offsetX, offsetY, viewWidth, viewHeight, worldToScreen, zoom } = viewTransform
   const followTarget = ref(true)
 
   let isDragging = false
@@ -27,8 +27,10 @@ export function createCamera(canvasRef, modelRef, simState, viewTransform, draw)
     if (!simState.state || !model) return
     const pos = model.getBallPosition(simState.state, simState.params)
     if (!pos) return
-    offsetX.value = -pos.x * DRAW_SCALE
-    offsetY.value = pos.y * DRAW_SCALE + 40 - viewHeight.value * 0.67
+    // 偏移量按当前缩放换算，跟随目标时无论放大缩小都保持在画面中央
+    const unit = DRAW_SCALE * (zoom?.value || 1)
+    offsetX.value = -pos.x * unit
+    offsetY.value = pos.y * unit + 40 - viewHeight.value * 0.67
   }
 
   const resetCamera = () => {

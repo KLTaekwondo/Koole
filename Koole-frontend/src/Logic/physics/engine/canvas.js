@@ -27,15 +27,29 @@ export function createCanvasManager(draw, viewTransform) {
     draw()
   }
 
+  let resizeObserver = null
+
   onMounted(async () => {
     resizeCanvas()
     window.addEventListener("resize", resizeCanvas)
+    // 容器尺寸变化（全屏切换、上滑面板、导航收起）不会触发 window resize，
+    // 只监听窗口会让 canvas 的像素尺寸和显示尺寸对不上，这里补一个 ResizeObserver。
+    if (typeof ResizeObserver !== "undefined") {
+      let frame = 0
+      resizeObserver = new ResizeObserver(() => {
+        cancelAnimationFrame(frame)
+        frame = requestAnimationFrame(resizeCanvas)
+      })
+      if (canvasAreaRef.value) resizeObserver.observe(canvasAreaRef.value)
+    }
     await nextTick()
     draw()
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener("resize", resizeCanvas)
+    resizeObserver?.disconnect()
+    resizeObserver = null
   })
 
   return {

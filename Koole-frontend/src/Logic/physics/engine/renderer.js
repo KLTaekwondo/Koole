@@ -10,22 +10,24 @@ import { DRAW_SCALE } from "../physicsModels.js"
  * @param {Function} getTheme - 获取当前主题
  */
 export function createRenderer(canvasRef, viewTransform, modelRef, simState, recordedTrails, getTheme, onInfoUpdate) {
-  const { worldToScreen, offsetX, offsetY, viewWidth, viewHeight } = viewTransform
+  const { worldToScreen, offsetX, offsetY, viewWidth, viewHeight, pixelPerUnit } = viewTransform
 
   const drawGrid = (ctx, cw, ch) => {
     ctx.strokeStyle = getTheme() === "dark" ? "#444444" : "#e8e8e8"
     ctx.lineWidth = 0.5
-    const startGX = Math.floor((-cw / 2 - offsetX.value) / DRAW_SCALE) * DRAW_SCALE
-    const endGX = Math.ceil((cw / 2 - offsetX.value) / DRAW_SCALE) * DRAW_SCALE
-    const startGY = Math.floor((-ch + 40 - offsetY.value) / DRAW_SCALE) * DRAW_SCALE
-    const endGY = Math.ceil((40 - offsetY.value) / DRAW_SCALE) * DRAW_SCALE
+    // 每格对应的像素数：缩放时网格跟着放大/缩小，但地面那一行始终对齐
+    const unit = pixelPerUnit()
+    const startGX = Math.floor((-cw / 2 - offsetX.value) / unit) * unit
+    const endGX = Math.ceil((cw / 2 - offsetX.value) / unit) * unit
+    const startGY = Math.floor((-ch + 40 - offsetY.value) / unit) * unit
+    const endGY = Math.ceil((40 - offsetY.value) / unit) * unit
 
-    for (let wx = startGX; wx <= endGX; wx += DRAW_SCALE) {
-      const sx = cw / 2 + wx * DRAW_SCALE + offsetX.value
+    for (let wx = startGX; wx <= endGX; wx += unit) {
+      const sx = cw / 2 + wx + offsetX.value
       ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, ch); ctx.stroke()
     }
-    for (let wy = startGY; wy <= endGY; wy += DRAW_SCALE) {
-      const sy = ch - 40 - wy * DRAW_SCALE + offsetY.value
+    for (let wy = startGY; wy <= endGY; wy += unit) {
+      const sy = ch - 40 - wy + offsetY.value
       ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(cw, sy); ctx.stroke()
     }
   }

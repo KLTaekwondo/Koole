@@ -1,153 +1,156 @@
 <template>
-    <div v-if="activeModel" class="model-workspace" :class="{ 'is-focused': focusMode }">
+    <div v-if="activeModel" class="model-workspace">
         <section class="simulation-stage">
-            <header v-if="!focusMode" class="simulation-heading">
-                <div>
-                    <small>{{ activeModel.category }}</small>
-                    <h1>{{ activeModel.name }}</h1>
-                </div>
-            </header>
+            <!-- 左上角：返回 + 当前位置，极轻的一行 -->
+            <div class="stage-status">
+                <button class="status-back" type="button" aria-label="返回物理实验室" @click="router.push('/physics-lab')">←</button>
+                <span class="status-dot"></span>
+                <small>{{ activeModel.category }}</small>
+                <strong>{{ activeModel.name }}</strong>
+            </div>
 
             <div class="canvas-area" ref="canvasAreaRef">
-                <SimInfoOverlay v-if="!focusMode" :lines="infoLines" />
                 <canvas
                     ref="canvasRef"
+                    @wheel.prevent="onWheelZoom"
                     @mousedown="onMouseDown"
                     @mousemove="onMouseMove"
                     @mouseup="onMouseUp"
                     @mouseleave="onMouseUp"
-                    @touchstart="onTouchStart"
-                    @touchmove="onTouchMove"
-                    @touchend="onTouchEnd"
+                    @touchstart="handleTouchStart"
+                    @touchmove="handleTouchMove"
+                    @touchend="handleTouchEnd"
                 ></canvas>
+                <SimInfoOverlay :lines="infoLines" />
 
-                <div class="canvas-controls">
-                    <button class="control-button primary" type="button" :title="running ? '暂停' : '开始'" @click="toggleSimulation">
-                        <img :src="running ? pauseIcon : playIcon" alt="" />
-                        <span>{{ running ? '暂停' : '开始' }}</span>
-                    </button>
-                    <i></i>
-                    <button class="control-button" type="button" title="重置模拟" @click="resetSimulation">
-                        <img :src="resetIcon" alt="" />
-                        <span>重置</span>
-                    </button>
-                    <button class="control-button" :class="{ active: followTarget }" type="button" title="追踪目标" @click="followTarget = !followTarget">
-                        <img :src="targetIcon" alt="" />
-                        <span>追踪</span>
-                    </button>
-                    <button class="control-button" type="button" title="重置视角" @click="resetCamera">
-                        <img :src="viewResetIcon" alt="" />
-                        <span>视角</span>
-                    </button>
-                    <i></i>
-                    <button class="control-button" type="button" :title="focusMode ? '退出专注模式' : '进入专注模式'" @click="toggleFocusMode">
-                        <img :src="gridIcon" alt="" />
-                        <span>{{ focusMode ? '退出' : '专注' }}</span>
-                    </button>
-                    <i></i>
-                    <button class="control-button" type="button" title="复制带当前参数的分享链接" @click="shareModel">
-                        <img :src="shareIcon" alt="" />
-                        <span>分享</span>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <transition name="model-swap" mode="out-in">
-        <div v-if="!focusMode" :key="activeModel.id" class="model-detail">
-        <section v-if="activeModel.exploration" class="exploration-section" :class="{ done: explorationDone }">
-            <span class="exploration-badge">{{ explorationDone ? '✓' : '任务' }}</span>
-            <div class="exploration-text">
-                <small>{{ explorationDone ? 'TASK DONE' : 'EXPLORE' }}</small>
-                <p>{{ activeModel.exploration.task }}</p>
-            </div>
-            <span class="exploration-status">{{ explorationDone ? '探索完成' : '进行中' }}</span>
-        </section>
-
-        <section class="parameter-section">
-            <header class="section-heading">
-                <span class="parameter-live-dot"></span>
-                <div>
-                    <small>PARAMETERS</small>
-                    <h2>参数调节</h2>
-                </div>
-            </header>
-
-            <div class="parameter-list">
-                <div v-for="param in activeModel.params" :key="param.key" class="parameter-item">
-                    <label>
-                        <span>{{ param.label }}</span>
-                        <strong>{{ displayParamValue(param) }}</strong>
-                    </label>
-                    <select
-                        v-if="param.options"
-                        :value="param.value"
-                        @change="updateParam(param.key, parseFloat($event.target.value))"
-                    >
-                        <option v-for="option in param.options" :key="option.value" :value="option.value">{{ option.label }}</option>
-                    </select>
-                    <input
-                        v-else
-                        type="range"
-                        :min="param.min"
-                        :max="param.max"
-                        :step="param.step || 1"
-                        :value="param.value"
-                        @input="updateParam(param.key, parseFloat($event.target.value))"
-                    />
-                    <div v-if="!param.options" class="range-limits">
-                        <span>{{ param.min }}</span>
-                        <span>{{ param.max }}</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="content-section">
-            <div class="section-block">
-                <header class="section-heading">
-                    <div>
-                        <small>DATA</small>
-                        <h2>实验记录</h2>
-                    </div>
-                </header>
-                <ComparisonPanel
-                    v-if="recordedTrails.length > 0"
-                    :trails="recordedTrails"
-                    @clear-all="clearRecords"
-                    @remove-record="removeRecord"
-                    @toggle-visibility="toggleTrailVisibility"
-                />
-                <div v-else class="data-empty">
-                    <img :src="activityIcon" alt="" />
-                    <div>
-                        <strong>还没有实验记录</strong>
-                        <p>开始运行模型，模拟结束后会在这里生成曲线、事件和关键数据。</p>
-                    </div>
-                    <button type="button" @click="toggleSimulation">开始实验</button>
+                <!-- 右下角缩放控件：滚轮 / 双指 / 按钮都能调 -->
+                <div class="zoom-widget">
+                    <button type="button" data-tip="缩小" @click="zoomBy(0.9)">−</button>
+                    <button type="button" class="zoom-value" data-tip="点击恢复 100%" @click="resetZoom">{{ Math.round(zoom * 100) }}%</button>
+                    <button type="button" data-tip="放大" @click="zoomBy(1.1)">+</button>
                 </div>
             </div>
 
-            <div class="section-block">
-                <button
-                    type="button"
-                    class="knowledge-toggle"
-                    :class="{ active: knowledgeOpen, locked: isKnowledgeLocked, shake: nudgeKnowledge }"
-                    @click="toggleKnowledge"
-                >
-                    <span class="knowledge-toggle-text">
-                        <small>PRINCIPLE</small>
-                        <span>{{ isKnowledgeLocked ? '先完成探索任务' : '原理讲解' }}</span>
-                    </span>
-                    <img :src="isKnowledgeLocked ? lockIcon : (knowledgeOpen ? closeIcon : gridIcon)" alt="" />
+            <!-- 底部胶囊：全部入口都在这儿 -->
+            <div class="model-toolbar">
+                <button class="model-chip" type="button" data-tip="切换模型" title="切换模型" @click="$emit('requestModels')">
+                    <span class="chip-dot"></span>
+                    <span class="chip-name">{{ activeModel.name }}</span>
+                    <span class="chip-caret">▾</span>
                 </button>
-                <div v-show="knowledgeOpen" class="tab-panel">
-                    <ModelInfoPanel :model-id="activeModel.id" :knowledge="activeModel.knowledge" />
-                </div>
+                <i class="tb-divider"></i>
+                <button class="tb-icon" type="button" :data-tip="running ? '暂停' : '开始'" :title="running ? '暂停' : '开始'" @click="toggleSimulation">
+                    <img :src="running ? pauseIcon : playIcon" alt="" />
+                </button>
+                <button class="tb-icon" type="button" data-tip="重置模拟" title="重置模拟" @click="resetSimulation">
+                    <img :src="resetIcon" alt="" />
+                </button>
+                <button class="tb-icon" :class="{ active: followTarget }" type="button" data-tip="视角锁定：镜头跟随物体" title="视角锁定：镜头跟随物体" @click="followTarget = !followTarget">
+                    <img :src="targetIcon" alt="" />
+                </button>
+                <button class="tb-icon" type="button" data-tip="重置视角" title="重置视角" @click="resetCamera">
+                    <img :src="viewResetIcon" alt="" />
+                </button>
+                <i class="tb-divider"></i>
+                <button class="tb-pill" :class="{ active: sheetOpen && sheetTab === 'params' }" type="button" data-tip="调节参数" @click="openSheet('params')">参数</button>
+                <button class="tb-pill" :class="{ active: sheetOpen && sheetTab === 'curves' }" type="button" data-tip="实验记录与曲线对比" @click="openSheet('curves')">曲线</button>
+                <button class="tb-pill" :class="{ active: sheetOpen && sheetTab === 'task' }" type="button" data-tip="本模型的探索任务" @click="openSheet('task')">任务</button>
+                <button class="tb-pill" :class="{ active: sheetOpen && sheetTab === 'info' }" type="button" data-tip="原理与公式讲解" @click="openSheet('info')">原理</button>
+                <i class="tb-divider"></i>
+                <button class="tb-icon" type="button" data-tip="复制带当前参数的分享链接" title="复制带当前参数的分享链接" @click="shareModel">
+                    <svg class="tb-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
+                        <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+                    </svg>
+                </button>
             </div>
+
+            <!-- 上滑面板：一次只显示一块内容 -->
+            <Transition name="sheet-rise">
+                <section v-if="sheetOpen" class="model-sheet" aria-label="模型面板">
+                    <header class="sheet-head">
+                        <div class="sheet-title">
+                            <small>{{ sheetKicker }}</small>
+                            <h2>{{ sheetTitle }}</h2>
+                        </div>
+                        <button class="sheet-close" type="button" aria-label="收起面板" @click="closeSheet">×</button>
+                    </header>
+
+                    <div class="sheet-body">
+                        <div v-show="sheetTab === 'params'" class="sheet-pane">
+                            <div class="parameter-list">
+                                <div v-for="param in activeModel.params" :key="param.key" class="parameter-item">
+                                    <label>
+                                        <span>{{ param.label }}</span>
+                                        <strong>{{ displayParamValue(param) }}</strong>
+                                    </label>
+                                    <select
+                                        v-if="param.options"
+                                        :value="param.value"
+                                        @change="updateParam(param.key, parseFloat($event.target.value))"
+                                    >
+                                        <option v-for="option in param.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+                                    </select>
+                                    <template v-else>
+                                        <input
+                                            type="range"
+                                            :min="param.min"
+                                            :max="param.max"
+                                            :step="param.step || 1"
+                                            :value="param.value"
+                                            @input="updateParam(param.key, parseFloat($event.target.value))"
+                                        />
+                                        <div class="range-limits">
+                                            <span>{{ param.min }}</span>
+                                            <span>{{ param.max }}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <p class="sheet-hint">拖动滑块即时生效，参数会同步到地址栏，复制链接即可还原这组条件。</p>
+                        </div>
+
+                        <div v-show="sheetTab === 'curves'" class="sheet-pane">
+                            <ComparisonPanel
+                                v-if="recordedTrails.length > 0"
+                                :trails="recordedTrails"
+                                @clear-all="clearRecords"
+                                @remove-record="removeRecord"
+                                @toggle-visibility="toggleTrailVisibility"
+                            />
+                            <div v-else class="data-empty">
+                                <img :src="activityIcon" alt="" />
+                                <div>
+                                    <strong>还没有实验记录</strong>
+                                    <p>开始运行模型，模拟结束后会在这里生成曲线、事件和关键数据。</p>
+                                </div>
+                                <button type="button" @click="toggleSimulation">开始实验</button>
+                            </div>
+                        </div>
+
+                        <div v-show="sheetTab === 'task'" class="sheet-pane">
+                            <div v-if="activeModel.exploration" class="task-block" :class="{ done: explorationDone }">
+                                <span class="task-badge">{{ explorationDone ? '✓' : '任务' }}</span>
+                                <div class="task-copy">
+                                    <small>{{ explorationDone ? 'TASK DONE' : 'EXPLORE' }}</small>
+                                    <p>{{ activeModel.exploration.task }}</p>
+                                    <p v-if="activeModel.exploration.hint" class="task-hint">{{ activeModel.exploration.hint }}</p>
+                                </div>
+                                <span class="task-status">{{ explorationDone ? '探索完成' : '进行中' }}</span>
+                            </div>
+                            <p v-else class="sheet-hint">这个模型没有单独的探索任务，直接调参数观察变化就行。</p>
+                        </div>
+
+                        <div v-show="sheetTab === 'info'" class="sheet-pane">
+                            <ModelInfoPanel :model-id="activeModel.id" :knowledge="activeModel.knowledge" />
+                        </div>
+                    </div>
+                </section>
+            </Transition>
         </section>
-        </div>
-        </transition>
     </div>
 
     <div v-else class="model-not-found">
@@ -159,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, defineAsyncComponent, nextTick, onBeforeUnmount } from "vue"
+import { ref, watch, computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { getModelById } from "../../../constants"
 import { usePhysicsSim } from "../../../Logic/physics/engine/usePhysicsSim.js"
@@ -173,18 +176,36 @@ import pauseIcon from "../../../assets/icons/pause.svg"
 import resetIcon from "../../../assets/icons/reset.svg"
 import targetIcon from "../../../assets/icons/target.svg"
 import viewResetIcon from "../../../assets/icons/view-reset.svg"
-import gridIcon from "../../../assets/icons/grid.svg"
 import activityIcon from "../../../assets/icons/activity.svg"
-import closeIcon from "../../../assets/icons/close.svg"
-import lockIcon from "../../../assets/icons/lock.svg"
-import shareIcon from "../../../assets/icons/share.svg"
 
 const emit = defineEmits(["requestModels", "focusChange"])
 const route = useRoute()
 const router = useRouter()
 const activeModel = ref(null)
-const knowledgeOpen = ref(false)
-const focusMode = ref(false)
+// 上滑面板：sheetOpen 控制显示，sheetTab 控制显示哪一块
+const sheetOpen = ref(false)
+const sheetTab = ref("params")
+const SHEET_META = {
+    params: { kicker: "PARAMETERS", title: "参数调节" },
+    curves: { kicker: "RECORDS", title: "实验记录与曲线" },
+    task: { kicker: "EXPLORE", title: "探索任务" },
+    info: { kicker: "PRINCIPLE", title: "原理讲解" },
+}
+const sheetKicker = computed(() => SHEET_META[sheetTab.value]?.kicker || "")
+const sheetTitle = computed(() => SHEET_META[sheetTab.value]?.title || "")
+
+function openSheet(tab) {
+    if (sheetOpen.value && sheetTab.value === tab) {
+        sheetOpen.value = false
+        return
+    }
+    sheetTab.value = tab
+    sheetOpen.value = true
+}
+
+function closeSheet() {
+    sheetOpen.value = false
+}
 // 模型默认参数（分享链接只带上被改过的参数；重置/还原也靠它判断）
 const defaultParams = ref({})
 // 刚进入页面时先别把默认参数写回 URL，等分享参数还原完再开始同步
@@ -201,7 +222,7 @@ function loadModel(modelId) {
         ...source,
         params: source.params.map(param => ({ ...param })),
     }
-    knowledgeOpen.value = false
+    sheetOpen.value = false
     shareReady.value = false
     // 等 usePhysicsSim 初始化完（模型切换 watcher）再把 URL 里的参数套上去
     nextTick(() => {
@@ -272,26 +293,9 @@ async function shareModel() {
     }
 }
 
-function toggleFocusMode() {
-    focusMode.value = !focusMode.value
-    emit("focusChange", focusMode.value)
-}
-
-// 探索任务未完成时，原理讲解加锁；点击只晃动提示，不展开
-const isKnowledgeLocked = computed(() => {
-    const model = activeModel.value
-    return !!model?.exploration && !explorationDone.value
-})
-const nudgeKnowledge = ref(false)
-function toggleKnowledge() {
-    if (isKnowledgeLocked.value) {
-        nudgeKnowledge.value = false
-        requestAnimationFrame(() => { nudgeKnowledge.value = true })
-        setTimeout(() => { nudgeKnowledge.value = false }, 300)
-        return
-    }
-    knowledgeOpen.value = !knowledgeOpen.value
-}
+// 页面一进来就是全屏工作台，让外层布局收起它的「模型 / 返回」按钮
+onMounted(() => emit("focusChange", true))
+onBeforeUnmount(() => emit("focusChange", false))
 
 watch(() => route.params.modelId, loadModel, { immediate: true })
 
@@ -312,6 +316,13 @@ const {
     clearRecords,
     removeRecord,
     toggleTrailVisibility,
+    zoom,
+    zoomBy,
+    resetZoom,
+    onWheelZoom,
+    onPinchStart,
+    onPinchMove,
+    onPinchEnd,
     onMouseDown,
     onMouseMove,
     onMouseUp,
@@ -319,6 +330,22 @@ const {
     onTouchMove,
     onTouchEnd,
 } = usePhysicsSim(activeModel)
+
+// 触屏：单指拖拽交给相机，双指捏合交给缩放
+function handleTouchStart(event) {
+    onPinchStart(event)
+    onTouchStart(event)
+}
+
+function handleTouchMove(event) {
+    onPinchMove(event)
+    onTouchMove(event)
+}
+
+function handleTouchEnd() {
+    onPinchEnd()
+    onTouchEnd()
+}
 </script>
 
 <style scoped>
@@ -873,6 +900,532 @@ const {
 
     .model-swap-enter-from {
         transform: none;
+    }
+}
+/* ===== 工作台 v2：全屏画布 + 底部胶囊 + 上滑面板 ===== */
+.model-workspace {
+    /* 物理实验室统一用学科蓝，不再用主站红 */
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-hover: #60a5fa;
+
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - var(--nav-height));
+    margin: 0;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.simulation-stage {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+}
+
+/* 左上角状态条 */
+.stage-status {
+    position: absolute;
+    top: 16px;
+    left: 18px;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 6px;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.status-back {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.status-back:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.stage-status small {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+}
+
+.stage-status strong {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* 画布铺满 */
+.canvas-area {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* 底部胶囊 */
+.model-toolbar {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    z-index: 20;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    padding: 7px 9px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(20, 28, 34, 0.1);
+}
+
+.model-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.model-chip:hover {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.chip-name {
+    max-width: 130px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.chip-caret {
+    color: var(--primary);
+    font-size: 10px;
+}
+
+.tb-divider {
+    width: 1px;
+    height: 20px;
+    background: color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.tb-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tb-icon:hover {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.tb-icon img,
+.tb-inline-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.75;
+}
+
+/* 内联 SVG（分享图标）直接跟随按钮文字色，避免 <img> 里 currentColor 失效 */
+.tb-inline-icon {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.tb-icon:hover .tb-inline-icon {
+    color: var(--primary);
+    opacity: 1;
+}
+
+/* 悬浮提示：用 data-tip 画一个小气泡，鼠标悬停/键盘聚焦时出现 */
+.tb-icon[data-tip],
+.tb-pill[data-tip],
+.model-chip[data-tip] {
+    position: relative;
+}
+
+.tb-icon[data-tip]::after,
+.tb-pill[data-tip]::after,
+.model-chip[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    z-index: 40;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: color-mix(in srgb, #0f1720 92%, transparent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, 4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    pointer-events: none;
+}
+
+.tb-icon[data-tip]:hover::after,
+.tb-icon[data-tip]:focus-visible::after,
+.tb-pill[data-tip]:hover::after,
+.tb-pill[data-tip]:focus-visible::after,
+.model-chip[data-tip]:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* 触屏设备没有 hover，不显示气泡 */
+@media (hover: none) {
+    .tb-icon[data-tip]::after,
+    .tb-pill[data-tip]::after,
+    .model-chip[data-tip]::after {
+        display: none;
+    }
+}
+
+/* 视角锁定等「开关型」图标按钮的激活态 */
+.tb-icon.active {
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.tb-icon.active img {
+    opacity: 1;
+}
+
+.tb-pill {
+    padding: 7px 13px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.tb-pill:hover {
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.tb-pill.active {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* 上滑面板 */
+.model-sheet {
+    position: absolute;
+    left: 50%;
+    bottom: 78px;
+    z-index: 18;
+    transform: translateX(-50%);
+    width: min(980px, calc(100vw - 32px));
+    max-height: min(44vh, 430px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 24px 60px rgba(20, 28, 34, 0.16);
+}
+
+.sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.sheet-title small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+}
+
+.sheet-title h2 {
+    margin: 2px 0 0;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.sheet-close {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--border) 60%, transparent);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.sheet-close:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.sheet-body {
+    padding: 16px 18px 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.sheet-pane {
+    display: grid;
+    gap: 12px;
+}
+
+.sheet-hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    line-height: 1.7;
+}
+
+/* 面板里的旧卡片去掉外壳 */
+.sheet-pane .parameter-section,
+.sheet-pane .content-section,
+.sheet-pane .exploration-section {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sheet-pane .parameter-list {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px 22px;
+}
+
+.sheet-pane .parameter-item {
+    background: transparent;
+}
+
+/* 任务块 */
+.task-block {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.task-block.done {
+    background: color-mix(in srgb, #2ecc71 10%, transparent);
+}
+
+.task-badge {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.task-block.done .task-badge {
+    background: #2ecc71;
+}
+
+.task-copy small {
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+}
+
+.task-copy p {
+    margin: 3px 0 0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.task-copy .task-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.task-status {
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* 面板动画 */
+.sheet-rise-enter-active,
+.sheet-rise-leave-active {
+    transition: opacity 0.22s var(--ease-out), transform 0.26s var(--ease-out);
+}
+
+.sheet-rise-enter-from,
+.sheet-rise-leave-to {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+}
+
+/* 右下角缩放控件 */
+.zoom-widget {
+    position: absolute;
+    right: 18px;
+    bottom: 26px;
+    z-index: 14;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.zoom-widget button {
+    min-width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+}
+
+.zoom-widget button:hover {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+}
+
+.zoom-widget .zoom-value {
+    min-width: 44px;
+    padding: 0 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 移动端抬高，避免和胶囊重叠 */
+@media (max-width: 760px) {
+    .zoom-widget {
+        right: 12px;
+        bottom: 74px;
+    }
+}
+
+@media (max-width: 760px) {
+    .stage-status {
+        top: 12px;
+        left: 12px;
+        padding: 5px 10px 5px 5px;
+    }
+
+    .model-toolbar {
+        bottom: 16px;
+        gap: 4px;
+        padding: 6px 8px;
+        max-width: calc(100vw - 20px);
+    }
+
+    .chip-name {
+        max-width: 72px;
+    }
+
+    .tb-pill {
+        padding: 6px 9px;
+        font-size: 12px;
+    }
+
+    .tb-divider {
+        display: none;
+    }
+
+    .model-sheet {
+        bottom: 64px;
+        width: calc(100vw - 16px);
+        max-height: 54vh;
+    }
+
+    .sheet-pane .parameter-list {
+        grid-template-columns: 1fr;
     }
 }
 </style>

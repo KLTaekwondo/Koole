@@ -208,6 +208,51 @@ export function usePhysicsSim(modelRef) {
     renderer.draw()
   }, { immediate: true })
 
+  // ── 画面缩放（只影响渲染，不改物理） ──
+  const zoom = viewTransform.zoom
+  const zoomBy = (factor) => {
+    viewTransform.zoomBy(factor)
+    renderer.draw()
+  }
+  const setZoom = (value) => {
+    viewTransform.setZoom(value)
+    renderer.draw()
+  }
+  const resetZoom = () => {
+    viewTransform.resetZoom()
+    renderer.draw()
+  }
+  /** 滚轮缩放：向上放大，向下缩小 */
+  const onWheelZoom = (event) => {
+    const factor = event.deltaY > 0 ? 0.9 : 1.1
+    zoomBy(factor)
+  }
+
+  // 缩放变化时：如果正在跟随目标，重新对中，避免物体被放大后跑出画面
+  watch(zoom, () => {
+    if (camera.followTarget.value) camera.centerCameraOnBall()
+    renderer.draw()
+  })
+  /** 双指捏合缩放（触屏） */
+  let pinchStartDistance = 0
+  let pinchStartZoom = 1
+  const distanceOf = (touches) => {
+    const [a, b] = touches
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+  }
+  const onPinchStart = (event) => {
+    if (event.touches?.length !== 2) return
+    pinchStartDistance = distanceOf(event.touches)
+    pinchStartZoom = zoom.value
+  }
+  const onPinchMove = (event) => {
+    if (event.touches?.length !== 2 || !pinchStartDistance) return
+    setZoom(pinchStartZoom * (distanceOf(event.touches) / pinchStartDistance))
+  }
+  const onPinchEnd = () => {
+    pinchStartDistance = 0
+  }
+
   return {
     canvasRef: canvasManager.canvasRef,
     canvasAreaRef: canvasManager.canvasAreaRef,
@@ -217,6 +262,14 @@ export function usePhysicsSim(modelRef) {
     explorationDone,
     followTarget: camera.followTarget,
     recordedTrails,
+    zoom,
+    zoomBy,
+    setZoom,
+    resetZoom,
+    onWheelZoom,
+    onPinchStart,
+    onPinchMove,
+    onPinchEnd,
     updateParam,
     applyParams,
     displayParamValue,
