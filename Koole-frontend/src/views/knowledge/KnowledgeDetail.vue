@@ -46,7 +46,7 @@
                             <h3>{{ beat.title }}</h3>
                             <!-- 含公式的段落走 md-editor 渲染（KaTeX），其余保持普通段落，避免多挂组件 -->
                             <MdPreview
-                                v-if="hasMath(beat.text)"
+                                v-if="needsMarkdown(beat.text)"
                                 class="beat-math"
                                 :modelValue="beat.text"
                                 :theme="theme"
@@ -62,7 +62,7 @@
                 <aside v-if="item.misconception" class="misconception">
                     <strong>这里容易被想错</strong>
                     <MdPreview
-                        v-if="hasMath(item.misconception)"
+                        v-if="needsMarkdown(item.misconception)"
                         class="beat-math misconception-math"
                         :modelValue="item.misconception"
                         :theme="theme"
@@ -98,7 +98,20 @@
                     <h2>容易看错的地方</h2>
                 </header>
                 <ul class="pitfall-list">
-                    <li v-for="pitfall in item.pitfalls" :key="pitfall">{{ pitfall }}</li>
+                    <li v-for="pitfall in item.pitfalls" :key="pitfall">
+                        <!-- 易错点里常带 $变量$，含公式的条目走 Markdown 渲染，否则原样显示 -->
+                        <MdPreview
+                            v-if="needsMarkdown(pitfall)"
+                            class="pitfall-math"
+                            :modelValue="pitfall"
+                            :theme="theme"
+                            previewTheme="stackoverflow"
+                            codeTheme="stackoverflow"
+                            :noKatex="false"
+                            style="background: transparent;"
+                        />
+                        <template v-else>{{ pitfall }}</template>
+                    </li>
                 </ul>
             </section>
 
@@ -185,14 +198,10 @@ const route = useRoute()
 const router = useRouter()
 const item = computed(() => getPhenomenonById(route.params.id))
 
-// 「返回」用 history.back() 而不是 push：只有真正回退，路由的 scrollBehavior
-// 才会拿回 savedPosition，把物理主页的滚动位置还原。直接打开文章时才用 push 兜底。
+// 「返回」统一走 router.push，不用 history.back()：
+// 文章之间可以互相跳（文末「接着读」），此时 back() 会退到上一篇而不是物理主页；
+// 直接打开文章时 back() 还可能把用户带出站外。滚动位置的恢复交给时间轴自己的记忆逻辑。
 function goBack() {
-    const previous = window.history.state?.back
-    if (typeof previous === "string" && previous.startsWith("/physics-lab") && previous !== route.path) {
-        router.back()
-        return
-    }
     router.push("/physics-lab")
 }
 
@@ -216,8 +225,9 @@ const updateTitle = () => {
     document.title = item.value ? `${item.value.title} · 现象与发现 · Koole` : "现象与发现 · Koole"
 }
 
-// 故事与「容易想错」里也可能带 $...$ 公式，只有这类段落才挂 Markdown 渲染
-const hasMath = text => typeof text === "string" && text.includes("$")
+// 故事、易错点里可能带 $...$ 公式，也可能带 **加粗**、`代码`，
+// 只要出现 Markdown 语法就走 MdPreview 渲染，纯文本段落仍用 <p>，避免多挂组件。
+const needsMarkdown = text => typeof text === "string" && /[$`*]/.test(text)
 
 // ── 接着读 ──
 // 优先同一主人公（比如伽利略的三篇），再用同分类补足，最多 3 篇
@@ -332,7 +342,7 @@ watch(() => route.params.id, updateTitle)
 
 /* ── 头部 ── */
 
-/* 返回入口是 button（要走 history.back），这里抹掉默认按钮外观 */
+/* 返回入口是 button（保持按钮语义），这里抹掉默认按钮外观 */
 .back-link,
 .back-footer {
     justify-self: start;
@@ -670,6 +680,34 @@ watch(() => route.params.id, updateTitle)
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+/* 含公式的易错点：抹掉 md-editor 预览的默认间距与内边距，和普通条目一致 */
+.pitfall-math {
+    margin: 0;
+}
+
+.pitfall-math :deep(.md-editor-preview) {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 13.5px;
+    line-height: 1.8;
+}
+
+.pitfall-math :deep(.md-editor-preview p) {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.8;
+}
+
+.pitfall-math :deep(.md-editor-preview ul) {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.pitfall-math :deep(.katex) {
+    font-size: 1.02em;
 }
 
 .pitfall-list li {

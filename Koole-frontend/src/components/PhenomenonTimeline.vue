@@ -126,35 +126,39 @@ const entries = computed(() => visible.value.map((item, index) => ({
 })))
 
 // ── 滚动位置记忆 ──
-// 从文章页返回时有两层滚动要还原：
-//   1. 页面级：路由的 scrollBehavior 负责（前提是走 history.back，才会有 savedPosition）
-//   2. 时间轴内部：它是独立滚动容器，路由管不到，这里自己记一份
-// 另外再存一份页面 scrollY 兜底：如果路由没恢复（比如从别的入口回来），至少能回到时间轴附近。
+// 文章页的「返回」走的是 router.push（不是 history.back），所以路由拿不到 savedPosition，
+// 页面会自动回到顶部。这里自己记一份：页面 scrollY + 时间轴内部 scrollTop，
+// 重新挂载后在过渡动画结束后恢复，用户在时间轴上的位置不会丢。
 const SCROLL_MEMORY_TTL = 10 * 60 * 1000
 const viewportRef = ref(null)
 let savedInnerTop = 0
 let savedPageY = 0
 let savedAt = 0
+let restoreTimer = 0
+
+function restoreScroll() {
+    if (viewportRef.value) viewportRef.value.scrollTop = savedInnerTop
+    // 页面级位置：只在仍停在顶部时恢复，避免和路由自己的 scrollBehavior 打架
+    if (savedPageY > 0 && window.scrollY === 0) {
+        window.scrollTo({ top: savedPageY, behavior: "auto" })
+    }
+}
 
 onBeforeUnmount(() => {
     savedInnerTop = viewportRef.value?.scrollTop || 0
     savedPageY = window.scrollY || 0
     savedAt = Date.now()
+    window.clearTimeout(restoreTimer)
 })
 
 onMounted(() => {
     if (Date.now() - savedAt > SCROLL_MEMORY_TTL) return
-    // 等卡片渲染完成、容器有高度之后再恢复
+    // 先等本轮渲染，再等页面切换的 out-in 过渡结束（约 340ms）后补一次，
+    // 否则路由「回到顶部」会在恢复之后把它覆盖掉。
     nextTick(() => {
-        requestAnimationFrame(() => {
-            if (viewportRef.value) viewportRef.value.scrollTop = savedInnerTop
-            // 路由的 scrollBehavior 会在 340ms 后覆盖为它记下的位置；
-            // 这里只在页面还停在顶部时兜底，避免两者打架。
-            if (savedPageY > 0 && window.scrollY === 0) {
-                window.scrollTo({ top: savedPageY, behavior: "auto" })
-            }
-        })
+        requestAnimationFrame(restoreScroll)
     })
+    restoreTimer = window.setTimeout(restoreScroll, 380)
 })
 
 function resetFilters() {
