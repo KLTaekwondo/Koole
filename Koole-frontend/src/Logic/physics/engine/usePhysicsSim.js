@@ -5,6 +5,7 @@ import { createPhysicsEngine } from "./PhysicsEngine.js"
 import { createSimulationPlayer } from "./SimulationPlayer.js"
 import { createRenderer } from "./renderer.js"
 import { createSimulationState } from "./SimulationState.js"
+import { useExperimentRecorder } from "../data/useExperimentRecorder.js"
 import { createViewTransform } from "./ViewTransform.js"
 import { theme } from "../../../stores/theme.js"
 import { useLearning } from "../../../stores/learning.js"
@@ -75,13 +76,20 @@ export function usePhysicsSim(modelRef) {
     () => {
       if (camera.followTarget.value) camera.centerCameraOnBall()
       checkExploration()
+      const record = recorder.tick(engine.isFinished())
       renderer.draw()
+      // 时间片到点：记一条后停下来，而不是继续滚动记录
+      if (record && recorder.settleMode.value === "window") player.stop()
     },
     () => {
       recordCurrentTrail(modelRef.value, simState.simTime)
+      recorder.onFinished()
       renderer.draw()
     }
   )
+
+  // 4.5 实验记录器（采样 + 结算，和渲染解耦）
+  const recorder = useExperimentRecorder(modelRef, simState)
 
   // 5. 渲染器（使用 ViewTransform 的 worldToScreen）
   const renderer = createRenderer(
@@ -212,15 +220,12 @@ export function usePhysicsSim(modelRef) {
   const zoom = viewTransform.zoom
   const zoomBy = (factor) => {
     viewTransform.zoomBy(factor)
-    renderer.draw()
   }
   const setZoom = (value) => {
     viewTransform.setZoom(value)
-    renderer.draw()
   }
   const resetZoom = () => {
     viewTransform.resetZoom()
-    renderer.draw()
   }
   /** 滚轮缩放：向上放大，向下缩小 */
   const onWheelZoom = (event) => {
@@ -262,6 +267,14 @@ export function usePhysicsSim(modelRef) {
     explorationDone,
     followTarget: camera.followTarget,
     recordedTrails,
+    // 实验记录
+    autoRecord: recorder.autoRecord,
+    lastRecord: recorder.lastRecord,
+    recordStats: recorder.stats,
+    hasDataSpec: recorder.hasDataSpec,
+    recordKind: recorder.kind,
+    recordNow: recorder.recordNow,
+    // 画面缩放
     zoom,
     zoomBy,
     setZoom,

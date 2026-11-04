@@ -1,21 +1,30 @@
 import { DRAW_SCALE } from "../physicsModels.js"
+import { createView } from "../render/ViewKit.js"
 
 /**
  * 渲染绘制模块
- * @param {Ref} canvasRef - Canvas 元素引用
- * @param {Object} viewTransform - 视图变换（提供 worldToScreen, offsetX, offsetY, viewWidth, viewHeight）
- * @param {Ref} modelRef - 当前模型引用
- * @param {Object} simState - 统一状态层
- * @param {Ref} recordedTrails - 录制轨迹引用
- * @param {Function} getTheme - 获取当前主题
+ *
+ * 两条绘制路径并存（迁移期）：
+ *   - 新：模型提供 drawScene(view, state, params)，舞台由环境部件绘制（ViewKit）
+ *   - 旧：模型提供 drawExtra(ctx, ...)，沿用桌面网格 + 地面 + 通用球体
+ *
+ * @param {Ref} canvasRef
+ * @param {Object} viewTransform 提供 worldToScreen / offsetX / offsetY / viewWidth / viewHeight / pixelPerUnit
+ * @param {Ref} modelRef
+ * @param {Object} simState
+ * @param {Ref} recordedTrails
+ * @param {Function} getTheme
+ * @param {Function} onInfoUpdate
  */
 export function createRenderer(canvasRef, viewTransform, modelRef, simState, recordedTrails, getTheme, onInfoUpdate) {
   const { worldToScreen, offsetX, offsetY, viewWidth, viewHeight, pixelPerUnit } = viewTransform
 
+  // 轨迹最多画最近这么多点：旧实现会一次画 5000 段，跑久了必然掉帧
+  const MAX_DRAW_TRAIL = 900
+
   const drawGrid = (ctx, cw, ch) => {
     ctx.strokeStyle = getTheme() === "dark" ? "#444444" : "#e8e8e8"
     ctx.lineWidth = 0.5
-    // 每格对应的像素数：缩放时网格跟着放大/缩小，但地面那一行始终对齐
     const unit = pixelPerUnit()
     const startGX = Math.floor((-cw / 2 - offsetX.value) / unit) * unit
     const endGX = Math.ceil((cw / 2 - offsetX.value) / unit) * unit
@@ -40,58 +49,65 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
     ctx.fillRect(0, groundScreenY, cw, 2)
   }
 
+  /**
+   * 轨迹描边：滚动窗口 + 渐隐。
+   * 只画最近 MAX_DRAW_TRAIL 个点，按新旧分成 8 段：
+   * 最老的一段几乎透明，最新的一段最亮 —— 视觉上就是「新点把老点顶出去」。
+   * 每帧最多 8 次 stroke，和点数无关。
+   */
+  const strokeTrail = (ctx, points, { color, width = 2.5, dash = null } = {}) => {
+    if (!points || points.length < 2) return
+    const visible = points.length > MAX_DRAW_TRAIL ? points.slice(-MAX_DRAW_TRAIL) : points
+    const buckets = 8
+    const size = Math.ceil(visible.length / buckets)
+    ctx.save()
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    ctx.lineJoin = "round"
+    ctx.lineCap = "round"
+    if (dash) ctx.setLineDash(dash)
+    for (let b = 0; b < buckets; b++) {
+      const start = b * size
+      const end = Math.min(visible.length, start + size + 1)
+      if (end - start < 2) continue
+      ctx.beginPath()
+      for (let i = start; i < end; i++) {
+        const p = worldToScreen(visible[i].x, visible[i].y)
+        if (i === start) ctx.moveTo(p.x, p.y)
+        else ctx.lineTo(p.x, p.y)
+      }
+      const progress = (b + 1) / buckets
+      ctx.globalAlpha = dash ? 0.16 + 0.3 * progress : 0.03 + 0.52 * progress
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+
   const drawRecordedTrails = (ctx) => {
     recordedTrails.value.forEach(rec => {
-      if (!rec.visible || rec.trail.length < 2) return
-      ctx.globalAlpha = 0.75
-      for (let i = 1; i < rec.trail.length; i++) {
-        const p1 = worldToScreen(rec.trail[i - 1].x, rec.trail[i - 1].y)
-        const p2 = worldToScreen(rec.trail[i].x, rec.trail[i].y)
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-        ctx.strokeStyle = rec.color; ctx.lineWidth = 2.5; ctx.stroke()
-      }
-      if (rec.trail2) {
-        ctx.globalAlpha = 0.45
-        for (let i = 1; i < rec.trail2.length; i++) {
-          const p1 = worldToScreen(rec.trail2[i - 1].x, rec.trail2[i - 1].y)
-          const p2 = worldToScreen(rec.trail2[i].x, rec.trail2[i].y)
-          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-          ctx.strokeStyle = rec.color; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([])
-        }
-      }
-      if (rec.trailB) {
-        ctx.globalAlpha = 0.45
-        for (let i = 1; i < rec.trailB.length; i++) {
-          const p1 = worldToScreen(rec.trailB[i - 1].x, rec.trailB[i - 1].y)
-          const p2 = worldToScreen(rec.trailB[i].x, rec.trailB[i].y)
-          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-          ctx.strokeStyle = rec.color; ctx.lineWidth = 2; ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([])
-        }
-      }
-      ctx.globalAlpha = 1.0
+      if (!rec.visible) return
+      strokeTrail(ctx, rec.trail, { color: rec.color, width: 2.5 })
+      if (rec.trail2) strokeTrail(ctx, rec.trail2, { color: rec.color, width: 2, dash: [4, 4] })
+      if (rec.trailB) strokeTrail(ctx, rec.trailB, { color: rec.color, width: 2, dash: [8, 4] })
     })
   }
 
   const drawCurrentTrail = (ctx, state) => {
-    for (let i = 1; i < state.trail.length; i++) {
-      const p1 = worldToScreen(state.trail[i - 1].x, state.trail[i - 1].y)
-      const p2 = worldToScreen(state.trail[i].x, state.trail[i].y)
-      const alpha = 0.08 + 0.35 * (i / state.trail.length)
-      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-      ctx.strokeStyle = `rgba(231, 76, 60, ${alpha})`; ctx.lineWidth = 2.5; ctx.stroke()
-    }
+    if (!state?.trail || state.trail.length < 2) return
+    strokeTrail(ctx, state.trail, { color: "#e74c3c", width: 2.5 })
   }
 
   const drawObject = (ctx, model, state, params) => {
     if (model.drawObject) {
       model.drawObject(ctx, state, params, worldToScreen)
-    } else {
-      const ballPos = model.getBallPosition(state, params)
-      const pos = worldToScreen(ballPos.x, ballPos.y)
-      ctx.beginPath(); ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
-      ctx.fillStyle = "#e74c3c"; ctx.fill()
-      ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.lineWidth = 1.5; ctx.stroke()
+      return
     }
+    const ballPos = model.getBallPosition(state, params)
+    if (!ballPos) return
+    const pos = worldToScreen(ballPos.x, ballPos.y)
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2)
+    ctx.fillStyle = "#e74c3c"; ctx.fill()
+    ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.lineWidth = 1.5; ctx.stroke()
   }
 
   const draw = () => {
@@ -104,6 +120,20 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
     const ch = canvas.height / dpr
     ctx.save(); ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, cw, ch)
+
+    // 新架构：模型声明环境（地面 / 水面 / 光轴），舞台由环境部件一次画完
+    const useScene = model && typeof model.drawScene === "function"
+    if (useScene) {
+      const view = createView({ ctx, cw, ch, viewTransform, theme: getTheme() })
+      model.drawScene(view, simState.state, simState.params)
+      drawRecordedTrails(ctx)
+      drawCurrentTrail(ctx, simState.state)
+      if (onInfoUpdate) onInfoUpdate(model.getInfoLines(simState.state, simState.params, simState.simTime))
+      ctx.restore()
+      return
+    }
+
+    // 旧架构：迁移期间原样保留
     ctx.fillStyle = getTheme() === "dark" ? "#2a2a2a" : "#f8f9fa"
     ctx.fillRect(0, 0, cw, ch)
     drawGrid(ctx, cw, ch)
@@ -113,7 +143,6 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
     drawRecordedTrails(ctx)
     drawCurrentTrail(ctx, simState.state)
     drawObject(ctx, model, simState.state, simState.params)
-    // 更新信息浮层数据（通过回调传给 Vue 组件）
     if (onInfoUpdate) onInfoUpdate(model.getInfoLines(simState.state, simState.params, simState.simTime))
     ctx.restore()
   }

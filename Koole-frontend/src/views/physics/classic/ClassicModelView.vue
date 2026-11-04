@@ -114,21 +114,38 @@
                         </div>
 
                         <div v-show="sheetTab === 'curves'" class="sheet-pane">
-                            <ComparisonPanel
-                                v-if="recordedTrails.length > 0"
-                                :trails="recordedTrails"
-                                @clear-all="clearRecords"
-                                @remove-record="removeRecord"
-                                @toggle-visibility="toggleTrailVisibility"
-                            />
-                            <div v-else class="data-empty">
-                                <img :src="activityIcon" alt="" />
-                                <div>
-                                    <strong>还没有实验记录</strong>
-                                    <p>开始运行模型，模拟结束后会在这里生成曲线、事件和关键数据。</p>
-                                </div>
-                                <button type="button" @click="toggleSimulation">开始实验</button>
+                            <!-- 没有 dataSpec 的模型：说明为什么不记录 -->
+                            <div v-if="!hasDataSpec" class="record-empty-explain">
+                                <strong>这个模型不需要记录</strong>
+                                <p>它展示的是几何关系或稳态结果，画面本身就是结论，没有随时间变化的数据。调参数观察画面即可。</p>
                             </div>
+
+                            <template v-else>
+                                <div class="record-toolbar">
+                                    <button type="button" class="record-button" @click="recordNow">
+                                        记录当前实验
+                                    </button>
+                                    <span class="record-status">
+                                        本段 {{ recordStats.duration }}s · {{ recordStats.points }} 点
+                                    </span>
+                                    <label class="record-auto">
+                                        <input type="checkbox" v-model="autoRecord" />
+                                        自动记录
+                                    </label>
+                                </div>
+
+                                <ComparisonPanel
+                                    v-if="recordTrails.length > 0"
+                                    :trails="recordTrails"
+                                    @clear-all="clearModelRuns(activeModel.id)"
+                                    @remove-record="index => removeRun(recordTrails[index]?.id)"
+                                    @toggle-visibility="index => toggleRecordVisible(index)"
+                                />
+                                <div v-else class="record-empty-explain">
+                                    <strong>还没有实验记录</strong>
+                                    <p>模型跑满时间窗口或抵达终点会自动记一条，也可以随时点上面的「记录当前实验」。</p>
+                                </div>
+                            </template>
                         </div>
 
                         <div v-show="sheetTab === 'task'" class="sheet-pane">
@@ -181,6 +198,11 @@ import activityIcon from "../../../assets/icons/activity.svg"
 const emit = defineEmits(["requestModels", "focusChange"])
 const route = useRoute()
 const router = useRouter()
+import { computed as vueComputed } from "vue"
+import { runs, removeRun, clearModelRuns } from "../../../stores/experiments.js"
+
+const TRAIL_PALETTE = ["#3b82f6", "#e67e22", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6"]
+
 const activeModel = ref(null)
 // 上滑面板：sheetOpen 控制显示，sheetTab 控制显示哪一块
 const sheetOpen = ref(false)
@@ -323,6 +345,10 @@ const {
     onPinchStart,
     onPinchMove,
     onPinchEnd,
+    autoRecord,
+    recordStats,
+    hasDataSpec,
+    recordNow,
     onMouseDown,
     onMouseMove,
     onMouseUp,
@@ -330,6 +356,38 @@ const {
     onTouchMove,
     onTouchEnd,
 } = usePhysicsSim(activeModel)
+
+// ── 实验记录：新记录 → ComparisonPanel 认识的形状 ──
+const modelRuns = computed(() => {
+    const id = activeModel.value?.id
+    if (!id) return []
+    // 按创建时间升序：老记录在前，新记录往后排
+    return runs.value
+        .filter(run => run.modelId === id)
+        .slice()
+        .sort((a, b) => a.createdAt - b.createdAt)
+})
+
+const hiddenRecordIds = ref([])
+
+const recordTrails = computed(() => modelRuns.value.map((run, index) => ({
+    id: run.id,
+    label: run.label,
+    color: run.color || TRAIL_PALETTE[index % TRAIL_PALETTE.length],
+    visible: !hiddenRecordIds.value.includes(run.id),
+    params: run.params,
+    paramLabel: Object.entries(run.params).slice(0, 2).map(([k, v]) => `${k}=${v}`).join(", "),
+    series: run.series,
+    resultData: Object.fromEntries(run.metrics.map(m => [m.label, `${m.value}${m.unit}`])),
+})))
+
+function toggleRecordVisible(index) {
+    const run = recordTrails.value[index]
+    if (!run) return
+    hiddenRecordIds.value = hiddenRecordIds.value.includes(run.id)
+        ? hiddenRecordIds.value.filter(id => id !== run.id)
+        : [...hiddenRecordIds.value, run.id]
+}
 
 // 触屏：单指拖拽交给相机，双指捏合交给缩放
 function handleTouchStart(event) {
@@ -452,8 +510,6 @@ function handleTouchEnd() {
     border-radius: 999px;
     background: color-mix(in srgb, var(--bg-card) 88%, transparent);
     box-shadow: 0 14px 40px rgba(15, 23, 32, 0.18);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
     transform: translateX(-50%);
 }
 
@@ -935,9 +991,7 @@ function handleTouchEnd() {
     padding: 6px 12px 6px 6px;
     border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg-card) 90%, transparent);
 }
 
 .status-back {
@@ -1005,9 +1059,7 @@ function handleTouchEnd() {
     padding: 7px 9px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 86%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
     box-shadow: 0 10px 30px rgba(20, 28, 34, 0.1);
 }
 
@@ -1185,8 +1237,6 @@ function handleTouchEnd() {
     border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
     border-radius: 18px;
     background: color-mix(in srgb, var(--bg-card) 94%, transparent);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 24px 60px rgba(20, 28, 34, 0.16);
 }
 
@@ -1336,6 +1386,78 @@ function handleTouchEnd() {
     transform: translate(-50%, 14px);
 }
 
+/* ── 实验记录：工具条与空态 ── */
+.record-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+.record-button {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.record-button:hover {
+    filter: brightness(1.08);
+}
+
+.record-status {
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.record-auto {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.record-auto input {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.record-empty-explain {
+    display: grid;
+    gap: 6px;
+    padding: 22px 20px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+    color: var(--text-secondary);
+}
+
+.record-empty-explain strong {
+    color: var(--text);
+    font-size: 13.5px;
+}
+
+.record-empty-explain p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.75;
+}
+
 /* 右下角缩放控件 */
 .zoom-widget {
     position: absolute;
@@ -1348,9 +1470,7 @@ function handleTouchEnd() {
     padding: 4px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-card) 86%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
 }
 
 .zoom-widget button {

@@ -115,8 +115,22 @@ const selectedTrail = computed(() => {
 // 从选中轨迹获取 chartDefs
 const chartDefs = computed(() => {
   const trail = selectedTrail.value
-  if (!trail || !trail.chartDefs) return []
-  return trail.chartDefs
+  if (!trail) return []
+  // 旧记录：模型自己声明的图表定义
+  if (trail.chartDefs?.length) return trail.chartDefs
+  // 新记录（dataSpec.series）：每个序列自动生成一张「时间—数值」图
+  if (Array.isArray(trail.series) && trail.series.length) {
+    return trail.series.map(item => ({
+      title: item.label,
+      xLabel: "t (s)",
+      yLabel: item.unit ? `${item.label} (${item.unit})` : item.label,
+      getData: (_trail, _params, source) => {
+        const matched = source?.series?.find(s => s.key === item.key)
+        return [{ name: source?.label || item.label, data: matched?.points || [] }]
+      },
+    }))
+  }
+  return []
 })
 
 // 确保 selectedIndex 在范围内
@@ -174,7 +188,7 @@ function updateCharts() {
     const series = visibleTrails.map(trail => ({
       name: trail.label,
       type: "line",
-      data: trail.trail.map(p => [p.x, p.y]),
+      data: (trail.trail || trail.series?.[0]?.points || []).map(p => (Array.isArray(p) ? p : [p.x, p.y])),
       lineStyle: { width: 2, color: trail.color },
       itemStyle: { color: trail.color },
       symbol: "none",
@@ -199,7 +213,7 @@ function updateCharts() {
 
     const series = []
     visibleTrails.forEach(trail => {
-      const seriesDefs = def.getData(trail.trail, trail.params || {})
+      const seriesDefs = def.getData(trail.trail || [], trail.params || {}, trail)
       seriesDefs.forEach(sd => {
         series.push({
           name: `${trail.label} · ${sd.name}`,

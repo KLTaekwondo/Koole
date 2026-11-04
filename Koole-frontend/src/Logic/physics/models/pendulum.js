@@ -1,3 +1,5 @@
+import { pendulumScene } from "../render/scenes/pendulumScene.js"
+
 // pendulum 模型数据
 const GROUND_Y = 0.4
 
@@ -28,6 +30,26 @@ export default {
       task: "改变摆长，观察摆动快慢怎么变？再改变起始角度，摆动的周期会变吗？",
       hint: "摆长调大、调小各试一次，数一数相同时间内的摆动次数。",
       check: (p, t, touched) => touched && t > 1,
+    },
+    // 轨迹走滚动窗口：只保留最近 1200 点，老点被新点顶出去
+    trailLimit: 1200,
+
+    // ── 实验记录：不可终止模型（isFinished 恒 false），走 10 秒时间窗口 ──
+    dataSpec: {
+        kind: "series",
+        settle: "window",
+        windowSeconds: 10,
+        series: [
+            { key: "theta", label: "摆角", unit: "°", sample: (s) => (s.theta * 180) / Math.PI },
+            { key: "omega", label: "角速度", unit: "rad/s", sample: (s) => s.omega },
+        ],
+        metrics: [
+            { key: "periodTheory", label: "理论周期", unit: "s", compute: (s, p) => 2 * Math.PI * Math.sqrt(p.length / p.gravity) },
+            { key: "maxSpeed", label: "最大线速度", unit: "m/s", compute: (s, p) => Math.abs(s.omega) * p.length },
+        ],
+        events: [
+            { key: "crossing", label: "过最低点", detect: (s, prev) => prev.omega * s.omega < 0 },
+        ],
     },
     params: [
       { key: "length", label: "摆长 (m)", value: 5, min: 1, max: 15, step: 0.5 },
@@ -79,6 +101,13 @@ s.theta += s.omega * dt
     ],
 
     // ── 渲染逻辑 ──
+    // 新架构：环境（地面/网格）由 landscape 部件统一绘制，尺寸走世界单位
+    environment: "landscape",
+    drawScene(view, state, params) {
+      pendulumScene.drawScene(view, state, params)
+    },
+
+    // 旧架构，保留用于对照，迁移完成后删除
     drawExtra: (ctx, s, p, w2s) => {
       const pivot = w2s(0, p.length)
       const ball = w2s(p.length * Math.sin(s.theta), p.length - p.length * Math.cos(s.theta) + GROUND_Y)

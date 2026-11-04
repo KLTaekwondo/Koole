@@ -28,6 +28,26 @@ $g \\approx 9.8 \\, m/s^2$ 方向竖直向下，跟质量无关。伽利略比�
       hint: "先记录默认高度的下落时间，把高度调大一倍再试一次，对比两次的时间。",
       check: (p, t, touched) => touched && t > 1,
     },
+    // 只保留最近 1200 点轨迹，够看出下落路线
+    trailLimit: 1200,
+
+    // ── 实验记录：可终止模型，落地即结算 ──
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "height", label: "离地高度", unit: "m", sample: (s) => s.y - GROUND_Y },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.vy },
+        ],
+        metrics: [
+            { key: "fallTime", label: "下落时间", unit: "s", compute: (s) => s._t },
+            { key: "landSpeed", label: "落地速度", unit: "m/s", compute: (s) => s.vy },
+            { key: "dropHeight", label: "下落高度", unit: "m", compute: (s, p) => p.height },
+        ],
+        events: [
+            { key: "touchdown", label: "落地", detect: (s, prev) => prev.y > GROUND_Y && s.y <= GROUND_Y },
+        ],
+    },
     params: [
       { key: "height", label: "初始高度 (m)", value: 15, min: 1, max: 50, step: 0.5 },
       { key: "gravity", label: "重力加速度 (m/s²)", value: 9.8, min: 1, max: 20, step: 0.1 },

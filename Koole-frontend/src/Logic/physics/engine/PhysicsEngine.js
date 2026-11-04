@@ -29,8 +29,10 @@ export function createPhysicsEngine(modelRef, simState) {
     if (model.isFinished(simState.state, simState.params)) return
     // 记录轨迹
     const trailPos = model.getTrailPosition(simState.state, simState.params)
-    if (trailPos) {
-      const MAX_TRAIL = 5000
+    // trailLimit：0 表示不记录轨迹（几何/演示型模型不需要），默认 5000
+    const trailLimit = model.trailLimit === undefined ? 5000 : model.trailLimit
+    if (trailPos && trailLimit > 0) {
+      const MAX_TRAIL = trailLimit
       const point = { ...trailPos }
       // 模型自定义扩展字段（如速度、时间等）
       if (model.trailFields) {
