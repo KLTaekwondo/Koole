@@ -1,3 +1,5 @@
+import { bounceDeformationScene } from "../render/scenes/bounceDeformationScene.js"
+
 // bounce-deformation 模型数据
 const GROUND_Y = 0.4
 
@@ -88,6 +90,28 @@ s.deform *= 0.85  // 每帧恢复一点
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "window",
+        windowSeconds: 12,
+        series: [
+            { key: "height", label: "高度", unit: "m", sample: (s) => Math.max(0, s.y - 0.4) },
+            { key: "deform", label: "形变", unit: "", sample: (s) => s.deform || 0 },
+        ],
+        metrics: [
+            { key: "bounces", label: "反弹次数", unit: "次", compute: (s) => s.bounceCount },
+            { key: "totalTime", label: "记录时长", unit: "s", compute: (s) => s._t },
+        ],
+        events: [
+            { key: "bounce", label: "触地反弹", detect: (s, prev) => s.bounceCount > prev.bounceCount },
+        ],
+    },
+    drawScene(view, state, params) {
+        bounceDeformationScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: (ctx, s, p, w2s) => {
       const pos = w2s(0, s.y)
       const radius = 12

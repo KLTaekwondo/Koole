@@ -8,7 +8,7 @@
  */
 
 import { MechanicsModel } from "../ModelBase.js"
-import { GROUND_Y } from "../../physicsModels.js"
+import { GROUND_Y } from "../geometry.js"
 
 const BALL_RADIUS = 0.3      // 世界单位：半径 0.3 米
 const PIVOT_HEIGHT = 0       // 悬点高度由参数 length 决定

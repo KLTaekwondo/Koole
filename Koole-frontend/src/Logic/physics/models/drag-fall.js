@@ -1,3 +1,5 @@
+import { dragFallScene } from "../render/scenes/dragFallScene.js"
+
 // drag-fall 模型数据
 const GROUND_Y = 0.4
 
@@ -80,6 +82,25 @@ s.y -= s.vy * dt
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.vy },
+            { key: "height", label: "高度", unit: "m", sample: (s) => Math.max(0, s.y - 0.4) },
+        ],
+        metrics: [
+            { key: "terminal", label: "收尾速度", unit: "m/s", compute: (s, p) => p.mass * p.gravity / p.dragCoeff },
+            { key: "impactSpeed", label: "落地速度", unit: "m/s", compute: (s) => s.vy },
+            { key: "fallTime", label: "下落时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        dragFallScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       if (s.vy > 0.5) {
         const pos = w2s(0, s.y)

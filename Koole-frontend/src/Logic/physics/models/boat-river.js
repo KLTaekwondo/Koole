@@ -1,3 +1,5 @@
+import { boatRiverScene } from "../render/scenes/boatRiverScene.js"
+
 // boat-river 模型数据
 export default {
     id: "boat-river",
@@ -81,6 +83,25 @@ vy = boatSpeed * cos(theta)
     },
 
     // ── 渲染逻辑 ──
+    environment: "none",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "across", label: "过河距离", unit: "m", sample: (s) => s.y },
+            { key: "drift", label: "沿河漂移", unit: "m", sample: (s) => s.x },
+        ],
+        metrics: [
+            { key: "crossTime", label: "过河时间", unit: "s", compute: (s) => s._t },
+            { key: "drift", label: "漂移距离", unit: "m", compute: (s) => s.x },
+            { key: "riverWidth", label: "河宽", unit: "m", compute: (s, p) => p.riverWidth },
+        ],
+    },
+    drawScene(view, state, params) {
+        boatRiverScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: () => {},
     drawExtra: (ctx, s, p, w2s) => {
       const canvas = ctx.canvas

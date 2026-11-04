@@ -1,3 +1,5 @@
+import { inclineScene } from "../render/scenes/inclineScene.js"
+
 // incline 模型数据
 export default {
     id: "incline",
@@ -80,6 +82,25 @@ y = rampHeight - s.dist * Math.sin(theta)
     ],
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "dist", label: "下滑距离", unit: "m", sample: (s) => s.dist },
+            { key: "vel", label: "速度", unit: "m/s", sample: (s) => s.vel },
+        ],
+        metrics: [
+            { key: "rampLen", label: "斜面长度", unit: "m", compute: (s) => s.rampLen },
+            { key: "totalTime", label: "下滑时间", unit: "s", compute: (s) => s._t },
+            { key: "endSpeed", label: "到底速度", unit: "m/s", compute: (s) => s.vel },
+        ],
+    },
+    drawScene(view, state, params) {
+        inclineScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       const theta = p.angle * Math.PI / 180
       const rampLen = s.rampLen

@@ -1,3 +1,5 @@
+import { mechanicalEnergyScene } from "../render/scenes/mechanicalEnergyScene.js"
+
 // mechanical-energy 模型数据
 export default {
     id: "mechanical-energy",
@@ -104,6 +106,37 @@ export default {
 
     // ── 渲染逻辑 ──
     drawObject: () => {},
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.v },
+            { key: "kinetic", label: "动能", unit: "J", sample: (s, p) => 0.5 * p.mass * s.v * s.v },
+            { key: "total", label: "总能量", unit: "J", sample: (s, p) => {
+                const rad = (p.angle * Math.PI) / 180;
+                const h = Math.max(0, p.height - s.dist * Math.sin(rad));
+                return 0.5 * p.mass * s.v * s.v + p.mass * p.gravity * h;
+            } },
+            { key: "potential", label: "势能", unit: "J", sample: (s, p) => {
+                const rad = (p.angle * Math.PI) / 180;
+                return p.mass * p.gravity * Math.max(0, p.height - s.dist * Math.sin(rad));
+            } },
+        ],
+        charts: [
+            { title: "能量转化（Ek + Ep 应守恒）", series: ["kinetic", "potential", "total"] },
+        ],
+        metrics: [
+            { key: "totalEnergy", label: "初始总能量", unit: "J", compute: (s) => s.E0 },
+            { key: "endSpeed", label: "到底速度", unit: "m/s", compute: (s) => s.v },
+            { key: "totalTime", label: "下滑时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        mechanicalEnergyScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s, getTheme) => {
       const isDark = getTheme && getTheme() === "dark"
       const rad = p.angle * Math.PI / 180

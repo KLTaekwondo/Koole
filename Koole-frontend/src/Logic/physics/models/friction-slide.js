@@ -1,3 +1,5 @@
+import { frictionSlideScene } from "../render/scenes/frictionSlideScene.js"
+
 // friction-slide 模型数据
 const GROUND_Y = 0.4
 
@@ -79,6 +81,25 @@ s.x += s.vx * dt
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "x", label: "位移", unit: "m", sample: (s) => s.x },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.vx },
+        ],
+        metrics: [
+            { key: "distance", label: "滑行距离", unit: "m", compute: (s) => s.x },
+            { key: "stopTime", label: "停止用时", unit: "s", compute: (s) => s._t },
+            { key: "startSpeed", label: "初速度", unit: "m/s", compute: (s, p) => p.v0 },
+        ],
+    },
+    drawScene(view, state, params) {
+        frictionSlideScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       const groundY = w2s(0, 0).y
       const cw = ctx.canvas.width / (window.devicePixelRatio || 1)

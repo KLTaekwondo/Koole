@@ -1,3 +1,5 @@
+import { freeFallScene } from "../render/scenes/freeFallScene.js"
+
 // free-fall 模型数据
 const GROUND_Y = 0.4
 
@@ -87,6 +89,13 @@ $g \\approx 9.8 \\, m/s^2$ 方向竖直向下，跟质量无关。伽利略比�
     ],
 
     // ── 渲染逻辑 ──
+    // 新架构：舞台（地面/网格）交给 landscape 环境，球半径走世界单位
+    environment: "landscape",
+    drawScene(view, state, params) {
+      freeFallScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照，迁移完成后删除
     drawExtra: (ctx, s, p, w2s) => {
       if (s.vy < 0.2 || s.y <= 0) return
       const pos = w2s(0, s.y)

@@ -1,3 +1,5 @@
+import { connectedBodiesScene } from "../render/scenes/connectedBodiesScene.js"
+
 // connected-bodies 模型数据
 const GROUND_Y = 0.4
 const DRAW_SCALE = 30
@@ -109,6 +111,25 @@ T = m1 * (a + mu * g)
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "dist", label: "位移", unit: "m", sample: (s) => s.d },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.v },
+        ],
+        metrics: [
+            { key: "totalDist", label: "总位移", unit: "m", compute: (s) => s.d },
+            { key: "endSpeed", label: "末速度", unit: "m/s", compute: (s) => s.v },
+            { key: "totalTime", label: "运动时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        connectedBodiesScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: (ctx, s, p, w2s) => {
       const TABLE_H = 5, TABLE_W = 8
       const d = s.d

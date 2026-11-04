@@ -378,6 +378,7 @@ const recordTrails = computed(() => modelRuns.value.map((run, index) => ({
     params: run.params,
     paramLabel: Object.entries(run.params).slice(0, 2).map(([k, v]) => `${k}=${v}`).join(", "),
     series: run.series,
+    charts: run.charts,
     resultData: Object.fromEntries(run.metrics.map(m => [m.label, `${m.value}${m.unit}`])),
 })))
 

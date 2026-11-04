@@ -1,3 +1,5 @@
+import { ballCollisionScene } from "../render/scenes/ballCollisionScene.js"
+
 // ball-collision 模型数据
 const GROUND_Y = 0.4
 
@@ -136,6 +138,33 @@ if (!s.collided && s.x2 - s.x1 < MIN_DIST && s.v1 > s.v2) {
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "v1", label: "球1速度", unit: "m/s", sample: (s) => s.v1 },
+            { key: "v2", label: "球2速度", unit: "m/s", sample: (s) => s.v2 },
+            { key: "momentum", label: "总动量", unit: "kg·m/s", sample: (s, p) => p.m1 * s.v1 + p.m2 * s.v2 },
+        ],
+        charts: [
+            { title: "两球速度", series: ["v1", "v2"] },
+            { title: "总动量（碰撞前后应不变）", series: ["momentum"] },
+        ],
+        metrics: [
+            { key: "preV1", label: "碰前球1速度", unit: "m/s", compute: (s) => s._preV1 ?? null },
+            { key: "postV1", label: "碰后球1速度", unit: "m/s", compute: (s) => s.v1 },
+            { key: "postV2", label: "碰后球2速度", unit: "m/s", compute: (s) => s.v2 },
+        ],
+        events: [
+            { key: "collide", label: "发生碰撞", detect: (s, prev) => !prev.collided && s.collided },
+        ],
+    },
+    drawScene(view, state, params) {
+        ballCollisionScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: (ctx, s, p, w2s) => {
       const RADIUS_PX = 14
       const pos1 = w2s(s.x1, GROUND_Y)

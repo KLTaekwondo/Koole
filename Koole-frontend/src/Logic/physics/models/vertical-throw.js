@@ -1,3 +1,5 @@
+import { verticalThrowScene } from "../render/scenes/verticalThrowScene.js"
+
 // vertical-throw 模型数据
 const GROUND_Y = 0.4
 
@@ -68,6 +70,24 @@ export default {
     ],
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "height", label: "高度", unit: "m", sample: (s) => Math.max(0, s.y - 0.4) },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => s.vy },
+        ],
+        metrics: [
+            { key: "maxHeight", label: "最大高度", unit: "m", compute: (s) => Math.max(0, s.maxY - 0.4) },
+            { key: "flightTime", label: "滞空时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        verticalThrowScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       if (Math.abs(s.vy) < 0.2 || s.y <= 0) return
       const pos = w2s(0, s.y)

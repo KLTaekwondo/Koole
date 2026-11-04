@@ -41,6 +41,7 @@ export function createExperimentSampler(spec = {}, meta = {}) {
   const seriesSpec = Array.isArray(spec.series) ? spec.series : []
   const metricsSpec = Array.isArray(spec.metrics) ? spec.metrics : []
   const eventsSpec = Array.isArray(spec.events) ? spec.events : []
+  const chartsSpec = Array.isArray(spec.charts) ? spec.charts : []
 
   let series = []
   let events = []
@@ -153,6 +154,7 @@ export function createExperimentSampler(spec = {}, meta = {}) {
       duration,
       metrics,
       series: cleanedSeries,
+      charts: chartsSpec.map(chart => ({ title: chart.title, series: [...(chart.series || [])] })),
       events: [...events],
     }
 

@@ -1,3 +1,5 @@
+import { conveyorBeltScene } from "../render/scenes/conveyorBeltScene.js"
+
 // conveyor-belt 模型数据
 const GROUND_Y = 0.4
 const DRAW_SCALE = 30
@@ -99,6 +101,25 @@ if (Math.abs(dv) > 0.05) {
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "x", label: "位置", unit: "m", sample: (s) => s.x },
+            { key: "speed", label: "滑块速度", unit: "m/s", sample: (s) => s.v },
+        ],
+        metrics: [
+            { key: "travel", label: "位移", unit: "m", compute: (s) => s.x },
+            { key: "beltSpeed", label: "带速", unit: "m/s", compute: (s, p) => p.beltSpeed },
+            { key: "syncTime", label: "同步用时", unit: "s", compute: (s) => s._syncTime ?? null },
+        ],
+    },
+    drawScene(view, state, params) {
+        conveyorBeltScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: (ctx, s, p, w2s) => {
       const beltLen = p.beltLength
       const beltH = 0.3, blockH = 0.7, blockW = 0.7

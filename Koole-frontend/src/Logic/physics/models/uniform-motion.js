@@ -1,3 +1,5 @@
+import { uniformMotionScene } from "../render/scenes/uniformMotionScene.js"
+
 // uniform-motion 模型数据
 export default {
     id: "uniform-motion",
@@ -54,6 +56,24 @@ export default {
 
     // ── 渲染逻辑 ──
     drawObject: () => {},
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "x", label: "位移", unit: "m", sample: (s) => s.x },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s, p) => p.speed },
+        ],
+        metrics: [
+            { key: "distance", label: "总位移", unit: "m", compute: (s) => s.x },
+            { key: "time", label: "用时", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        uniformMotionScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s, getTheme) => {
       const isDark = getTheme && getTheme() === "dark"
       const ground = w2s(0, 0)

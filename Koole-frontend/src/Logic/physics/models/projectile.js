@@ -1,3 +1,5 @@
+import { projectileScene } from "../render/scenes/projectileScene.js"
+
 // projectile 模型数据
 const GROUND_Y = 0.4
 
@@ -73,6 +75,26 @@ export default {
     ],
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "height", label: "高度", unit: "m", sample: (s) => Math.max(0, s.y - 0.4) },
+            { key: "x", label: "水平距离", unit: "m", sample: (s) => s.x },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => Math.hypot(s.vx, s.vy) },
+        ],
+        metrics: [
+            { key: "range", label: "射程", unit: "m", compute: (s) => s.x },
+            { key: "flightTime", label: "飞行时间", unit: "s", compute: (s) => s._t },
+            { key: "impactSpeed", label: "落地速度", unit: "m/s", compute: (s) => Math.hypot(s.vx, s.vy) },
+        ],
+    },
+    drawScene(view, state, params) {
+        projectileScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy)
       if (speed < 0.2 || s.y <= 0) return

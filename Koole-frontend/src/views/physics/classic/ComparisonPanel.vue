@@ -118,7 +118,23 @@ const chartDefs = computed(() => {
   if (!trail) return []
   // 旧记录：模型自己声明的图表定义
   if (trail.chartDefs?.length) return trail.chartDefs
-  // 新记录（dataSpec.series）：每个序列自动生成一张「时间—数值」图
+  // 新记录：优先用 dataSpec.charts 分组（多条线同图），再退回「一序列一图」
+  if (Array.isArray(trail.charts) && trail.charts.length && Array.isArray(trail.series)) {
+    const PALETTE = ["#3b82f6", "#e67e22", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6"]
+    return trail.charts.map(chart => ({
+      title: chart.title,
+      xLabel: "t (s)",
+      yLabel: "",
+      getData: (_trail, _params, source) => (chart.series || []).map((key, index) => {
+        const item = source?.series?.find(s => s.key === key)
+        return {
+          name: item?.label || key,
+          data: item?.points || [],
+          color: PALETTE[index % PALETTE.length],
+        }
+      }),
+    }))
+  }
   if (Array.isArray(trail.series) && trail.series.length) {
     return trail.series.map(item => ({
       title: item.label,

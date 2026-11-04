@@ -1,3 +1,5 @@
+import { blockBoardScene } from "../render/scenes/blockBoardScene.js"
+
 // block-board 模型数据
 const GROUND_Y = 0.4
 const DRAW_SCALE = 30
@@ -120,6 +122,25 @@ v_cm = (m*v0) / (m+M)
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "vb", label: "滑块速度", unit: "m/s", sample: (s) => s.vb },
+            { key: "vB", label: "木板速度", unit: "m/s", sample: (s) => s.vB },
+        ],
+        metrics: [
+            { key: "relative", label: "相对位移", unit: "m", compute: (s) => Math.abs(s.xb - s.xB) },
+            { key: "endVb", label: "末速度（滑块）", unit: "m/s", compute: (s) => s.vb },
+            { key: "totalTime", label: "运动时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        blockBoardScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       if (!s.trailB || s.trailB.length < 2) return
       ctx.globalAlpha = 0.45

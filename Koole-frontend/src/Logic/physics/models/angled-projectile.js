@@ -1,3 +1,5 @@
+import { angledProjectileScene } from "../render/scenes/angledProjectileScene.js"
+
 // angled-projectile 模型数据
 const GROUND_Y = 0.4
 
@@ -83,6 +85,29 @@ s.vy -= gravity * dt  // 注意减号
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    dataSpec: {
+        kind: "series",
+        settle: "finish",
+        series: [
+            { key: "height", label: "高度", unit: "m", sample: (s) => Math.max(0, s.y - 0.4) },
+            { key: "x", label: "水平距离", unit: "m", sample: (s) => s.x },
+            { key: "speed", label: "速度", unit: "m/s", sample: (s) => Math.hypot(s.vx, s.vy) },
+        ],
+        metrics: [
+            { key: "range", label: "射程", unit: "m", compute: (s) => s.x },
+            { key: "maxHeight", label: "最大高度", unit: "m", compute: (s, p) => {
+                const rad = (p.angle * Math.PI) / 180;
+                return (p.initialVelocity * Math.sin(rad)) ** 2 / (2 * p.gravity);
+            } },
+            { key: "flightTime", label: "飞行时间", unit: "s", compute: (s) => s._t },
+        ],
+    },
+    drawScene(view, state, params) {
+        angledProjectileScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       const start = w2s(0, 0)
       const theta = p.angle * Math.PI / 180
