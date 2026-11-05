@@ -9,6 +9,7 @@ const MASS_H = 0.6
 const EQUILIBRIUM = 3
 
 export class SpringMassScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const x = state.x || 0
     const massY = EQUILIBRIUM - x

@@ -8,6 +8,14 @@ import { GROUND_Y } from "../geometry.js"
 const BALL_RADIUS = 0.35
 
 export class InclineScene extends MechanicsModel {
+  constructor(options = {}) {
+    super(options)
+    // 球心沿法线抬起，轨迹同步补偿
+    this.trailOffset = (state, params) => {
+      const rad = (params.angle * Math.PI) / 180
+      return [-0.35 * Math.sin(rad), 0.35 * Math.cos(rad)]
+    }
+  }
   drawWorld(view, state, params) {
     const theta = (params.angle * Math.PI) / 180
     const rampEnd = [state.rampLen * Math.cos(theta), 0]

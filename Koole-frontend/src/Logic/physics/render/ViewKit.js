@@ -275,6 +275,33 @@ export function createView({ ctx, cw, ch, viewTransform, theme }) {
       ctx.restore()
     },
 
+    /** 轨迹：分段渐隐，越新越亮（最多画最近 900 点） */
+    trail(points, { color = "#e74c3c", width = 2.4, maxPoints = 900 } = {}) {
+      if (!points || points.length < 2) return
+      const visible = points.length > maxPoints ? points.slice(-maxPoints) : points
+      const buckets = 8
+      const size = Math.ceil(visible.length / buckets)
+      ctx.save()
+      ctx.strokeStyle = color
+      ctx.lineWidth = width
+      ctx.lineJoin = "round"
+      ctx.lineCap = "round"
+      for (let b = 0; b < buckets; b++) {
+        const start = b * size
+        const end = Math.min(visible.length, start + size + 1)
+        if (end - start < 2) continue
+        ctx.beginPath()
+        for (let i = start; i < end; i++) {
+          const p = toScreen(visible[i][0], visible[i][1])
+          if (i === start) ctx.moveTo(p.x, p.y)
+          else ctx.lineTo(p.x, p.y)
+        }
+        ctx.globalAlpha = 0.05 + 0.5 * ((b + 1) / buckets)
+        ctx.stroke()
+      }
+      ctx.restore()
+    },
+
     /** 折线（世界坐标点数组） */
     polyline(points, { color = paletteColors.text, width = 1.5, dash = null, fill = null } = {}) {
       if (points.length < 2) return

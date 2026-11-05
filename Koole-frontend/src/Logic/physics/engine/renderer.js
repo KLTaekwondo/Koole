@@ -127,7 +127,6 @@ export function createRenderer(canvasRef, viewTransform, modelRef, simState, rec
       const view = createView({ ctx, cw, ch, viewTransform, theme: getTheme() })
       model.drawScene(view, simState.state, simState.params)
       drawRecordedTrails(ctx)
-      drawCurrentTrail(ctx, simState.state)
       if (onInfoUpdate) onInfoUpdate(model.getInfoLines(simState.state, simState.params, simState.simTime))
       ctx.restore()
       return

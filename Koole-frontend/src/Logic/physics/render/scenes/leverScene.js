@@ -7,6 +7,7 @@ const BEAM_LEN = 6
 const PIVOT_Y = 2
 
 export class LeverScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const tilt = state.angle || 0
     const cx = 0

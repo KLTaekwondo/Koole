@@ -41,11 +41,28 @@ export class ModelBase {
     const env = this.resolveEnvironment()
     const options = this.environmentOptions
 
+    this.lastParams = params
     env.drawBack?.(view, options)
     this.drawWorld(view, state, params)
     env.drawFront?.(view, options)
+    this.drawTrail(view, state, params)
     this.drawOverlay(view, state, params)
     env.drawOverlay?.(view, options)
+  }
+
+  /**
+   * 轨迹层：默认把 state.trail 按「越新越亮」画出来。
+   * 场景把物体画在和记录点不同的位置时（比如传送带把滑块抬高），
+   * 子类设置 trailOffset 做补偿，轨迹才不会和物体错位。
+   */
+  drawTrail(view, state) {
+    const points = state?.trail
+    if (!points || points.length < 2) return
+    const offset = typeof this.trailOffset === "function"
+      ? this.trailOffset(state, this.lastParams || {})
+      : (this.trailOffset || [0, 0])
+    const shifted = points.map(p => [p.x + offset[0], p.y + offset[1]])
+    view.trail(shifted, { color: this.trailColor || "#e74c3c", width: 2.4 })
   }
 
   /** 世界层：物体、光线、导线……子类实现 */

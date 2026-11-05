@@ -4,6 +4,7 @@
 import { MechanicsModel } from "../ModelBase.js"
 
 export class ForceCompositionScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const rad = (params.angle * Math.PI) / 180
     const scale = 0.25

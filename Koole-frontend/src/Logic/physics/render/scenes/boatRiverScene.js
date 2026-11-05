@@ -9,6 +9,7 @@ const BOAT_W = 0.9
 const BOAT_H = 0.4
 
 export class BoatRiverScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const width = params.riverWidth
     // 河水

@@ -4,6 +4,7 @@
 import { MechanicsModel } from "../ModelBase.js"
 
 export class BuoyancyScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const half = 2.2
     const side = state.side || Math.cbrt(params.volume)

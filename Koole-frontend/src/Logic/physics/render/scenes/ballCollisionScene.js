@@ -8,6 +8,11 @@ const R1 = 0.5
 const R2 = 0.42
 
 export class BallCollisionScene extends MechanicsModel {
+  constructor(options = {}) {
+    super(options)
+    // 球心抬到半径高度，轨迹补偿同样的高度差
+    this.trailOffset = [0, 0.1]
+  }
   drawWorld(view, state, params) {
     // 球心抬到半径高度，球刚好贴地
     view.circle([state.x1, R1], R1, { fill: "#29b6f6", stroke: "rgba(0,0,0,0.2)", width: 1.5 })

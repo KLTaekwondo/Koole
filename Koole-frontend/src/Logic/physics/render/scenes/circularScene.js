@@ -6,6 +6,7 @@ import { MechanicsModel } from "../ModelBase.js"
 const R_BALL = 0.35
 
 export class CircularScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const r = params.radius
     const a = state.angle || 0

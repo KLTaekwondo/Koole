@@ -7,6 +7,7 @@
 import { MechanicsModel } from "../ModelBase.js"
 
 export class RefractionScene extends MechanicsModel {
+  static environment = "none"
   drawWorld(view, state, params) {
     const theta1 = (params.incidentAngle * Math.PI) / 180
     const n1 = params.n1
