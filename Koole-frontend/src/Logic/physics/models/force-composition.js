@@ -1,3 +1,5 @@
+import { forceCompositionScene } from "../render/scenes/forceCompositionScene.js"
+
 // force-composition 模型数据
 export default {
     id: "force-composition",
@@ -94,6 +96,12 @@ Fr = Math.sqrt(F1² + F2² + 2*F1*F2*Math.cos(theta))
     },
 
     // ── 渲染逻辑 ──
+    environment: "none",
+    drawScene(view, state, params) {
+        forceCompositionScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: () => {},
     drawExtra: (ctx, s, p, w2s, getTheme) => {
       const isDark = getTheme && getTheme() === "dark"

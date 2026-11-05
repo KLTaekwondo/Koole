@@ -1,3 +1,5 @@
+import { circularScene } from "../render/scenes/circularScene.js"
+
 // circular 模型数据
 const DRAW_SCALE = 30
 
@@ -108,6 +110,12 @@ export default {
     },
 
     // ── 渲染逻辑 ──
+    environment: "none",
+    drawScene(view, state, params) {
+        circularScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s, getTheme) => {
       const center = w2s(0, p.radius)
       const ball = w2s(p.radius * Math.cos(s.angle), p.radius * Math.sin(s.angle) + p.radius)

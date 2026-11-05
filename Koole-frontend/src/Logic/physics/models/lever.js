@@ -1,3 +1,5 @@
+import { leverScene } from "../render/scenes/leverScene.js"
+
 // lever 模型数据
 const GROUND_Y = 0.4
 const DRAW_SCALE = 30
@@ -101,6 +103,12 @@ alpha = tau / I - 0.8 * omega  // 阻尼
     },
 
     // ── 渲染逻辑 ──
+    environment: "none",
+    drawScene(view, state, params) {
+        leverScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, state, params, w2s) => {
       const pivotW = { x: 0, y: 1.2 }
       const pivotS = w2s(pivotW.x, pivotW.y)

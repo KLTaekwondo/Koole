@@ -1,3 +1,5 @@
+import { springMassScene } from "../render/scenes/springMassScene.js"
+
 // spring-mass 模型数据
 const GROUND_Y = 0.4
 
@@ -108,6 +110,12 @@ s.x += s.vx * dt
     },
 
     // ── 渲染逻辑 ──
+    environment: "none",
+    drawScene(view, state, params) {
+        springMassScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawExtra: (ctx, s, p, w2s) => {
       const massPos = w2s(s.x, GROUND_Y)
       const wallX = -p.initX - 0.8

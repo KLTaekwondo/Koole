@@ -1,3 +1,5 @@
+import { twoForceBalanceScene } from "../render/scenes/twoForceBalanceScene.js"
+
 // two-force-balance 模型数据
 export default {
     id: "two-force-balance",
@@ -68,6 +70,12 @@ export default {
     },
 
     // ── 渲染逻辑 ──
+    environment: "landscape",
+    drawScene(view, state, params) {
+        twoForceBalanceScene.drawScene(view, state, params)
+    },
+
+    // 旧绘制：保留作对照
     drawObject: () => {},
     drawExtra: (ctx, s, p, w2s, getTheme) => {
       const isDark = getTheme && getTheme() === "dark"
