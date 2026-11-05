@@ -14,11 +14,22 @@ export class BoatRiverScene extends MechanicsModel {
     const width = params.riverWidth
     // 河水
     view.polyline([[0, 0], [state.x + 8, 0], [state.x + 8, width], [0, width]], {
-      color: "#4aa3df", width: 2, fill: "rgba(52,152,219,0.10)",
+      color: "#4aa3df", width: 2, fill: "rgba(52,152,219,0.22)",
     })
     // 两岸
     view.line([-4, 0], [state.x + 8, 0], { color: view.colors.ground, width: 3 })
     view.line([-4, width], [state.x + 8, width], { color: view.colors.ground, width: 3 })
+    // 水纹：几条横向短波纹，让水面看起来像水
+    for (let i = 0; i < 5; i++) {
+      const y = width * (0.12 + i * 0.18)
+      view.polyline([
+        [state.x - 3, y],
+        [state.x - 2.4, y + 0.12],
+        [state.x - 1.8, y],
+        [state.x - 1.2, y + 0.12],
+      ], { color: "rgba(74,163,223,0.55)", width: 1.2 })
+    }
+
     // 水流方向箭头（每 0.25 河宽一道）
     for (const ratio of [0.2, 0.4, 0.6, 0.8]) {
       const y = width * ratio
