@@ -25,7 +25,8 @@ export function createCamera(canvasRef, modelRef, simState, viewTransform, draw)
   const centerCameraOnBall = () => {
     const model = modelRef.value
     if (!simState.state || !model) return
-    const pos = model.getBallPosition(simState.state, simState.params)
+    // 模型可以声明「取景中心」：像传送带这种长条机器，应该看整台而不是跟着滑块
+    const pos = (model.getCameraTarget || model.getBallPosition)(simState.state, simState.params)
     if (!pos) return
     // 偏移量按当前缩放换算，跟随目标时无论放大缩小都保持在画面中央
     const unit = DRAW_SCALE * (zoom?.value || 1)

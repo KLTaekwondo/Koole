@@ -72,6 +72,8 @@ if (Math.abs(dv) > 0.05) {
     },
     isFinished: (s, p) => s.x >= p.beltLength,
     getBallPosition: (s) => ({ x: s.x, y: GROUND_Y }),
+    // 取景看整台机器，而不是跟着滑块跑（否则 20m 长的带子会被切掉一半）
+    getCameraTarget: (s, p) => ({ x: p.beltLength / 2, y: 1.2 }),
     getTrailPosition: (s) => ({ x: s.x, y: GROUND_Y }),
     trailFields: (s) => ({ t: s._t, v: s.v }),
     chartDefs: [

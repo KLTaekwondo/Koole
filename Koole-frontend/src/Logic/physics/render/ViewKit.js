@@ -180,6 +180,33 @@ export function createView({ ctx, cw, ch, viewTransform, theme }) {
       ctx.restore()
     },
 
+    /**
+     * 矩形：at 是世界坐标「左下角」，w/h 是世界单位宽高
+     * 支撑结构（支腿、底座、机身）用这个而不是 line，
+     * 因为几像素宽的线在缩放后会几乎看不见，看起来像"悬空"。
+     */
+    rect(at, w, h, { fill = null, stroke = null, width = 1.5, radius = 0 } = {}) {
+      const p = toScreen(at[0], at[1])
+      const ww = w * unit()
+      const hh = h * unit()
+      const x = p.x
+      const y = p.y - hh
+      ctx.save()
+      ctx.beginPath()
+      if (radius > 0 && ctx.roundRect) ctx.roundRect(x, y, ww, hh, radius)
+      else ctx.rect(x, y, ww, hh)
+      if (fill) {
+        ctx.fillStyle = fill
+        ctx.fill()
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke
+        ctx.lineWidth = width
+        ctx.stroke()
+      }
+      ctx.restore()
+    },
+
     /** 点：半径固定像素（用于关节、端点标记） */
     point(at, { r = 4, color = paletteColors.text } = {}) {
       const p = toScreen(at[0], at[1])
